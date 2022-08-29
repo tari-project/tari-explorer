@@ -78,26 +78,6 @@
     <thead>
       <tr>
         <th>
-          <h2>Kernels({{kernels.length}})</h2>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each kernels as |kernel|}}
-        <tr>
-          <td>
-            <h3>Kernel {{@index}}</h3>
-            {{>TransactionKernel kernel}}
-          </td>
-        </tr>
-      {{/each}}
-    </tbody>
-  </table>
-
-  <table>
-    <thead>
-      <tr>
-        <th>
           <h2>Outputs({{outputs.length}})</h2>
         </th>
       </tr>
@@ -128,6 +108,26 @@
           <td>
             <h3>Input {{@index}}</h4>
             {{>TransactionInput input}}
+          </td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>
+          <h2>Kernels({{kernels.length}})</h2>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each kernels as |kernel|}}
+        <tr>
+          <td>
+            <h3>Kernel {{@index}}</h3>
+            {{>TransactionKernel kernel}}
           </td>
         </tr>
       {{/each}}

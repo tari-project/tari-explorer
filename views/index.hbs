@@ -193,19 +193,19 @@
 </table>
 <br />
 
-<h2>Registered Validator Nodes</h2>
+<h2>Active Validator Nodes</h2>
 <table>
   <thead>
     <tr>
       <th>Public key</th>
-      <th>Block</th>
+      <th>Shard key</th>
     </tr>
   </thead>
   <tbody>
-    {{#each this.registeredVns}}
+    {{#each this.activeVns}}
       <tr>
-        <td>{{this.public_key}}</td>
-        <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
+        <td>{{hex this.public_key}}</td>
+        <td>{{hex this.shard_key}}</td>
       </tr>
     {{/each}}
   </tbody>

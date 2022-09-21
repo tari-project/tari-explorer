@@ -193,6 +193,25 @@
 </table>
 <br />
 
+<h2>Registered Validator Nodes</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Public key</th>
+      <th>Block</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each this.registeredVns}}
+      <tr>
+        <td>{{this.public_key}}</td>
+        <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
+<br />
+
 <form method="get" action="search">
   <label for="c">Find commitment</label>
   <input id="c" name="c" type="text" />

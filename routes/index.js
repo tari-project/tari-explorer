@@ -85,6 +85,13 @@ router.get('/', async function (req, res) {
     let moneroHashRates = getHashRates(lastDifficulties, 'monero_estimated_hash_rate');
     let shaHashRates = getHashRates(lastDifficulties, 'sha3_estimated_hash_rate');
 
+    // list of registered validator nodes
+    let registeredVns = [
+      {public_key: '93248565fc4c6e8431fe2b3cd1da70e6ae264a3031d8db43cdf81045649e75bf', height: 1},
+      {public_key: '93248565fc4c6e8431fe2b3cd1da70e6ae264a3031d8db43cdf81045649e75bf', height: 2},
+      {public_key: '93248565fc4c6e8431fe2b3cd1da70e6ae264a3031d8db43cdf81045649e75bf', height: 3},
+    ];
+
     // console.log(mempool);
     for (let i = 0; i < mempool.length; i++) {
       let sum = 0;
@@ -115,6 +122,7 @@ router.get('/', async function (req, res) {
       shaHashRates,
       currentMoneroHashRate: moneroHashRates[moneroHashRates.length - 1],
       moneroHashRates,
+      registeredVns,
     };
     res.render('index', result);
   } catch (error) {

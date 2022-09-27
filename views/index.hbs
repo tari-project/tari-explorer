@@ -193,6 +193,25 @@
 </table>
 <br />
 
+<h2>Active Validator Nodes</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Public key</th>
+      <th>Shard key</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each this.activeVns}}
+      <tr>
+        <td>{{hex this.public_key}}</td>
+        <td>{{hex this.shard_key}}</td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
+<br />
+
 <form method="get" action="search">
   <label for="c">Find commitment</label>
   <input id="c" name="c" type="text" />

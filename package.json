@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "asciichart": "^1.5.25",
-    "base-node-grpc-client": "file:../tari/clients/base_node_grpc_client",
+    "base-node-grpc-client": "file:../tari/clients/nodejs/base_node_grpc_client",
     "cookie-parser": "~1.4.4",
     "express": "~4.16.1",
     "hbs": "^4.1.2",

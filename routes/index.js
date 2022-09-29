@@ -1,17 +1,17 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-var {createClient} = require('../baseNodeClient');
+var { createClient } = require("../baseNodeClient");
 
-var express = require('express');
+var express = require("express");
 var router = express.Router();
 
 /* GET home page. */
-router.get('/', async function (req, res) {
+router.get("/", async function (req, res) {
   try {
     let client = createClient();
     let from = parseInt(req.query.from || 0);
-    let limit = parseInt(req.query.limit || '20');
+    let limit = parseInt(req.query.limit || "20");
 
     let tipInfo = await client.getTipInfo({});
 
@@ -27,7 +27,7 @@ router.get('/', async function (req, res) {
     // console.log(last100Headers)
 
     for (let i = 0; i < last100Headers.length - 1; i++) {
-      let arr = last100Headers[i].pow.pow_algo === '0' ? monero : sha;
+      let arr = last100Headers[i].pow.pow_algo === "0" ? monero : sha;
       if (i < 10) {
         arr[0] += 1;
       }
@@ -57,14 +57,16 @@ router.get('/', async function (req, res) {
       num_headers: limit + 1,
     });
     let headers = headersResp.map((r) => r.header);
-    const pows = {0: 'Monero', 1: 'SHA-3'};
+    const pows = { 0: "Monero", 1: "SHA-3" };
     for (var i = headers.length - 2; i >= 0; i--) {
-      headers[i].kernels = headers[i].kernel_mmr_size - headers[i + 1].kernel_mmr_size;
-      headers[i].outputs = headers[i].output_mmr_size - headers[i + 1].output_mmr_size;
+      headers[i].kernels =
+        headers[i].kernel_mmr_size - headers[i + 1].kernel_mmr_size;
+      headers[i].outputs =
+        headers[i].output_mmr_size - headers[i + 1].output_mmr_size;
       headers[i].powText = pows[headers[i].pow.pow_algo];
     }
     let lastHeader = headers[headers.length - 1];
-    if (lastHeader.height === '0') {
+    if (lastHeader.height === "0") {
       // If the block is the genesis block, then the MMR sizes are the values to use
       lastHeader.kernels = lastHeader.kernel_mmr_size;
       lastHeader.outputs = lastHeader.output_mmr_size;
@@ -74,16 +76,22 @@ router.get('/', async function (req, res) {
     }
 
     // console.log(headers);
-    let firstHeight = parseInt(headers[0].height || '0');
+    let firstHeight = parseInt(headers[0].height || "0");
 
     // --  mempool
     let mempool = await client.getMempoolTransactions({});
 
     // estimated hash rates
-    let lastDifficulties = await client.getNetworkDifficulty({from_tip: 100});
-    let totalHashRates = getHashRates(lastDifficulties, 'estimated_hash_rate');
-    let moneroHashRates = getHashRates(lastDifficulties, 'monero_estimated_hash_rate');
-    let shaHashRates = getHashRates(lastDifficulties, 'sha3_estimated_hash_rate');
+    let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 100 });
+    let totalHashRates = getHashRates(lastDifficulties, "estimated_hash_rate");
+    let moneroHashRates = getHashRates(
+      lastDifficulties,
+      "monero_estimated_hash_rate"
+    );
+    let shaHashRates = getHashRates(
+      lastDifficulties,
+      "sha3_estimated_hash_rate"
+    );
 
     // list of active validator nodes
     let tipHeight = tipInfo.metadata.height_of_longest_chain;
@@ -102,7 +110,7 @@ router.get('/', async function (req, res) {
       mempool[i].transaction.body.total_fees = sum;
     }
     const result = {
-      title: 'Blocks',
+      title: "Blocks",
       tipInfo,
       mempool,
       headers,
@@ -113,8 +121,8 @@ router.get('/', async function (req, res) {
       from,
       algoSplit,
       blockTimes: getBlockTimes(last100Headers),
-      moneroTimes: getBlockTimes(last100Headers, '0'),
-      shaTimes: getBlockTimes(last100Headers, '1'),
+      moneroTimes: getBlockTimes(last100Headers, "0"),
+      shaTimes: getBlockTimes(last100Headers, "1"),
       currentHashRate: totalHashRates[totalHashRates.length - 1],
       totalHashRates,
       currentShaHashRate: shaHashRates[shaHashRates.length - 1],
@@ -123,10 +131,10 @@ router.get('/', async function (req, res) {
       moneroHashRates,
       activeVns,
     };
-    res.render('index', result);
+    res.render("index", result);
   } catch (error) {
     res.status(500);
-    res.render('error', {error: error});
+    res.render("error", { error: error });
   }
 });
 
@@ -134,14 +142,19 @@ function getHashRates(difficulties, property) {
   const end_idx = difficulties.length - 1;
   const start_idx = end_idx - 60;
 
-  return difficulties.map((d) => parseInt(d[property])).slice(start_idx, end_idx);
+  return difficulties
+    .map((d) => parseInt(d[property]))
+    .slice(start_idx, end_idx);
 }
 
 function getBlockTimes(last100Headers, algo) {
   let blocktimes = [];
   let i = 0;
-  if (algo === '0' || algo === '1') {
-    while (i < last100Headers.length && last100Headers[i].pow.pow_algo !== algo) {
+  if (algo === "0" || algo === "1") {
+    while (
+      i < last100Headers.length &&
+      last100Headers[i].pow.pow_algo !== algo
+    ) {
       i++;
       blocktimes.push(0);
     }
@@ -154,7 +167,9 @@ function getBlockTimes(last100Headers, algo) {
   i++;
   while (i < last100Headers.length && blocktimes.length < 60) {
     if (!algo || last100Headers[i].pow.pow_algo === algo) {
-      blocktimes.push((lastBlockTime - parseInt(last100Headers[i].timestamp.seconds)) / 60);
+      blocktimes.push(
+        (lastBlockTime - parseInt(last100Headers[i].timestamp.seconds)) / 60
+      );
       lastBlockTime = parseInt(last100Headers[i].timestamp.seconds);
     } else {
       blocktimes.push(0);

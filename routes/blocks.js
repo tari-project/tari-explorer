@@ -48,7 +48,6 @@ router.get("/:height", async function (req, res) {
     let nextLink = `/blocks/${nextHeight}`;
     if (height === tipHeight) nextLink = null;
 
-    // console.log(block);
     res.render("blocks", {
       title: `Block at height: ${block[0].block.header.height}`,
       header: block[0].block.header,

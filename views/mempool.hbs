@@ -71,11 +71,10 @@
           <td>{{hex hash}}</td>
           <td>{{hex script}}</td>
           <td>{{hex sender_offset_public_key}}</td>
-          <td><i>Public Nonce Commitment</i><br />
-            {{hex metadata_signature.public_nonce_commitment}}<hr /><i>Signature
-              U</i><br />
-            {{hex metadata_signature.signature_u}}<hr /><i>Signature V</i><br />
-            {{hex metadata_signature.signature_v}}</td>
+          <td>
+            {{>ComSignature metadata_signature}}
+
+          </td>
         </tr>
       {{/each}}
     </tbody>

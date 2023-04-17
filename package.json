@@ -18,8 +18,7 @@
     "express": "~4.16.1",
     "hbs": "^4.1.2",
     "http-errors": "~1.6.3",
-    "morgan": "~1.9.1",
-    "validator-node-grpc-client": "file:../tari-dan/clients/validator_node_grpc_client"
+    "morgan": "~1.9.1"
   },
   "devDependencies": {
     "@babel/core": "^7.15.8",

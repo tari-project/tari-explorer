@@ -14,7 +14,6 @@ var mempoolRouter = require("./routes/mempool");
 var searchRouter = require("./routes/search");
 
 var assetsRouter = require("./routes/assets");
-var validatorRouter = require("./routes/validator");
 
 var hbs = require("hbs");
 const [hex, script] = require("./script");
@@ -92,7 +91,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);
 app.use("/assets", assetsRouter);
-app.use("/validator", validatorRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/search", searchRouter);
 

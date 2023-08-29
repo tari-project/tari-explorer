@@ -13,6 +13,9 @@ router.get("/", async function (req, res) {
     let from = parseInt(req.query.from || 0);
     let limit = parseInt(req.query.limit || "20");
 
+    let version_result = await client.getVersion({});
+    let version = version_result.value.slice(0,25);
+
     let tipInfo = await client.getTipInfo({});
 
     // Algo split
@@ -111,6 +114,7 @@ router.get("/", async function (req, res) {
     }
     const result = {
       title: "Blocks",
+      version,
       tipInfo,
       mempool,
       headers,

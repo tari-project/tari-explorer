@@ -1,10 +1,10 @@
 # Tari explorer
 
-## No client-side JavaScript block explorer
+## No client-side JavaScript block explorer (tari-text-explorer)
 
 ### Dependencies
 
-- `npm i`
+- `npm install`
 
 ### Development (nodemon reload)
 
@@ -13,3 +13,8 @@
 ### Start server
 
 - `npm start`
+
+## Useful environment variables
+
+- PORT:4000 'Port of service'
+- BASE_NODE_GRPC_URL:localhost:18142 'Base node GRPC URL'

@@ -14,7 +14,7 @@ router.get("/", async function (req, res) {
     let limit = parseInt(req.query.limit || "20");
 
     let version_result = await client.getVersion({});
-    let version = version_result.value.slice(0,25);
+    let version = version_result.value.slice(0, 25);
 
     let tipInfo = await client.getTipInfo({});
 
@@ -86,15 +86,17 @@ router.get("/", async function (req, res) {
 
     // estimated hash rates
     let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 100 });
-    let totalHashRates = getHashRates(lastDifficulties, "estimated_hash_rate");
-    let moneroHashRates = getHashRates(
-      lastDifficulties,
-      "monero_estimated_hash_rate"
-    );
-    let shaHashRates = getHashRates(
-      lastDifficulties,
-      "sha3_estimated_hash_rate"
-    );
+    let totalHashRates = getHashRates(lastDifficulties, [
+      "estimated_hash_rate",
+    ]);
+    let moneroHashRates = getHashRates(lastDifficulties, [
+      "monero_estimated_hash_rate",
+      "randomx_estimated_hash_rate",
+    ]);
+    let shaHashRates = getHashRates(lastDifficulties, [
+      "sha3_estimated_hash_rate",
+      "sha3x_estimated_hash_rate",
+    ]);
 
     // list of active validator nodes
     let tipHeight = tipInfo.metadata.height_of_longest_chain;
@@ -142,12 +144,17 @@ router.get("/", async function (req, res) {
   }
 });
 
-function getHashRates(difficulties, property) {
+function getHashRates(difficulties, properties) {
   const end_idx = difficulties.length - 1;
   const start_idx = end_idx - 60;
 
   return difficulties
-    .map((d) => parseInt(d[property]))
+    .map((d) =>
+      properties.reduce(
+        (sum, property) => sum + (parseInt(d[property]) || 0),
+        0
+      )
+    )
     .slice(start_idx, end_idx);
 }
 

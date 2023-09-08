@@ -16,5 +16,6 @@
 
 ## Useful environment variables
 
-- PORT:4000 'Port of service'
-- BASE_NODE_GRPC_URL:localhost:18142 'Base node GRPC URL'
+- PORT:4000 ```Port of service```
+- BASE_NODE_GRPC_URL:localhost:18142 ```Base node GRPC URL```
+- BASE_NODE_PROTO:../proto/base_node.proto ```location of base_node.proto```

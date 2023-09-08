@@ -1,0 +1,199 @@
+---
+name: Build minotari text explorer docker image
+
+'on':
+  push:
+    paths-ignore:
+      - '**/*.md'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'
+    branches:
+      # - 'build_dockers*'
+      - 'build-*'
+  schedule:
+    - cron: '05 00 * * *'
+  workflow_dispatch:
+    inputs:
+      TPBranch:
+        description: 'Tari Project Branch'
+        required: true
+        default: 'development'
+      version:
+        type: string
+        description: 'override image tag/version'
+      tag_alias:
+        type: string
+        description: 'image tag alias'
+  workflow_call:
+    secrets:
+      DOCKER_PROVIDER:
+        required: true
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      DOCKER_REPO:
+        required: true
+
+env:
+  TARI_REPO: tari-project/tari
+  # TARI_BRANCH: development
+  # TARI_BRANCH: stagenet
+  DOCKER_IMAGE: minotari_text_explorer
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker_build:
+    name: Docker building
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tari-explorer
+        uses: actions/checkout@v4
+        with:
+          path: tari-explorer
+
+      - name: Prep for branch
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.TPBranch }}" ] ; then
+            echo "TARI_BRANCH=development" >> $GITHUB_ENV
+          else
+            echo "Setting Tari Branch as ${{ inputs.TPBranch }}"
+            echo "TARI_BRANCH=${{ inputs.TPBranch }}" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout tari
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TARI_REPO }}
+          ref: ${{ env.TARI_BRANCH }}
+          path: tari-project-tari
+
+      - name: Prep docker build environment
+        shell: bash
+        run: |
+            ls -alht
+            mkdir -p tari-explorer/external_libs
+            cp -vr tari-project-tari/clients/nodejs/base_node_grpc_client tari-explorer/external_libs/
+            if [ -d "tari-project-tari/applications/tari_app_grpc" ] ; then
+              echo "Found older tari"
+              cp -vr tari-project-tari/applications/tari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
+            else
+              echo "Copy minotari grpc proto"
+              cp -vr tari-project-tari/applications/minotari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
+            fi
+            TPBRANCH=$(git --git-dir tari-project-tari/.git branch --show-current)
+            TPSHA_SHORT=$(git --git-dir tari-project-tari/.git rev-parse --short HEAD)
+            TPVERSION="${TPBRANCH}_${TPSHA_SHORT}"
+            TEBRANCH=$(git --git-dir tari-explorer/.git branch --show-current)
+            TESHA_SHORT=$(git --git-dir tari-explorer/.git rev-parse --short HEAD)
+            if [ -z "${{ inputs.version }}" ] ; then
+              VERSION="${TEBRANCH}_$(date -u '+%Y%m%d')_${TESHA_SHORT}_${TPVERSION}"
+            else
+              VERSION=${{ inputs.version }}
+            fi
+            echo "Setting ${VERSION} as docker tag"
+            echo "VERSION=${VERSION}" >> $GITHUB_ENV
+            if [ ! -z "${{ inputs.tag_alias }}" ] ; then
+              echo "Setup tag_alias"
+              echo "TAG_ALIAS=${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ inputs.tag_alias }}" >> $GITHUB_ENV
+            fi
+
+      - name: Hack - Checkout base_node_grpc_client/src/index.js
+        if: ${{ env.TARI_BRANCH != 'development' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TARI_REPO }}
+          ref: development
+          sparse-checkout: |
+            clients/nodejs/base_node_grpc_client/src/index.js
+          sparse-checkout-cone-mode: false
+          path: tari-project-tari
+
+      - name: Hack - Copy over base_node_grpc_client/src/index.js
+        if: ${{ env.TARI_BRANCH != 'development' }}
+        shell: bash
+        run: |
+            ls -alht
+            cp -fv tari-project-tari/clients/nodejs/base_node_grpc_client/src/index.js tari-explorer/external_libs/base_node_grpc_client/src
+            head -n15 tari-explorer/external_libs/base_node_grpc_client/src/index.js
+
+      - name: Set up QEMU for Docker
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            #name/${{ env.DOCKER_IMAGE }}
+            #name/${{ github.repository }}
+            #ghcr.io/${{ github.repository }}
+            #ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+            #ghcr.io/${{ github.repository_owner }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE }}
+            ${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+          labels: |
+            maintainer=${{ github.actor }}
+            quay.expires-after=60d
+            #org.opencontainers.image.title=MyCustomTitle
+            org.opencontainers.image.description=Minotari Text Explorer
+            org.opencontainers.image.vendor=TariLabs
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          #username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Image Provider
+        # Debug
+        # if: ${{ false }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.DOCKER_PROVIDER }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker image build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: ./tari-explorer/
+          file: ./tari-explorer/Dockerfile
+          platforms: linux/arm64, linux/amd64
+          push: true
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.VERSION }}
+            ${{ env.TAG_ALIAS }}
+          outputs: |
+            type=registry,annotation-manifest-descriptor.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation-manifest-descriptor.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }},annotation.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }},annotation-index.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation-index.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }}
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}

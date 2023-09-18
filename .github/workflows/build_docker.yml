@@ -126,7 +126,7 @@ jobs:
             head -n15 tari-explorer/external_libs/base_node_grpc_client/src/index.js
 
       - name: Set up QEMU for Docker
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2

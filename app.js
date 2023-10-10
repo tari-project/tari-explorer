@@ -25,7 +25,7 @@ hbs.registerHelper("json", function (obj) {
 });
 
 hbs.registerHelper("timestamp", function (timestamp) {
-  var dateObj = new Date(timestamp.seconds * 1000);
+  var dateObj = new Date(timestamp * 1000);
   const day = dateObj.getUTCDate();
   const month = dateObj.getUTCMonth() + 1;
   const year = dateObj.getUTCFullYear();

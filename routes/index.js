@@ -174,14 +174,14 @@ function getBlockTimes(last100Headers, algo) {
     // This happens if there are no blocks for a specific algorithm in last100headers
     return blocktimes;
   }
-  let lastBlockTime = parseInt(last100Headers[i].timestamp.seconds);
+  let lastBlockTime = parseInt(last100Headers[i].timestamp);
   i++;
   while (i < last100Headers.length && blocktimes.length < 60) {
     if (!algo || last100Headers[i].pow.pow_algo === algo) {
       blocktimes.push(
-        (lastBlockTime - parseInt(last100Headers[i].timestamp.seconds)) / 60
+        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60
       );
-      lastBlockTime = parseInt(last100Headers[i].timestamp.seconds);
+      lastBlockTime = parseInt(last100Headers[i].timestamp);
     } else {
       blocktimes.push(0);
     }

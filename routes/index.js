@@ -114,7 +114,7 @@ router.get("/", async function (req, res) {
       }
       mempool[i].transaction.body.total_fees = sum;
     }
-    const result = {
+    const json = {
       title: "Blocks",
       version,
       tipInfo,
@@ -137,7 +137,11 @@ router.get("/", async function (req, res) {
       moneroHashRates,
       activeVns,
     };
-    res.render("index", result);
+    if (req.query.json !== undefined) {
+      res.json(json);
+    } else {
+      res.render("index", json);
+    }
   } catch (error) {
     res.status(500);
     res.render("error", { error: error });

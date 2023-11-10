@@ -25,12 +25,34 @@ var { createClient } = require("../baseNodeClient");
 var express = require("express");
 var router = express.Router();
 
-router.get("/:height", async function (req, res) {
+function fromHexString(hexString) {
+  let res = [];
+  for (let i = 0; i < hexString.length; i += 2) {
+    res.push(Number("0x" + hexString.substring(i, i + 2)));
+  }
+  return res;
+}
+
+
+router.get("/:height_or_hash", async function (req, res) {
   try {
     let client = createClient();
-    let height = parseInt(req.params.height);
-    let block = await client.getBlocks({ heights: [height] });
+    let height_or_hash = req.params.height_or_hash;
+    let block;
+    let height;
+    if (height_or_hash.length === 64) {
+      block = await client.getHeaderByHash({ hash: fromHexString(height_or_hash) });
+      if (!block) {
+        res.status(404);
+        res.render("404", { message: `Block with hash ${height_or_hash} not found` });
+        return;
+      }
+      height = parseInt(block.header.height);
+    } else {
+      height = parseInt(height_or_hash);
+    }
 
+    block = await client.getBlocks({ heights: [height] });
     if (!block || block.length === 0) {
       res.status(404);
       res.render("404", { message: `Block at height ${height} not found` });
@@ -48,7 +70,7 @@ router.get("/:height", async function (req, res) {
     let nextLink = `/blocks/${nextHeight}`;
     if (height === tipHeight) nextLink = null;
 
-    res.render("blocks", {
+    let json = {
       title: `Block at height: ${block[0].block.header.height}`,
       header: block[0].block.header,
       height,
@@ -58,7 +80,12 @@ router.get("/:height", async function (req, res) {
       nextHeight,
       block: block[0].block,
       pows: { 0: "Monero", 1: "SHA-3" },
-    });
+    };
+    if (req.query.json !== undefined) {
+      res.json(json);
+    } else {
+      res.render("blocks", json);
+    }
   } catch (error) {
     res.status(500);
     res.render("error", { error: error });

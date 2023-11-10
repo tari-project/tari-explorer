@@ -48,9 +48,14 @@ router.get("/", async function (req, res) {
   });
 
   console.log(result);
-  res.render("search", {
+  let json = {
     items: result,
-  });
+  };
+  if (req.query.json !== undefined) {
+    res.json(json);
+  } else {
+    res.render("search", json);
+  }
 });
 
 module.exports = router;

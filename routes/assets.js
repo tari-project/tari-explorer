@@ -45,11 +45,17 @@ router.get("/:asset_public_key", async function (req, res) {
 
     // let headers = validatorNodeClient.listHeaders({ from_height: 0, num_headers: 101 })
 
-    res.render("assets", {
+    let json = {
       title: `Asset with pub key: ${asset_public_key}`,
       tokens: tokens,
       // headers
-    });
+    };
+    if (req.query.json !== undefined) {
+      res.json(json);
+    } else {
+      res.render("assets", json);
+    }
+
   } catch (error) {
     res.status(500);
     res.render("error", { error: error });

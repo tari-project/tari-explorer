@@ -4,7 +4,7 @@
 var { Client } = require("@tari/base-node-grpc-client");
 
 function createClient() {
-  return Client.connect( process.env.BASE_NODE_GRPC_URL || "localhost:18142");
+  return Client.connect(process.env.BASE_NODE_GRPC_URL || "localhost:18182");
 }
 
 module.exports = {

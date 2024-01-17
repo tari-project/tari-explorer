@@ -42,12 +42,18 @@ router.get("/", async function (req, res) {
   for (let i = 0; i < commitments.length; i++) {
     hexCommitments.push(Buffer.from(commitments[i], "hex"));
   }
-  console.log(hexCommitments);
-  let result = await client.searchUtxos({
-    hexCommitments,
-  });
-
-  console.log(result);
+  let result;
+  try {
+    result = await client.searchUtxos({ commitments: hexCommitments });
+  } catch (error) {
+    res.status(404);
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
+    return;
+  }
   let json = {
     items: result,
   };

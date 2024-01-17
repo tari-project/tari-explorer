@@ -33,7 +33,6 @@ function fromHexString(hexString) {
   return res;
 }
 
-
 router.get("/:height_or_hash", async function (req, res) {
   try {
     let client = createClient();
@@ -41,10 +40,14 @@ router.get("/:height_or_hash", async function (req, res) {
     let block;
     let height;
     if (height_or_hash.length === 64) {
-      block = await client.getHeaderByHash({ hash: fromHexString(height_or_hash) });
+      block = await client.getHeaderByHash({
+        hash: fromHexString(height_or_hash),
+      });
       if (!block) {
         res.status(404);
-        res.render("404", { message: `Block with hash ${height_or_hash} not found` });
+        res.render("404", {
+          message: `Block with hash ${height_or_hash} not found`,
+        });
         return;
       }
       height = parseInt(block.header.height);
@@ -88,7 +91,11 @@ router.get("/:height_or_hash", async function (req, res) {
     }
   } catch (error) {
     res.status(500);
-    res.render("error", { error: error });
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
 });
 

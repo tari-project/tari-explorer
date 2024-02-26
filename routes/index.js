@@ -144,7 +144,11 @@ router.get("/", async function (req, res) {
     }
   } catch (error) {
     res.status(500);
-    res.render("error", { error: error });
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
 });
 

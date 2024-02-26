@@ -55,10 +55,13 @@ router.get("/:asset_public_key", async function (req, res) {
     } else {
       res.render("assets", json);
     }
-
   } catch (error) {
     res.status(500);
-    res.render("error", { error: error });
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
 });
 

@@ -34,7 +34,11 @@ router.get("/:excessSigs", async function (req, res) {
 
     if (!tx) {
       res.status(404);
-      res.render("error", { error: "Tx not found" });
+      if (req.query.json !== undefined) {
+        res.json({ error: "Tx not found" });
+      } else {
+        res.render("error", { error: "Tx not found" });
+      }
       return;
     }
     console.log(tx);
@@ -47,7 +51,11 @@ router.get("/:excessSigs", async function (req, res) {
     }
   } catch (error) {
     res.status(500);
-    res.render("error", { error: error });
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
 });
 

@@ -4,10 +4,11 @@
 {{#if items.length}}
   <ul>
     {{#each items}}
-      <li>{{link
-          "/blocks/{{this.block.header.hash}}"
-          this.block.header.height
-        }}</li>
+      <li>
+        <a href="/blocks/{{this.block.header.height}}">
+          {{this.block.header.height}}
+        </a>
+      </li>
 
     {{/each}}
   </ul>

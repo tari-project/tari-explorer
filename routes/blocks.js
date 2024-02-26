@@ -34,6 +34,7 @@ function fromHexString(hexString) {
 }
 
 router.get("/:height_or_hash", async function (req, res) {
+  res.setHeader("Cache-Control", "public, max-age=120, immutable");
   try {
     let client = createClient();
     let height_or_hash = req.params.height_or_hash;

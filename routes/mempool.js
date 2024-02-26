@@ -7,6 +7,7 @@ var router = express.Router();
 
 /* GET mempool page. */
 router.get("/:excessSigs", async function (req, res) {
+  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
   try {
     let client = createClient();
     let txId = req.params.excessSigs.split("+");

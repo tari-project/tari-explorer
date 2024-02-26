@@ -26,6 +26,7 @@ var express = require("express");
 var router = express.Router();
 
 router.get("/", async function (req, res) {
+  res.setHeader("Cache-Control", "public, max-age=120, immutable");
   let client = createClient();
   let commitments = (
     req.query.comm ||

@@ -97,6 +97,9 @@ app.use("/assets", assetsRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
 app.use("/search_kernels", searchKernelsRouter);
+app.use("/healthz", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

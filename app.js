@@ -14,6 +14,7 @@ var blocksRouter = require("./routes/blocks");
 var mempoolRouter = require("./routes/mempool");
 var searchCommitmentsRouter = require("./routes/search_commitments");
 var searchKernelsRouter = require("./routes/search_kernels");
+var healthz = require("./routes/healthz");
 
 var assetsRouter = require("./routes/assets");
 
@@ -97,9 +98,7 @@ app.use("/assets", assetsRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
 app.use("/search_kernels", searchKernelsRouter);
-app.use("/healthz", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.use("/healthz", healthz);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

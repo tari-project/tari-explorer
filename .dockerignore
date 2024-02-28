@@ -8,6 +8,3 @@ npm-debug.log
 .git
 .gitignore
 .github
-
-# Testing external_libs
-external_libs

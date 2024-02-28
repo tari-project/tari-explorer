@@ -23,10 +23,11 @@
 var { createClient } = require("../baseNodeClient");
 
 var express = require("express");
+const cacheSettings = require("../cacheSettings");
 var router = express.Router();
 
 router.get("/", async function (req, res) {
-  res.setHeader("Cache-Control", "public, max-age=120, immutable");
+  res.setHeader("Cache-Control", cacheSettings.newBlocks);
   let client = createClient();
   let commitments = (
     req.query.comm ||

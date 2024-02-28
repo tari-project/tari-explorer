@@ -35,7 +35,6 @@ router.get("/:asset_public_key", async function (req, res) {
     let tokens = await baseNodeClient.getTokens({
       asset_public_key: Buffer.from(asset_public_key, "hex"),
     });
-    console.log(tokens);
 
     if (!tokens || tokens.length === 0) {
       res.status(404);

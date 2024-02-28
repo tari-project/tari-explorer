@@ -3,15 +3,15 @@
 
 var express = require("express");
 const { createClient } = require("../baseNodeClient");
+const cacheSettings = require("../cacheSettings");
 var router = express.Router();
 
 /* GET mempool page. */
 router.get("/:excessSigs", async function (req, res) {
-  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+  res.setHeader("Cache-Control", cacheSettings.mempool);
   try {
     let client = createClient();
     let txId = req.params.excessSigs.split("+");
-    console.log(txId);
     let mempool = await client.getMempoolTransactions({});
     let tx = null;
     for (let i = 0; i < mempool.length; i++) {
@@ -42,8 +42,6 @@ router.get("/:excessSigs", async function (req, res) {
       }
       return;
     }
-    console.log(tx);
-    console.log("===============");
     let json = { tx };
     if (req.query.json !== undefined) {
       res.json(json);

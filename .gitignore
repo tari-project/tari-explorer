@@ -134,3 +134,6 @@ dist
 
 # OSX files
 .DS_Store
+
+# Testing external_libs
+external_libs

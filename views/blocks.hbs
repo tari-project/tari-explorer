@@ -73,12 +73,20 @@
   </tr>
 </table>
 
-{{#with this.block.body}}
+{{#with this.body}}
   <table>
     <thead>
       <tr>
         <th>
-          <h2>Outputs({{outputs.length}})</h2>
+          <h2>Outputs({{outputs_length}})</h2>
+          <p>
+            {{#if outputsPrevLink}}
+              <a href="{{outputsPrevLink}}">&lt Outputs {{outputsPrev}}</a>
+            {{/if}}
+            {{#if outputsNextLink}}
+              <a href="{{outputsNextLink}}">Outputs {{outputsNext}} &gt;</a>
+            {{/if}}
+          </p>
         </th>
       </tr>
     </thead>
@@ -86,7 +94,7 @@
       {{#each outputs as |output|}}
         <tr>
           <td>
-            <h3>Output {{@index}}</h3>
+            <h3>Output {{add @index ../outputsFrom}}</h3>
             {{>TransactionOutput output}}
           </td>
         </tr>
@@ -98,7 +106,15 @@
     <thead>
       <tr>
         <th>
-          <h2>Inputs({{inputs.length}})</h2>
+          <h2>Inputs({{inputs_length}})</h2>
+          <p>
+            {{#if inputsPrevLink}}
+              <a href="{{inputsPrevLink}}">&lt Inputs {{inputsPrev}}</a>
+            {{/if}}
+            {{#if inputsNextLink}}
+              <a href="{{inputsNextLink}}">Inputs {{inputsNext}} &gt;</a>
+            {{/if}}
+          </p>
         </th>
       </tr>
     </thead>
@@ -106,7 +122,7 @@
       {{#each inputs as |input|}}
         <tr>
           <td>
-            <h3>Input {{@index}}</h4>
+            <h3>Input {{add @index ../inputsFrom}}</h4>
             {{>TransactionInput input}}
           </td>
         </tr>
@@ -118,7 +134,15 @@
     <thead>
       <tr>
         <th>
-          <h2>Kernels({{kernels.length}})</h2>
+          <h2>Kernels({{kernels_length}})</h2>
+          <p>
+            {{#if kernelsPrevLink}}
+              <a href="{{kernelsPrevLink}}">&lt Kernels {{kernelsPrev}}</a>
+            {{/if}}
+            {{#if kernelsNextLink}}
+              <a href="{{kernelsNextLink}}">Kernels {{kernelsNext}} &gt;</a>
+            {{/if}}
+          </p>
         </th>
       </tr>
     </thead>
@@ -126,7 +150,7 @@
       {{#each kernels as |kernel|}}
         <tr>
           <td>
-            <h3>Kernel {{@index}}</h3>
+            <h3>Kernel {{add @index ../kernelsFrom}}</h4>
             {{>TransactionKernel kernel}}
           </td>
         </tr>

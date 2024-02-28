@@ -73,6 +73,9 @@ hbs.registerHelper("chart", function (data, height) {
 hbs.registerHelper("json", function (obj) {
   return JSON.stringify(obj);
 });
+hbs.registerHelper("add", function (a, b) {
+  return a + b;
+});
 
 hbs.registerPartials(path.join(__dirname, "partials"));
 

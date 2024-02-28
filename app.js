@@ -9,8 +9,9 @@ const logger = require("morgan");
 const asciichart = require("asciichart");
 const cors = require("cors");
 
-var favicon = require('serve-favicon');
+var favicon = require("serve-favicon");
 var indexRouter = require("./routes/index");
+var blockDataRouter = require("./routes/block_data");
 var blocksRouter = require("./routes/blocks");
 var mempoolRouter = require("./routes/mempool");
 var searchCommitmentsRouter = require("./routes/search_commitments");
@@ -85,7 +86,7 @@ var app = express();
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "hbs");
 
-app.use(favicon(path.join(__dirname,'public','favicon.ico')));
+app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
 app.use(logger("dev"));
 app.use(express.json());
 app.use(
@@ -99,6 +100,7 @@ app.use(cors());
 
 app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);
+app.use("/block_data", blockDataRouter);
 app.use("/assets", assetsRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/search_commitments", searchCommitmentsRouter);

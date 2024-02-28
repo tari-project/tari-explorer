@@ -99,7 +99,7 @@ router.get("/", async function (req, res) {
     ]);
 
     // list of active validator nodes
-    let tipHeight = tipInfo.metadata.height_of_longest_chain;
+    let tipHeight = tipInfo.metadata.best_block_height;
     let activeVns = await client.getActiveValidatorNodes({
       height: tipHeight,
     });

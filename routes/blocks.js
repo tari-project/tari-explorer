@@ -24,6 +24,7 @@ var { createClient } = require("../baseNodeClient");
 
 var express = require("express");
 const cache = require("../cache");
+const cacheSettings = require("../cacheSettings");
 var router = express.Router();
 
 function fromHexString(hexString) {
@@ -35,7 +36,6 @@ function fromHexString(hexString) {
 }
 
 router.get("/:height_or_hash", async function (req, res) {
-  res.setHeader("Cache-Control", "public, max-age=120, immutable");
   try {
     let client = createClient();
     let height_or_hash = req.params.height_or_hash;
@@ -212,6 +212,12 @@ router.get("/:height_or_hash", async function (req, res) {
     let nextHeight = height + 1;
     let nextLink = `/blocks/${nextHeight}`;
     if (height === tipHeight) nextLink = null;
+
+    if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
+      res.setHeader("Cache-Control", cacheSettings.oldBlocks);
+    } else {
+      res.setHeader("Cache-Control", cacheSettings.newBlocks);
+    }
 
     let json = {
       title: `Block at height: ${block[0].block.header.height}`,

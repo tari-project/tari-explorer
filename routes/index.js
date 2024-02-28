@@ -4,10 +4,12 @@
 var { createClient } = require("../baseNodeClient");
 
 var express = require("express");
+const cacheSettings = require("../cacheSettings");
 var router = express.Router();
 
 /* GET home page. */
 router.get("/", async function (req, res) {
+  res.setHeader("Cache-Control", cacheSettings.index);
   try {
     let client = createClient();
     let from = parseInt(req.query.from || 0);
@@ -26,8 +28,6 @@ router.get("/", async function (req, res) {
     let last100Headers = resp.map((r) => r.header);
     let monero = [0, 0, 0, 0];
     let sha = [0, 0, 0, 0];
-
-    // console.log(last100Headers)
 
     for (let i = 0; i < last100Headers.length - 1; i++) {
       let arr = last100Headers[i].pow.pow_algo === "0" ? monero : sha;
@@ -53,7 +53,6 @@ router.get("/", async function (req, res) {
       sha100: sha[3],
     };
 
-    // console.log(algoSplit)
     // Get one more header than requested so we can work out the difference in MMR_size
     let headersResp = await client.listHeaders({
       from_height: from,
@@ -78,7 +77,6 @@ router.get("/", async function (req, res) {
       headers.splice(headers.length - 1, 1);
     }
 
-    // console.log(headers);
     let firstHeight = parseInt(headers[0].height || "0");
 
     // --  mempool
@@ -104,7 +102,6 @@ router.get("/", async function (req, res) {
       height: tipHeight,
     });
 
-    // console.log(mempool);
     for (let i = 0; i < mempool.length; i++) {
       let sum = 0;
       for (let j = 0; j < mempool[i].transaction.body.kernels.length; j++) {

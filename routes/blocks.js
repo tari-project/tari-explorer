@@ -63,7 +63,7 @@ router.get("/:height_or_hash", async function (req, res) {
     }
 
     let tipInfo = await client.getTipInfo({});
-    let tipHeight = parseInt(tipInfo.metadata.height_of_longest_chain);
+    let tipHeight = parseInt(tipInfo.metadata.best_block_height);
 
     let prevHeight = height - 1;
     let prevLink = `/blocks/${prevHeight}`;

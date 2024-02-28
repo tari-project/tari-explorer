@@ -1,5 +1,5 @@
 class Cache {
-  constructor(limit = 1000) {
+  constructor(limit) {
     this.limit = limit;
     this.cache = new Map();
   }
@@ -27,5 +27,7 @@ class Cache {
   }
 }
 
-var cache = new Cache();
+var cache = new Cache(
+  +process.env.TARI_EXPLORER_OLD_BLOCKS_CACHE_SETTINGS || 1000
+);
 module.exports = cache;

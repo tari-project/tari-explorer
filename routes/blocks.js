@@ -67,7 +67,7 @@ router.get("/:height_or_hash", async function (req, res) {
 
     let outputs_from = +(req.query.outputs_from || 0);
     let outputs_to = +(req.query.outputs_to || 10);
-    let inputs_from = req.query.inputs_from || 0;
+    let inputs_from = +(req.query.inputs_from || 0);
     let inputs_to = +(req.query.inputs_to || 10);
     let kernels_from = +(req.query.kernels_from || 0);
     let kernels_to = +(req.query.kernels_to || 10);

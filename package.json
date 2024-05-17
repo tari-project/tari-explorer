@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.9.1",
-    "@tari/base-node-grpc-client": "file:external_libs/base_node_grpc_client",
+    "@tariproject/base-node-grpc-client": "0.0.1",
     "asciichart": "^1.5.25",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",

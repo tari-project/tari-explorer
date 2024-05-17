@@ -20,7 +20,7 @@ Template Registration
     {{/undefined}}
   </dd>
   <dt>Maturity</dt><dd>{{maturity}}</dd>
-  {{#if metadata.length}}<dt>Metadata</dt><dd>{{json metadata}}</dd>{{/if}}
+  {{#if coinbase_extra.length}}<dt>Coinbase extra data</dt><dd>{{hex coinbase_extra}}</dd>{{/if}}
   {{#if sidechain_feature}}
     <dt>Sidechain Features</dt>
     {{>SideChainFeatures sidechain_feature}}

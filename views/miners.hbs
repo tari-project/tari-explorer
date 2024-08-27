@@ -1,0 +1,62 @@
+<h2>Versions</h2>
+<table>
+    <tr>
+        <th>Version</th>
+        <th>Blocks Mined</th>
+    </tr>
+    {{#each this.versions}}
+    <tr>
+        <td>{{@key}}</td>
+        <td>{{this}}</td>
+    </tr>
+    {{/each}}
+</table>
+
+
+<h2>Operating System</h2>
+<table>
+    <tr>
+        <th>OS</th>
+        <th>Blocks mined</th>
+    </tr>
+    {{#each this.os}}
+    <tr>
+        <td>{{@key}}</td>
+        <td>{{this}}</td>
+    </tr>
+    {{/each}}
+</table>
+
+<h2>Unique miners</h2>
+<table>
+    <tr>
+        <th>Uniqueid</th>
+        <th>Blocks won</th>
+        <th>Version</th>
+        <th>OS</th>
+    </tr>
+    {{#each this.unique_ids}}
+    <tr>
+        <td>{{@key}}</td>
+        <td>{{this.count}}</td>
+        <td>{{this.version}}</td>
+        <td>{{this.os}}</td>
+    </tr>
+    {{/each}}
+</table>
+
+
+
+
+<h3>All extra fields</h3>
+<table>
+    {{# each this.extras}}
+    <tr>
+        <td>{{this.height}}</td>
+        <td>{{this.extra}}</td>
+        <td>{{this.unique_id}}</td>
+        <td>{{this.os}}</td>
+        <td>{{this.version}}</td>
+    </tr>
+    {{/each}}
+</table>

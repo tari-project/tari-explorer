@@ -8,9 +8,9 @@ const EXTRA_COLUMN = 8;
 router.get("/", async function (req, res) {
     try {
         let client = createClient();
-        let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 1000 });
+        let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 720 });
 
-        let data = { num_blocks: lastDifficulties.length, difficulties: lastDifficulties, extras: [], unique_ids: {}, os: {}, versions: {} };
+        let data = { num_blocks: lastDifficulties.length, difficulties: lastDifficulties, extras: [], unique_ids: {}, os: {}, versions: {}, now: Math.floor(Date.now() / 1000) };
 
         for (let i = 0; i < lastDifficulties.length; i++) {
             let extra = lastDifficulties[i].first_coinbase_extra.toString();
@@ -28,13 +28,29 @@ router.get("/", async function (req, res) {
             }
 
             if (data.unique_ids[unique_id] === undefined) {
+
                 data.unique_ids[unique_id] = {
-                    count: 0,
-                    os: os,
-                    version: version
+                    sha: {
+                        count: 0,
+                        version: version,
+                        os: os,
+                        last_block_time: 0,
+                        time_since_last_block: null
+                    },
+                    randomx: {
+                        count: 0,
+                        version: version,
+                        os: os,
+                        last_block_time: 0,
+                        time_since_last_block: null
+                    }
                 };
+
             }
-            data.unique_ids[unique_id].count += 1;
+            data.unique_ids[unique_id][lastDifficulties[i].pow_algo === "0" ? 'randomx' : 'sha'].count += 1;
+            data.unique_ids[unique_id][lastDifficulties[i].pow_algo === "0" ? 'randomx' : 'sha'].last_block_time = lastDifficulties[i].timestamp;
+            data.unique_ids[unique_id][lastDifficulties[i].pow_algo === "0" ? 'randomx' : 'sha'].time_since_last_block = Math.ceil((data.now - lastDifficulties[i].timestamp) / 60);
+
             if (data.os[os] === undefined) {
                 data.os[os] = 0;
             }

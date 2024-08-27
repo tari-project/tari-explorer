@@ -27,20 +27,48 @@
     {{/each}}
 </table>
 
-<h2>Unique miners</h2>
+<h2>Unique miners (GPU)</h2>
 <table>
     <tr>
         <th>Uniqueid</th>
+        <th>Resource</th>
         <th>Blocks won</th>
         <th>Version</th>
         <th>OS</th>
+        <th>Last block</th>
     </tr>
     {{#each this.unique_ids}}
     <tr>
         <td>{{@key}}</td>
-        <td>{{this.count}}</td>
-        <td>{{this.version}}</td>
-        <td>{{this.os}}</td>
+        <td>gpu</td>
+        <td>{{this.sha.count}}</td>
+        <td>{{this.sha.version}}</td>
+        <td>{{this.sha.os}}</td>
+        <td>{{this.sha.time_since_last_block}} minutes ago</td>
+    </tr>
+    {{/each}}
+</table>
+
+
+<h2>Unique miners (CPU)</h2>
+<table>
+    <tr>
+        <th>Uniqueid</th>
+        <th>Resource</th>
+        <th>Blocks won</th>
+        <th>Version</th>
+        <th>OS</th>
+        <th>Last block</th>
+    </tr>
+    {{#each this.unique_ids}}
+    <tr>
+        <td>{{@key}}</td>
+        <td>cpu</td>
+        <td>{{this.randomx.count}}</td>
+        <td>{{this.randomx.version}}</td>
+        <td>{{this.randomx.os}}</td>
+        <td>{{this.randomx.time_since_last_block}} minutes ago</td>
+
     </tr>
     {{/each}}
 </table>

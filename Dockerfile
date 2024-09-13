@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.3
 
 # https://hub.docker.com/_/node
-ARG NODE_VERSION=16-bullseye-slim
+ARG NODE_VERSION=22-bookworm-slim
 
 FROM node:$NODE_VERSION
 
@@ -18,6 +18,8 @@ COPY --chown=node:node . .
 #RUN npm ci --only=production --omit=dev
 RUN npm install ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/
 RUN npm install
+# Hack - bring proto files in
+RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto node_modules/\@tariproject/base-node-grpc-client/proto
 #RUN npm install debug
 
 ENV BASE_NODE_PROTO=${BASE_NODE_PROTO}

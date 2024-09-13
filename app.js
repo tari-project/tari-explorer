@@ -104,7 +104,7 @@ app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);
 app.use("/block_data", blockDataRouter);
 app.use("/assets", assetsRouter);
-app.use("/export", exportRouter);
+// app.use("/export", exportRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);

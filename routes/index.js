@@ -186,7 +186,8 @@ function getBlockTimes(last100Headers, algo, targetTime) {
   while (i < last100Headers.length && blocktimes.length < 60) {
     if (!algo || last100Headers[i].pow.pow_algo === algo) {
       blocktimes.push(
-        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 - targetTime
+        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
+          targetTime
       );
       lastBlockTime = parseInt(last100Headers[i].timestamp);
     } else {

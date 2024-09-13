@@ -27,6 +27,44 @@
     {{/each}}
 </table>
 
+
+<h2>Active miners</h2>
+<table>
+    <tr>
+        <th>Uniqueid</th>
+        <th>Resource</th>
+        <th>Blocks won (total)</th>
+        <th>Blocks won (last 2 hours)</th>
+        <th>Version</th>
+        <th>OS</th>
+        <th>Last block</th>
+    </tr>
+    {{#each this.active_miners}}
+    {{#if this.sha.count }}
+    <tr>
+        <td>{{@key}}</td>
+        <td>gpu</td>
+        <td>{{this.sha.count}}</td>
+        <td>{{this.sha.recent_blocks}}</td>
+        <td>{{this.sha.version}}</td>
+        <td>{{this.sha.os}}</td>
+        <td>{{this.sha.time_since_last_block}} minutes ago</td>
+    </tr>
+    {{/if}}
+    {{#if this.randomx.count }}
+    <tr>
+        <td>{{@key}}</td>
+        <td>cpu</td>
+        <td>{{this.randomx.count}}</td>
+        <td>{{this.randomx.recent_blocks}}</td>
+        <td>{{this.randomx.version}}</td>
+        <td>{{this.randomx.os}}</td>
+        <td>{{this.randomx.time_since_last_block}} minutes ago</td>
+    </tr>
+    {{/if}}
+    {{/each}}
+</table>
+
 <h2>Unique miners (GPU)</h2>
 <table>
     <tr>
@@ -38,6 +76,7 @@
         <th>Last block</th>
     </tr>
     {{#each this.unique_ids}}
+    {{#if this.sha.count }}
     <tr>
         <td>{{@key}}</td>
         <td>gpu</td>
@@ -46,6 +85,7 @@
         <td>{{this.sha.os}}</td>
         <td>{{this.sha.time_since_last_block}} minutes ago</td>
     </tr>
+    {{/if}}
     {{/each}}
 </table>
 
@@ -61,6 +101,7 @@
         <th>Last block</th>
     </tr>
     {{#each this.unique_ids}}
+    {{#if this.randomx.count }}
     <tr>
         <td>{{@key}}</td>
         <td>cpu</td>
@@ -70,6 +111,7 @@
         <td>{{this.randomx.time_since_last_block}} minutes ago</td>
 
     </tr>
+    {{/if}}
     {{/each}}
 </table>
 

@@ -83,7 +83,7 @@ router.get("/", async function (req, res) {
     let mempool = await client.getMempoolTransactions({});
 
     // estimated hash rates
-    let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 100 });
+    let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 180 });
     let totalHashRates = getHashRates(lastDifficulties, [
       "estimated_hash_rate",
     ]);
@@ -123,14 +123,16 @@ router.get("/", async function (req, res) {
       limit,
       from,
       algoSplit,
-      blockTimes: getBlockTimes(last100Headers),
-      moneroTimes: getBlockTimes(last100Headers, "0"),
-      shaTimes: getBlockTimes(last100Headers, "1"),
+      blockTimes: getBlockTimes(last100Headers, null, 2),
+      moneroTimes: getBlockTimes(last100Headers, "0", 4),
+      shaTimes: getBlockTimes(last100Headers, "1", 4),
       currentHashRate: totalHashRates[totalHashRates.length - 1],
       totalHashRates,
       currentShaHashRate: shaHashRates[shaHashRates.length - 1],
       shaHashRates,
+      averageShaMiners: shaHashRates[shaHashRates.length - 1] / 200_000_000, // Hashrate of an NVidia 1070
       currentMoneroHashRate: moneroHashRates[moneroHashRates.length - 1],
+      averageMoneroMiners: moneroHashRates[moneroHashRates.length - 1] / 2700, // Average apple m1 hashrate
       moneroHashRates,
       activeVns,
     };
@@ -151,7 +153,7 @@ router.get("/", async function (req, res) {
 
 function getHashRates(difficulties, properties) {
   const end_idx = difficulties.length - 1;
-  const start_idx = end_idx - 60;
+  const start_idx = end_idx - 720;
 
   return difficulties
     .map((d) =>
@@ -163,7 +165,7 @@ function getHashRates(difficulties, properties) {
     .slice(start_idx, end_idx);
 }
 
-function getBlockTimes(last100Headers, algo) {
+function getBlockTimes(last100Headers, algo, targetTime) {
   let blocktimes = [];
   let i = 0;
   if (algo === "0" || algo === "1") {
@@ -184,11 +186,12 @@ function getBlockTimes(last100Headers, algo) {
   while (i < last100Headers.length && blocktimes.length < 60) {
     if (!algo || last100Headers[i].pow.pow_algo === algo) {
       blocktimes.push(
-        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60
+        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
+          targetTime
       );
       lastBlockTime = parseInt(last100Headers[i].timestamp);
     } else {
-      blocktimes.push(0);
+      blocktimes.push(targetTime);
     }
     i++;
   }

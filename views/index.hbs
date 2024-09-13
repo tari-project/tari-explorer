@@ -78,13 +78,13 @@
   <tr>
     <td>
       <h3>Monero</h3>
-      Target time: 3.3 minutes
+      Target time: 4 minutes
       <pre>{{chart this.moneroTimes 15}}
       </pre>
     </td>
     <td>
       <h3>SHA3</h3>
-      Target time: 5 minutes
+      Target time: 4 minutes
       <pre>{{chart this.shaTimes 15}}
       </pre>
     </td>
@@ -95,30 +95,20 @@
 <table class="noborder">
   <tr>
     <td>
-      <h3>Estimated Hash Rate</h3>
-      Current total estimated Hash Rate:
-      {{this.currentHashRate}}
-      H/s
-      <pre>{{chart this.totalHashRates 15}}
+      <h3>Monero</h3>
+      Current estimated Hash Rate (180 blocks, 1.5 hours):
+      {{this.currentMoneroHashRate}}
+      H/s ({{this.averageMoneroMiners}} average miners)
+      <pre>{{chart this.moneroHashRates 15}}
       </pre>
-    </td>
-    <td>
     </td>
   </tr>
   <tr>
     <td>
-      <h3>Monero</h3>
-      Current estimated Hash Rate:
-      {{this.currentMoneroHashRate}}
-      H/s
-      <pre>{{chart this.moneroHashRates 15}}
-      </pre>
-    </td>
-    <td>
       <h3>SHA3</h3>
-      Current estimated Hash Rate:
+      Current estimated Hash Rate (180 blocks, 1.5 hours):
       {{this.currentShaHashRate}}
-      H/s
+      H/s ({{this.averageShaMiners}} average miners)
       <pre>{{chart this.shaHashRates 15}}
       </pre>
     </td>
@@ -140,15 +130,15 @@
   </thead>
   <tbody>
     {{#each this.headers}}
-      <tr>
-        <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
-        <td>{{timestamp this.timestamp}}</td>
+    <tr>
+      <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
+      <td>{{timestamp this.timestamp}}</td>
 
-        <td>{{this.powText}}</td>
-        <td>{{hex this.hash}}</td>
-        <td>{{kernels}}</td>
-        <td>{{outputs}}</td>
-      </tr>
+      <td>{{this.powText}}</td>
+      <td>{{hex this.hash}}</td>
+      <td>{{kernels}}</td>
+      <td>{{outputs}}</td>
+    </tr>
     {{/each}}
   </tbody>
 </table>
@@ -179,17 +169,17 @@
   </thead>
   <tbody>
     {{#each mempool}}
-      {{#with this.transaction.body}}
-        <tr>
-          <td><a href="/mempool/{{hex this.signature}}">{{hex
-                this.signature
-              }}</a></td>
-          <td>{{this.total_fees}}</td>
-          <td>{{this.outputs.length}}</td>
-          <td>{{this.kernels.length}}</td>
-          <td>{{this.inputs.length}}</td>
-        </tr>
-      {{/with}}
+    {{#with this.transaction.body}}
+    <tr>
+      <td><a href="/mempool/{{hex this.signature}}">{{hex
+          this.signature
+          }}</a></td>
+      <td>{{this.total_fees}}</td>
+      <td>{{this.outputs.length}}</td>
+      <td>{{this.kernels.length}}</td>
+      <td>{{this.inputs.length}}</td>
+    </tr>
+    {{/with}}
     {{/each}}
   </tbody>
 </table>
@@ -205,10 +195,10 @@
   </thead>
   <tbody>
     {{#each this.activeVns}}
-      <tr>
-        <td>{{hex this.public_key}}</td>
-        <td>{{hex this.shard_key}}</td>
-      </tr>
+    <tr>
+      <td>{{hex this.public_key}}</td>
+      <td>{{hex this.shard_key}}</td>
+    </tr>
     {{/each}}
   </tbody>
 </table>

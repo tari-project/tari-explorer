@@ -1,0 +1,9 @@
+block_height, hashrate
+{{#each outputs as |output|}}
+<tr>
+    <td>
+        <h3>Output {{add @index ../outputsFrom}}</h3>
+        {{>TransactionOutput output}}
+    </td>
+</tr>
+{{/each}}

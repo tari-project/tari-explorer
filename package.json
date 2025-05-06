@@ -30,7 +30,7 @@
     "@babel/eslint-plugin": "^7.27.1",
     "connect-livereload": "^0.6.1",
     "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.4.0",
     "livereload": "^0.9.3",
     "nodemon": "^3.1.10",

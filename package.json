@@ -31,7 +31,7 @@
     "connect-livereload": "^0.6.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^3.4.1",
+    "eslint-plugin-prettier": "^5.4.0",
     "livereload": "^0.9.3",
     "nodemon": "^2.0.16",
     "prettier": "^3.5.3"

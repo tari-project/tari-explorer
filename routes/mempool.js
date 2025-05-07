@@ -20,7 +20,7 @@ router.get("/:excessSigs", async function (req, res) {
           if (
             txId[k] ===
             Buffer.from(
-              mempool[i].transaction.body.kernels[j].excess_sig.signature
+              mempool[i].transaction.body.kernels[j].excess_sig.signature,
             ).toString("hex")
           ) {
             tx = mempool[i].transaction;

@@ -159,8 +159,8 @@ function getHashRates(difficulties, properties) {
     .map((d) =>
       properties.reduce(
         (sum, property) => sum + (parseInt(d[property]) || 0),
-        0
-      )
+        0,
+      ),
     )
     .slice(start_idx, end_idx);
 }
@@ -187,7 +187,7 @@ function getBlockTimes(last100Headers, algo, targetTime) {
     if (!algo || last100Headers[i].pow.pow_algo === algo) {
       blocktimes.push(
         (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
-          targetTime
+          targetTime,
       );
       lastBlockTime = parseInt(last100Headers[i].timestamp);
     } else {

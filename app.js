@@ -13,7 +13,6 @@ var favicon = require("serve-favicon");
 var indexRouter = require("./routes/index");
 var blockDataRouter = require("./routes/block_data");
 var blocksRouter = require("./routes/blocks");
-var exportRouter = require("./routes/export");
 var mempoolRouter = require("./routes/mempool");
 var minersRouter = require("./routes/miners");
 var searchCommitmentsRouter = require("./routes/search_commitments");
@@ -94,7 +93,7 @@ app.use(express.json());
 app.use(
   express.urlencoded({
     extended: false,
-  })
+  }),
 );
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));

@@ -25,6 +25,7 @@ var { createClient } = require("../baseNodeClient");
 var express = require("express");
 const cache = require("../cache");
 const cacheSettings = require("../cacheSettings");
+const { miningStats } = require("../utils/stats");
 var router = express.Router();
 
 function fromHexString(hexString) {
@@ -39,7 +40,6 @@ router.get("/:height_or_hash", async function (req, res) {
   try {
     let client = createClient();
     let height_or_hash = req.params.height_or_hash;
-    let block;
     let height;
     if (height_or_hash.length === 64) {
       block = await client.getHeaderByHash({
@@ -58,12 +58,15 @@ router.get("/:height_or_hash", async function (req, res) {
     }
 
     let request = { heights: [height] };
-    block = await cache.get(client.getBlocks, request);
+    let block = await cache.get(client.getBlocks, request);
     if (!block || block.length === 0) {
       res.status(404);
       res.render("404", { message: `Block at height ${height} not found` });
       return;
     }
+
+    // Calculate statistics
+    const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } = miningStats(block);
 
     let outputs_from = +(req.query.outputs_from || 0);
     let outputs_to = +(req.query.outputs_to || 10);
@@ -229,6 +232,10 @@ router.get("/:height_or_hash", async function (req, res) {
       nextHeight,
       body: body,
       pows: { 0: "Monero", 1: "SHA-3" },
+      numInputs,
+      totalCoinbaseXtm,
+      numCoinbases,
+      numOutputsNoCoinbases,
     };
     if (req.query.json !== undefined) {
       res.json(json);

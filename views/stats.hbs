@@ -1,0 +1,22 @@
+<table>
+  <thead>
+  <tr>
+    <th>Block Height</th>
+    <th>Total Coinbase (XTM)</th>
+    <th>Number of Coinbase Outputs</th>
+    <th>Number of Non-Coinbase Outputs</th>
+    <th>Number of Inputs</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{#each stats}}
+    <tr>
+      <td>{{this.height}}</td>
+      <td>{{this.totalCoinbaseXtm}}</td>
+      <td>{{this.numCoinbases}}</td>
+      <td>{{this.numOutputsNoCoinbases}}</td>
+      <td>{{this.numInputs}}</td>
+    </tr>
+  {{/each}}
+  </tbody>
+</table>

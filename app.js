@@ -18,6 +18,8 @@ var minersRouter = require("./routes/miners");
 var searchCommitmentsRouter = require("./routes/search_commitments");
 var searchKernelsRouter = require("./routes/search_kernels");
 var healthz = require("./routes/healthz");
+var statsRouter = require("./routes/stats");
+
 
 var assetsRouter = require("./routes/assets");
 
@@ -109,6 +111,7 @@ app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
 app.use("/search_kernels", searchKernelsRouter);
 app.use("/healthz", healthz);
+app.use("/stats", statsRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

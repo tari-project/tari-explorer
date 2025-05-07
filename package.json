@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",
-    "@babel/eslint-parser": "^7.15.8",
+    "@babel/eslint-parser": "^7.27.1",
     "@babel/eslint-plugin": "^7.27.1",
     "connect-livereload": "^0.6.1",
     "eslint": "^7.32.0",

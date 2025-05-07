@@ -10,7 +10,7 @@
     "lint-fix": "eslint --fix ."
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.1",
+    "@grpc/grpc-js": "^1.13.3",
     "@tariproject/base-node-grpc-client": "0.0.1",
     "asciichart": "^1.5.25",
     "cookie-parser": "~1.4.7",

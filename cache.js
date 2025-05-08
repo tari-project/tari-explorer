@@ -21,7 +21,7 @@ class Cache {
       return temp;
     }
     let result = await func(args);
-    console.log("Actual call", args);
+    // console.log("Cache: Actual call", args);
     this.set(cache_key, result);
     return result;
   }

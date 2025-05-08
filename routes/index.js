@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 var { createClient } = require("../baseNodeClient");
+const { miningStats } = require("../utils/stats");
 
 var express = require("express");
 const cacheSettings = require("../cacheSettings");
+const cache = require("../cache");
 var router = express.Router();
 
 /* GET home page. */
@@ -111,6 +113,20 @@ router.get("/", async function (req, res) {
       }
       mempool[i].transaction.body.total_fees = sum;
     }
+
+
+    let request = { heights: [tipHeight] };
+    let block = await cache.get(client.getBlocks, request);
+    if (!block || block.length === 0) {
+      res.status(404);
+      res.render("404", { message: `Block at height ${height} not found` });
+      return;
+    }
+
+    // Calculate statistics
+    const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
+      miningStats(block);
+
     const json = {
       title: "Blocks",
       version,
@@ -135,6 +151,10 @@ router.get("/", async function (req, res) {
       averageMoneroMiners: moneroHashRates[moneroHashRates.length - 1] / 2700, // Average apple m1 hashrate
       moneroHashRates,
       activeVns,
+      numInputs,
+      totalCoinbaseXtm,
+      numCoinbases,
+      numOutputsNoCoinbases,
     };
     if (req.query.json !== undefined) {
       res.json(json);

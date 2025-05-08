@@ -19,6 +19,34 @@
 </table>
 <br />
 
+<h3><a href="/stats#mining-stats">Mining Stats</a></h3>
+<table>
+  <tr>
+    <th style="text-align: left; width: 400px;">Block height</th>
+    <td style="text-align: left;">{{this.tipInfo.metadata.best_block_height}}</td>
+  </tr>
+  <tr>
+    <th style="text-align: left; width: 400px;">Number of inputs</th>
+    <td style="text-align: left;">{{this.numInputs}}</td>
+  </tr>
+  <tr>
+    <th style="text-align: left; width: 400px;">Number of outputs (excl. coinbases)</th>
+    <td style="text-align: left;">{{this.numOutputsNoCoinbases}}</td>
+  </tr>
+  <tr>
+    <th style="text-align: left; width: 400px;">Number of coinbases</th>
+    <td style="text-align: left;">{{this.numCoinbases}}</td>
+  </tr>
+  <tr>
+    <th style="text-align: left; width: 400px;">Total coinbase value (XTM)</th>
+    <td style="text-align: left;">{{this.totalCoinbaseXtm}}</td>
+  </tr>
+  <tr>
+    <th style="text-align: left; width: 400px;">PoW algorithm</th>
+    <td style="text-align: left;">{{this.powAlgo}}</td>
+  </tr>
+</table>
+
 <h3>Proof of work split</h3>
 <table>
   <thead>

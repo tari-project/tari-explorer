@@ -14,8 +14,8 @@ name: Build minotari text explorer docker image
     - cron: '05 00 * * 00' # Build every Sunday
   workflow_dispatch:
     inputs:
-      TPBranch:
-        description: 'Tari Project Branch'
+      TPRef:
+        description: 'Tari Project branch or tag'
         required: true
         default: 'development'
       version:
@@ -74,18 +74,19 @@ jobs:
       - name: Prep for branch
         shell: bash
         run: |
-          if [ -z "${{ inputs.TPBranch }}" ] ; then
-            echo "TARI_BRANCH=development" >> $GITHUB_ENV
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${{ github.event.inputs.TPRef }}" ]]; then
+            echo "TARI_REF=${{ github.event.inputs.TPRef }}" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "TARI_REF=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           else
-            echo "Setting Tari Branch as ${{ inputs.TPBranch }}"
-            echo "TARI_BRANCH=${{ inputs.TPBranch }}" >> $GITHUB_ENV
+            echo "TARI_REF=development" >> $GITHUB_ENV
           fi
 
       - name: Checkout tari
         uses: actions/checkout@v4
         with:
           repository: ${{ env.TARI_REPO }}
-          ref: ${{ env.TARI_BRANCH }}
+          ref: ${{ env.TARI_REF }}
           path: tari-project-tari
 
       - name: Prep docker build environment
@@ -101,9 +102,9 @@ jobs:
               echo "Copy minotari grpc proto"
               cp -vr tari-project-tari/applications/minotari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
             fi
-            TPBRANCH=$(git --git-dir tari-project-tari/.git branch --show-current)
+            TPRef=$(git --git-dir tari-project-tari/.git branch --show-current)
             TPSHA_SHORT=$(git --git-dir tari-project-tari/.git rev-parse --short HEAD)
-            TPVERSION="${TPBRANCH}_${TPSHA_SHORT}"
+            TPVERSION="${TPRef}_${TPSHA_SHORT}"
             TEBRANCH=$(git --git-dir tari-explorer/.git branch --show-current)
             TESHA_SHORT=$(git --git-dir tari-explorer/.git rev-parse --short HEAD)
             if [ -z "${{ inputs.version }}" ] ; then

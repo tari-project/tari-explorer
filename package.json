@@ -18,7 +18,7 @@
     "express": "~4.16.1",
     "fast-csv": "^5.0.2",
     "hbs": "^4.1.2",
-    "http-errors": "~1.6.3",
+    "http-errors": "~2.0.0",
     "morgan": "~1.10.0",
     "serve-favicon": "^2.5.0"
   },

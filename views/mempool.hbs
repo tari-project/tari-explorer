@@ -10,37 +10,81 @@
         <td>{{hex this.offset}}</td></tr>
     </tbody>
   </table>
+
   <h3>Inputs</h3>
   <table border="1" width="100%" cellpadding="5" bordercolor="#EFEFEF">
     <thead>
       <tr>
-        <th>Features</th>
-        <th>Commitment</th>
-        <th>Hash</th>
-        <th>Script</th>
-        <th>Input Data</th>
-        <th>Script Signature</th>
-        <th>Sender Offset Public Key</th>
+        <th scope="col">Features</th>
+        <th scope="col">Commitment</th>
+        <th scope="col">Hash</th>
+        <th scope="col">Script</th>
+        <th scope="col">Input Data</th>
+        <th scope="col">Script Signature</th>
+        <th scope="col">Sender Offset Public Key</th>
       </tr>
     </thead>
     <tbody>
       {{#each this.body.inputs}}
         <tr>
-          <td><i>Flags</i><br />
-            {{features.flags}}<hr /><i>Maturity</i><br />
-            {{features.maturity}}</td>
+          <td>
+            <i>Flags</i><br />
+            {{features.flags}}<hr />
+            <i>Maturity</i><br />
+            {{features.maturity}}
+          </td>
           <td>{{hex commitment}}</td>
           <td>{{hex hash}}</td>
           <td>{{hex script}}</td>
           <td>{{hex input_data}}</td>
-          <td><i>Public Nonce Commitment</i><br />
-              {{#if script_signature.public_nonce_commitment }}
-                {{hex script_signature.public_nonce_commitment}}
-              {{else}}
-                <i>No public nonce commitment</i>
-              {{/if}}<hr /><i>Signature U</i><br />
-            {{hex script_signature.signature_u}}<hr /><i>Signature V</i><br />
-            {{hex script_signature.signature_v}}</td>
+          <td>
+            {{#if script_signature}}
+              {{#with script_signature}}
+                {{#if public_nonce_commitment }}
+                  <i>Public Nonce Commitment</i><br />
+                  {{hex public_nonce_commitment}}
+                  <hr />
+                {{/if}}
+                {{#if signature_u }}
+                  <i>Signature U</i><br />
+                  {{hex signature_u}}
+                  <hr />
+                {{/if}}
+                {{#if signature_v }}
+                  <i>Signature V</i><br />
+                  {{hex signature_v}}
+                  <hr />
+                {{/if}}
+                {{#if ephemeral_commitment }}
+                  <i>Ephemeral Commitment</i><br />
+                  {{hex ephemeral_commitment}}
+                  <hr />
+                {{/if}}
+                {{#if ephemeral_pubkey }}
+                  <i>Ephemeral Pubkey</i><br />
+                  {{hex ephemeral_pubkey}}
+                  <hr />
+                {{/if}}
+                {{#if u_a }}
+                  <i>U_A</i><br />
+                  {{hex u_a}}
+                  <hr />
+                {{/if}}
+                {{#if u_x }}
+                  <i>U_X</i><br />
+                  {{hex u_x}}
+                  <hr />
+                {{/if}}
+                {{#if u_y }}
+                  <i>U_Y</i><br />
+                  {{hex u_y}}
+                  {{!-- No <hr /> after the last item for tidiness --}}
+                {{/if}}
+              {{/with}}
+            {{else}}
+              N/A {{!-- Or leave blank if preferred --}}
+            {{/if}}
+          </td>
           <td>{{hex sender_offset_public_key}}</td>
         </tr>
       {{/each}}
@@ -52,31 +96,31 @@
   <table border="1" width="100%" cellpadding="5" bordercolor="#EFEFEF">
     <thead>
       <tr>
-        <th>Features</th>
-        <th>Commitment</th>
-        <th>Range Proof</th>
-        <th>Hash</th>
-        <th>Script</th>
-        <th>Sender Offset Public Key</th>
-        <th>Metadata Signature</th>
+        <th scope="col">Features</th>
+        <th scope="col">Commitment</th>
+        <th scope="col">Range Proof</th>
+        <th scope="col">Hash</th>
+        <th scope="col">Script</th>
+        <th scope="col">Sender Offset Public Key</th>
+        <th scope="col">Metadata Signature</th>
       </tr>
     </thead>
     <tbody>
       {{#each this.body.outputs}}
         <tr>
-          <td><i>Flags</i><br />
-            {{features.flags}}<hr /><i>Maturity</i><br />
-            {{features.maturity}}</td>
+          <td>
+            <i>Flags</i><br />
+            {{features.flags}}<hr />
+            <i>Maturity</i><br />
+            {{features.maturity}}
+          </td>
           <td>{{hex commitment}}</td>
-          <td style="width:500px;display:block;word-break:break-all;">{{hex
-              range_proof
-            }}</td>
+          <td style="width:500px;display:block;word-break:break-all;">{{hex range_proof}}</td>
           <td>{{hex hash}}</td>
           <td>{{hex script}}</td>
           <td>{{hex sender_offset_public_key}}</td>
           <td>
             {{>ComSignature metadata_signature}}
-
           </td>
         </tr>
       {{/each}}
@@ -88,12 +132,12 @@
   <table border="1" width="100%" cellpadding="5" bordercolor="#EFEFEF">
     <thead>
       <tr>
-        <th>Features</th>
-        <th>Fee</th>
-        <th>Lock Height</th>
-        <th>Excess</th>
-        <th>Excess Signature</th>
-        <th>Hash</th>
+        <th scope="col">Features</th>
+        <th scope="col">Fee</th>
+        <th scope="col">Lock Height</th>
+        <th scope="col">Excess</th>
+        <th scope="col">Excess Signature</th>
+        <th scope="col">Hash</th>
       </tr>
     </thead>
     <tbody>
@@ -103,9 +147,12 @@
           <td>{{fee}}</td>
           <td>{{lock_height}}</td>
           <td>{{hex excess}}</td>
-          <td><i>Nonce</i>
-            {{hex excess_sig.public_nonce}}<hr /><i>Sig</i>
-            {{hex excess_sig.signature}}</td>
+          <td>
+            <i>Nonce</i><br/>
+            {{hex excess_sig.public_nonce}}<hr />
+            <i>Sig</i><br/>
+            {{hex excess_sig.signature}}
+          </td>
           <td>{{hex hash}}</td>
         </tr>
       {{/each}}

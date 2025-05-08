@@ -216,7 +216,7 @@ router.get("/:height_or_hash", async function (req, res) {
     let nextLink = `/blocks/${nextHeight}`;
     if (height === tipHeight) nextLink = null;
 
-    if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
+    if (tipHeight - height >= cacheSettings.oldBlockDeltaTip) {
       res.setHeader("Cache-Control", cacheSettings.oldBlocks);
     } else {
       res.setHeader("Cache-Control", cacheSettings.newBlocks);

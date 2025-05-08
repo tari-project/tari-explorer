@@ -11,7 +11,7 @@ name: Build minotari text explorer docker image
       # - 'build_dockers*'
       - 'build-*'
   schedule:
-    - cron: '05 00 * * *'
+    - cron: '05 00 * * 00' # Build every Sunday
   workflow_dispatch:
     inputs:
       TPBranch:
@@ -66,7 +66,7 @@ jobs:
           path: tari-explorer
 
       - name: Setup expiration for scheduled builds
-        if: ${{ github.event_name == 'schedule' && github.event.schedule == '05 00 * * *' }}
+        if: ${{ github.event_name == 'schedule' && github.event.schedule == '05 00 * * 00' }}
         shell: bash
         run: |
           echo "EXPIRATION=${{ env.DAYS_to_EXPIRE }}d" >> $GITHUB_ENV

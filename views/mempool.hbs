@@ -34,8 +34,11 @@
           <td>{{hex script}}</td>
           <td>{{hex input_data}}</td>
           <td><i>Public Nonce Commitment</i><br />
-            {{hex script_signature.public_nonce_commitment}}<hr /><i>Signature U</i><br
-            />
+              {{#if script_signature.public_nonce_commitment }}
+                {{hex script_signature.public_nonce_commitment}}
+              {{else}}
+                <i>No public nonce commitment</i>
+              {{/if}}<hr /><i>Signature U</i><br />
             {{hex script_signature.signature_u}}<hr /><i>Signature V</i><br />
             {{hex script_signature.signature_v}}</td>
           <td>{{hex sender_offset_public_key}}</td>

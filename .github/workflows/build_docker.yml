@@ -17,6 +17,7 @@ name: Build minotari text explorer docker image
       TPRef:
         description: 'Tari Project branch or tag'
         required: true
+        # plain branch name or tags/v{version number}
         default: 'development'
       version:
         type: string
@@ -75,9 +76,10 @@ jobs:
         shell: bash
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${{ github.event.inputs.TPRef }}" ]]; then
-            echo "TARI_REF=${{ github.event.inputs.TPRef }}" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "TARI_REF=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            if [[ "${TPRef}" == tags/v ]]; then
+              echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
+            else
+              echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
           else
             echo "TARI_REF=development" >> $GITHUB_ENV
           fi

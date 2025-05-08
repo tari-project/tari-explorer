@@ -16,6 +16,8 @@
 
 ## Useful environment variables
 
-- PORT:4000 ```Port of service```
-- BASE_NODE_GRPC_URL:localhost:18142 ```Base node GRPC URL```
-- BASE_NODE_PROTO:../proto/base_node.proto ```location of base_node.proto```
+To run, export the following environment variables:
+
+- PORT ```Port of service``` (Default: `4000`)
+- BASE_NODE_GRPC_URL ```Base node GRPC URL``` (Default: `localhost:18142`)
+- BASE_NODE_PROTO ```location of base_node.proto``` (Default: `../proto/base_node.proto`)

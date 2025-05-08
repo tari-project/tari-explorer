@@ -26,7 +26,7 @@ const cache = require("../cache");
 const { miningStats } = require("../utils/stats");
 var router = express.Router();
 
-const NUM_BLOCKS = 20; // Configurable constant
+const NUM_BLOCKS = 100;
 
 router.get("/", async function (req, res) {
   try {

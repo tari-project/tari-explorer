@@ -11,6 +11,14 @@ function miningStats(block) {
     throw new Error("Invalid block data");
   }
 
+  let powAlgo;
+  if (blockData.block.header.pow.pow_algo == "0") {
+    powAlgo = "Monero";
+  } else {
+    powAlgo = "SHA-3";
+  };
+  console.log("pow", powAlgo);
+
   let outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;
   let numCoinbases = 0;
@@ -37,6 +45,7 @@ function miningStats(block) {
     numCoinbases,
     numOutputsNoCoinbases,
     numInputs,
+    powAlgo,
   };
 }
 

@@ -75,11 +75,13 @@ jobs:
       - name: Prep for branch
         shell: bash
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${{ github.event.inputs.TPRef }}" ]]; then
+          TPRef="${{ github.event.inputs.TPRef }}"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${TPRef}" ]]; then
             if [[ "${TPRef}" == tags/v ]]; then
               echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
             else
               echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
+            fi
           else
             echo "TARI_REF=development" >> $GITHUB_ENV
           fi

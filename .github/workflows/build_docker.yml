@@ -38,8 +38,9 @@ name: Build minotari text explorer docker image
 
 env:
   TARI_REPO: tari-project/tari
-  # TARI_BRANCH: development
-  # TARI_BRANCH: stagenet
+  # TARI_REF: development
+  # TARI_REF: stagenet
+  # TARI_REF: tag/v2.0.1
   DOCKER_IMAGE: minotari_text_explorer
   DAYS_to_EXPIRE: 30
 
@@ -51,7 +52,7 @@ permissions: {}
 
 jobs:
   docker_build:
-    name: Docker building
+    name: Docker building - ${{ github.event.inputs.TPRef }}
     strategy:
       fail-fast: false
 
@@ -101,35 +102,40 @@ jobs:
       - name: Prep docker build environment
         shell: bash
         run: |
-            ls -alht
-            mkdir -p tari-explorer/external_libs
-            cp -vr tari-project-tari/clients/nodejs/base_node_grpc_client tari-explorer/external_libs/
-            if [ -d "tari-project-tari/applications/tari_app_grpc" ] ; then
-              echo "Found older tari"
-              cp -vr tari-project-tari/applications/tari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
-            else
-              echo "Copy minotari grpc proto"
-              cp -vr tari-project-tari/applications/minotari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
-            fi
+          set -xo pipefail
+          ls -alht
+          mkdir -p tari-explorer/external_libs
+          cp -vr tari-project-tari/clients/nodejs/base_node_grpc_client tari-explorer/external_libs/
+          if [ -d "tari-project-tari/applications/tari_app_grpc" ] ; then
+            echo "Found older tari"
+            cp -vr tari-project-tari/applications/tari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
+          else
+            echo "Copy minotari grpc proto"
+            cp -vr tari-project-tari/applications/minotari_app_grpc/proto tari-explorer/external_libs/base_node_grpc_client/
+          fi
+          if [[ "${TARI_TAG}" == "true" ]]; then
+            TPRef="${TARI_REF}"
+          else
             TPRef=$(git --git-dir tari-project-tari/.git branch --show-current)
-            TPSHA_SHORT=$(git --git-dir tari-project-tari/.git rev-parse --short HEAD)
-            TPVERSION="${TPRef}_${TPSHA_SHORT}"
-            TEBRANCH=$(git --git-dir tari-explorer/.git branch --show-current)
-            TESHA_SHORT=$(git --git-dir tari-explorer/.git rev-parse --short HEAD)
-            if [ -z "${{ inputs.version }}" ] ; then
-              VERSION="${TEBRANCH}_$(date -u '+%Y%m%d')_${TESHA_SHORT}_${TPVERSION}"
-            else
-              VERSION=${{ inputs.version }}
-            fi
-            echo "Setting ${VERSION} as docker tag"
-            echo "VERSION=${VERSION}" >> $GITHUB_ENV
-            if [ ! -z "${{ inputs.tag_alias }}" ] ; then
-              echo "Setup tag_alias"
-              echo "TAG_ALIAS=${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ inputs.tag_alias }}" >> $GITHUB_ENV
-            fi
+          fi
+          TPSHA_SHORT=$(git --git-dir tari-project-tari/.git rev-parse --short HEAD)
+          TPVERSION="${TPRef}_${TPSHA_SHORT}"
+          TEBRANCH=$(git --git-dir tari-explorer/.git branch --show-current)
+          TESHA_SHORT=$(git --git-dir tari-explorer/.git rev-parse --short HEAD)
+          if [ -z "${{ inputs.version }}" ] ; then
+            VERSION="${TEBRANCH}_$(date -u '+%Y%m%d')_${TESHA_SHORT}_${TPVERSION}"
+          else
+            VERSION=${{ inputs.version }}
+          fi
+          echo "Setting ${VERSION} as docker tag"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          if [ ! -z "${{ inputs.tag_alias }}" ] ; then
+            echo "Setup tag_alias"
+            echo "TAG_ALIAS=${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ inputs.tag_alias }}" >> $GITHUB_ENV
+          fi
 
       - name: Hack - Checkout base_node_grpc_client/src/index.js
-        if: ${{ env.TARI_BRANCH != 'development' }}
+        if: ${{ env.TARI_REF != 'development' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ env.TARI_REPO }}
@@ -141,7 +147,7 @@ jobs:
           path: tari-project-tari
 
       - name: Hack - Copy over base_node_grpc_client/src/index.js
-        if: ${{ env.TARI_BRANCH != 'development' }}
+        if: ${{ env.TARI_REF != 'development' }}
         shell: bash
         run: |
             ls -alht

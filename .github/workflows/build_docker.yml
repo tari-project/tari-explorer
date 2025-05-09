@@ -77,13 +77,17 @@ jobs:
         run: |
           TPRef="${{ github.event.inputs.TPRef }}"
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${TPRef}" ]]; then
-            if [[ "${TPRef}" == tags/v ]]; then
-              echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
+            if [[ "${TPRef}" =~ ^tag/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              TAG_ONLY="${TPRef#tag/}"
+              echo "TARI_REF=${TAG_ONLY}" >> $GITHUB_ENV
+              echo "TARI_TAG=true" >> $GITHUB_ENV
             else
               echo "TARI_REF=${TPRef}" >> $GITHUB_ENV
+              echo "TARI_TAG=false" >> $GITHUB_ENV
             fi
           else
             echo "TARI_REF=development" >> $GITHUB_ENV
+              echo "TARI_TAG=false" >> $GITHUB_ENV
           fi
 
       - name: Checkout tari
@@ -91,6 +95,7 @@ jobs:
         with:
           repository: ${{ env.TARI_REPO }}
           ref: ${{ env.TARI_REF }}
+          fetch-tags: ${{ env.TARI_TAG }}
           path: tari-project-tari
 
       - name: Prep docker build environment

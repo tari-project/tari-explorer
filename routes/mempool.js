@@ -46,7 +46,7 @@ router.get("/:excessSigs", async function (req, res) {
     if (req.query.json !== undefined) {
       res.json(json);
     } else {
-      res.render("mempool", json);
+      res.render("Mempool", json);
     }
   } catch (error) {
     res.status(500);

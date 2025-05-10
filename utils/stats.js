@@ -17,7 +17,6 @@ function miningStats(block) {
   } else {
     powAlgo = "SHA-3";
   };
-  console.log("pow", powAlgo);
 
   let outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;

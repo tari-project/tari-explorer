@@ -1,7 +1,6 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-const createError = require("http-errors");
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
@@ -114,8 +113,8 @@ app.use("/healthz", healthz);
 app.use("/stats", statsRouter);
 
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
+app.use((req, res, next) => {
+  res.status(404).send('Not found')
 });
 
 // error handler

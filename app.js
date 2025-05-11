@@ -28,9 +28,6 @@ import { hex, script } from "./script.js";
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
 
-hbs.registerHelper("json", function (obj) {
-  return Buffer.from(JSON.stringify(obj)).toString("base64");
-});
 
 hbs.registerHelper("timestamp", function (timestamp) {
   const dateObj = new Date(timestamp * 1000);
@@ -72,10 +69,6 @@ hbs.registerHelper("chart", function (data, height) {
   } else {
     return "**No data**";
   }
-});
-
-hbs.registerHelper("json", function (obj) {
-  return JSON.stringify(obj);
 });
 
 hbs.registerHelper("add", function (a, b) {

@@ -83,4 +83,8 @@ export default class BackgroundUpdater {
     // Consider unhealthy if last successful update was more than 5 minutes ago
     return timeSinceLastUpdate < 300000;
   }
+
+  toJSON() {
+    return {};
+  }
 }

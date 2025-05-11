@@ -16,17 +16,32 @@ router.get("/", async function (req, res) {
   let from = parseInt(req.query.from || 0);
   let limit = parseInt(req.query.limit || "20");
 
-  let version_result = await client.getVersion({});
+  const [
+    version_result,
+    tipInfo,
+    listHeaders,
+    headersResp,
+    mempool,
+    lastDifficulties,
+  ] = await Promise.all([
+    client.getVersion({}),
+    client.getTipInfo({}),
+    client.listHeaders({
+      from_height: 0,
+      num_headers: 101,
+    }),
+    // Get one more header than requested so we can work out the difference in MMR_size
+    client.listHeaders({
+      from_height: from,
+      num_headers: limit + 1,
+    }),
+    client.getMempoolTransactions({}),
+    client.getNetworkDifficulty({ from_tip: 180 }),
+  ]);
   let version = version_result.value.slice(0, 25);
 
-  let tipInfo = await client.getTipInfo({});
-
   // Algo split
-  let resp = await client.listHeaders({
-    from_height: 0,
-    num_headers: 101,
-  });
-  let last100Headers = resp.map((r) => r.header);
+  let last100Headers = listHeaders.map((r) => r.header);
   let monero = [0, 0, 0, 0];
   let sha = [0, 0, 0, 0];
 
@@ -55,10 +70,6 @@ router.get("/", async function (req, res) {
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
-  let headersResp = await client.listHeaders({
-    from_height: from,
-    num_headers: limit + 1,
-  });
   let headers = headersResp.map((r) => r.header);
   const pows = { 0: "Monero", 1: "SHA-3" };
   for (var i = headers.length - 2; i >= 0; i--) {
@@ -80,11 +91,7 @@ router.get("/", async function (req, res) {
 
   let firstHeight = parseInt(headers[0].height || "0");
 
-  // --  mempool
-  let mempool = await client.getMempoolTransactions({});
-
   // estimated hash rates
-  let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 180 });
   let totalHashRates = getHashRates(lastDifficulties, ["estimated_hash_rate"]);
   let moneroHashRates = getHashRates(lastDifficulties, [
     "monero_estimated_hash_rate",

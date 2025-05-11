@@ -75,7 +75,7 @@ function hex(data) {
 function script(data) {
   data = [...data];
   let i = 0;
-  let s = [];
+  const s = [];
   let m, n, msg, public_keys;
   while (i < data.length) {
     switch (data[i]) {

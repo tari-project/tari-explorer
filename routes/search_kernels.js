@@ -28,9 +28,9 @@ var router = express.Router();
 
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
-  let client = createClient();
-  let nonces = (req.query.nonces || "").split(",");
-  let signatures = (req.query.signatures || "").split(",");
+  const client = createClient();
+  const nonces = (req.query.nonces || "").split(",");
+  const signatures = (req.query.signatures || "").split(",");
 
   if (
     nonces.length === 0 ||
@@ -40,7 +40,7 @@ router.get("/", async function (req, res) {
     res.status(404);
     return;
   }
-  let params = [];
+  const params = [];
   for (let i = 0; i < nonces.length; i++) {
     params.push({
       public_nonce: Buffer.from(nonces[i], "hex"),
@@ -59,7 +59,7 @@ router.get("/", async function (req, res) {
     }
     return;
   }
-  let json = {
+  const json = {
     items: result,
   };
   if (req.query.json !== undefined) {

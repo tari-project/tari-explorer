@@ -29,7 +29,7 @@ const { miningStats } = require("../utils/stats");
 var router = express.Router();
 
 function fromHexString(hexString) {
-  let res = [];
+  const res = [];
   for (let i = 0; i < hexString.length; i += 2) {
     res.push(Number("0x" + hexString.substring(i, i + 2)));
   }
@@ -37,8 +37,8 @@ function fromHexString(hexString) {
 }
 
 router.get("/:height_or_hash", async function (req, res) {
-  let client = createClient();
-  let height_or_hash = req.params.height_or_hash;
+  const client = createClient();
+  const height_or_hash = req.params.height_or_hash;
   let height;
   if (height_or_hash.length === 64) {
     const block = await client.getHeaderByHash({
@@ -56,7 +56,7 @@ router.get("/:height_or_hash", async function (req, res) {
     height = parseInt(height_or_hash);
   }
 
-  let request = { heights: [height] };
+  const request = { heights: [height] };
   const block = await cache.get(client.getBlocks, request);
   if (!block || block.length === 0) {
     res.status(404);
@@ -68,13 +68,13 @@ router.get("/:height_or_hash", async function (req, res) {
   const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
     miningStats(block);
 
-  let outputs_from = +(req.query.outputs_from || 0);
-  let outputs_to = +(req.query.outputs_to || 10);
-  let inputs_from = +(req.query.inputs_from || 0);
-  let inputs_to = +(req.query.inputs_to || 10);
-  let kernels_from = +(req.query.kernels_from || 0);
-  let kernels_to = +(req.query.kernels_to || 10);
-  let body = {
+  const outputs_from = +(req.query.outputs_from || 0);
+  const outputs_to = +(req.query.outputs_to || 10);
+  const inputs_from = +(req.query.inputs_from || 0);
+  const inputs_to = +(req.query.inputs_to || 10);
+  const kernels_from = +(req.query.kernels_from || 0);
+  const kernels_to = +(req.query.kernels_to || 10);
+  const body = {
     outputs_length: block[0].block.body.outputs.length,
     inputs_length: block[0].block.body.inputs.length,
     kernels_length: block[0].block.body.kernels.length,
@@ -205,14 +205,14 @@ router.get("/:height_or_hash", async function (req, res) {
       "&kernels_to=" +
       (kernels_to + 10);
   }
-  let tipInfo = await client.getTipInfo({});
-  let tipHeight = parseInt(tipInfo.metadata.best_block_height);
+  const tipInfo = await client.getTipInfo({});
+  const tipHeight = parseInt(tipInfo.metadata.best_block_height);
 
-  let prevHeight = height - 1;
+  const prevHeight = height - 1;
   let prevLink = `/blocks/${prevHeight}`;
   if (height === 0) prevLink = null;
 
-  let nextHeight = height + 1;
+  const nextHeight = height + 1;
   let nextLink = `/blocks/${nextHeight}`;
   if (height === tipHeight) nextLink = null;
 
@@ -222,7 +222,7 @@ router.get("/:height_or_hash", async function (req, res) {
     res.setHeader("Cache-Control", cacheSettings.newBlocks);
   }
 
-  let json = {
+  const json = {
     title: `Block at height: ${block[0].block.header.height}`,
     header: block[0].block.header,
     height,

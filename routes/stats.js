@@ -29,39 +29,39 @@ var router = express.Router();
 const NUM_BLOCKS = 100;
 
 router.get("/", async function (req, res) {
-    let client = createClient();
-    let tipInfo = await client.getTipInfo({});
+  const client = createClient();
+  const tipInfo = await client.getTipInfo({});
 
-    if (!tipInfo || !tipInfo.metadata || !tipInfo.metadata.best_block_height) {
-      throw new Error("Invalid tipInfo response");
-    }
+  if (!tipInfo || !tipInfo.metadata || !tipInfo.metadata.best_block_height) {
+    throw new Error("Invalid tipInfo response");
+  }
 
-    let tipHeight = tipInfo.metadata.best_block_height;
-    let request = {
-      heights: Array.from({ length: NUM_BLOCKS }, (_, i) => tipHeight - i),
-    };
+  const tipHeight = tipInfo.metadata.best_block_height;
+  const request = {
+    heights: Array.from({ length: NUM_BLOCKS }, (_, i) => tipHeight - i),
+  };
 
-    let blocks = await cache.get(client.getBlocks, request);
-    if (!blocks || blocks.length === 0) {
-      res.status(404);
-      res.render("404", { message: `Blocks not found` });
-      return;
-    }
+  const blocks = await cache.get(client.getBlocks, request);
+  if (!blocks || blocks.length === 0) {
+    res.status(404);
+    res.render("404", { message: `Blocks not found` });
+    return;
+  }
 
-    // Calculate statistics
-    let stats = blocks
-      .map((block) => ({
-        height: block.block.header.height,
-        ...miningStats(block),
-      }))
-      .sort((a, b) => b.height - a.height);
+  // Calculate statistics
+  const stats = blocks
+    .map((block) => ({
+      height: block.block.header.height,
+      ...miningStats(block),
+    }))
+    .sort((a, b) => b.height - a.height);
 
-    let json = { stats };
-    if (req.query.json !== undefined) {
-      res.json(json);
-    } else {
-      res.render("stats", json);
-    }
+  const json = { stats };
+  if (req.query.json !== undefined) {
+    res.json(json);
+  } else {
+    res.render("stats", json);
+  }
 });
 
 module.exports = router;

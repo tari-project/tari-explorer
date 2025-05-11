@@ -5,22 +5,22 @@ const { format } = require("@fast-csv/format");
 var router = express.Router();
 
 router.get("/", async function (req, res) {
-    let client = createClient();
-    let lastDifficulties = await client.getNetworkDifficulty({
-      from_tip: 1000,
-    });
+  const client = createClient();
+  const lastDifficulties = await client.getNetworkDifficulty({
+    from_tip: 1000,
+  });
 
-    const csvStream = format({ headers: true });
-    res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
-    res.setHeader("Content-Type", "text/csv");
+  const csvStream = format({ headers: true });
+  res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
+  res.setHeader("Content-Type", "text/csv");
 
-    csvStream.pipe(res);
+  csvStream.pipe(res);
 
-    // Example data
+  // Example data
 
-    for (let i = 0; i < lastDifficulties.length; i++) {
-      csvStream.write(lastDifficulties[i]);
-    }
+  for (let i = 0; i < lastDifficulties.length; i++) {
+    csvStream.write(lastDifficulties[i]);
+  }
 
-    csvStream.end();
+  csvStream.end();
 });

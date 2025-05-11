@@ -28,8 +28,8 @@ var router = express.Router();
 
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
-  let client = createClient();
-  let commitments = (
+  const client = createClient();
+  const commitments = (
     req.query.comm ||
     req.query.commitment ||
     req.query.c ||
@@ -40,7 +40,7 @@ router.get("/", async function (req, res) {
     res.status(404);
     return;
   }
-  let hexCommitments = [];
+  const hexCommitments = [];
   for (let i = 0; i < commitments.length; i++) {
     hexCommitments.push(Buffer.from(commitments[i], "hex"));
   }
@@ -56,7 +56,7 @@ router.get("/", async function (req, res) {
     }
     return;
   }
-  let json = {
+  const json = {
     items: result,
   };
   if (req.query.json !== undefined) {

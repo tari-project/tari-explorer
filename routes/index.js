@@ -12,9 +12,9 @@ var router = express.Router();
 /* GET home page. */
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.index);
-  let client = createClient();
-  let from = parseInt(req.query.from || 0);
-  let limit = parseInt(req.query.limit || "20");
+  const client = createClient();
+  const from = parseInt(req.query.from || 0);
+  const limit = parseInt(req.query.limit || "20");
 
   const [
     version_result,
@@ -38,15 +38,15 @@ router.get("/", async function (req, res) {
     client.getMempoolTransactions({}),
     client.getNetworkDifficulty({ from_tip: 180 }),
   ]);
-  let version = version_result.value.slice(0, 25);
+  const version = version_result.value.slice(0, 25);
 
   // Algo split
-  let last100Headers = listHeaders.map((r) => r.header);
-  let monero = [0, 0, 0, 0];
-  let sha = [0, 0, 0, 0];
+  const last100Headers = listHeaders.map((r) => r.header);
+  const monero = [0, 0, 0, 0];
+  const sha = [0, 0, 0, 0];
 
   for (let i = 0; i < last100Headers.length - 1; i++) {
-    let arr = last100Headers[i].pow.pow_algo === "0" ? monero : sha;
+    const arr = last100Headers[i].pow.pow_algo === "0" ? monero : sha;
     if (i < 10) {
       arr[0] += 1;
     }
@@ -70,7 +70,7 @@ router.get("/", async function (req, res) {
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
-  let headers = headersResp.map((r) => r.header);
+  const headers = headersResp.map((r) => r.header);
   const pows = { 0: "Monero", 1: "SHA-3" };
   for (var i = headers.length - 2; i >= 0; i--) {
     headers[i].kernels =
@@ -79,7 +79,7 @@ router.get("/", async function (req, res) {
       headers[i].output_mmr_size - headers[i + 1].output_mmr_size;
     headers[i].powText = pows[headers[i].pow.pow_algo];
   }
-  let lastHeader = headers[headers.length - 1];
+  const lastHeader = headers[headers.length - 1];
   if (lastHeader.height === "0") {
     // If the block is the genesis block, then the MMR sizes are the values to use
     lastHeader.kernels = lastHeader.kernel_mmr_size;
@@ -89,22 +89,24 @@ router.get("/", async function (req, res) {
     headers.splice(headers.length - 1, 1);
   }
 
-  let firstHeight = parseInt(headers[0].height || "0");
+  const firstHeight = parseInt(headers[0].height || "0");
 
   // estimated hash rates
-  let totalHashRates = getHashRates(lastDifficulties, ["estimated_hash_rate"]);
-  let moneroHashRates = getHashRates(lastDifficulties, [
+  const totalHashRates = getHashRates(lastDifficulties, [
+    "estimated_hash_rate",
+  ]);
+  const moneroHashRates = getHashRates(lastDifficulties, [
     "monero_estimated_hash_rate",
     "randomx_estimated_hash_rate",
   ]);
-  let shaHashRates = getHashRates(lastDifficulties, [
+  const shaHashRates = getHashRates(lastDifficulties, [
     "sha3_estimated_hash_rate",
     "sha3x_estimated_hash_rate",
   ]);
 
   // list of active validator nodes
-  let tipHeight = tipInfo.metadata.best_block_height;
-  let activeVns = await client.getActiveValidatorNodes({
+  const tipHeight = tipInfo.metadata.best_block_height;
+  const activeVns = await client.getActiveValidatorNodes({
     height: tipHeight,
   });
 
@@ -118,8 +120,8 @@ router.get("/", async function (req, res) {
     mempool[i].transaction.body.total_fees = sum;
   }
 
-  let request = { heights: [tipHeight] };
-  let block = await cache.get(client.getBlocks, request);
+  const request = { heights: [tipHeight] };
+  const block = await cache.get(client.getBlocks, request);
   if (!block || block.length === 0) {
     res.status(404);
     res.render("404", { message: `Block at height ${tipHeight} not found` });
@@ -181,7 +183,7 @@ function getHashRates(difficulties, properties) {
 }
 
 function getBlockTimes(last100Headers, algo, targetTime) {
-  let blocktimes = [];
+  const blocktimes = [];
   let i = 0;
   if (algo === "0" || algo === "1") {
     while (

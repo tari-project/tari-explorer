@@ -16,7 +16,7 @@ export default defineConfig([
     },
     files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
     rules: {
-      "prefer-const": "off",
+      "prefer-const": "warn",
       "no-constant-binary-expression": "error",
       "no-undef": "error",
     },

@@ -11,9 +11,82 @@ const router = express.Router();
 /* GET home page. */
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.index);
-  const client = createClient();
   const from = parseInt(req.query.from || 0);
-  const limit = parseInt(req.query.limit || "20");
+  let limit = parseInt(req.query.limit || "20");
+  if (limit > 100) {
+    limit = 100;
+  }
+
+  let json = null;
+  if (
+    Object.keys(req.query).length == 0 &&
+    res.locals.backgroundUpdater.isHealthy()
+  ) {
+    // load the default page from cache
+    json = res.locals.backgroundUpdater.getData().indexData;
+  } else {
+    json = await getIndexData(from, limit);
+  }
+  if (json === null) {
+    res.status(404).send("Block not found");
+  }
+
+  if (req.query.json !== undefined) {
+    res.json(json);
+  } else {
+    res.render("index", json);
+  }
+});
+
+function getHashRates(difficulties, properties) {
+  const end_idx = difficulties.length - 1;
+  const start_idx = end_idx - 720;
+
+  return difficulties
+    .map((d) =>
+      properties.reduce(
+        (sum, property) => sum + (parseInt(d[property]) || 0),
+        0,
+      ),
+    )
+    .slice(start_idx, end_idx);
+}
+
+function getBlockTimes(last100Headers, algo, targetTime) {
+  const blocktimes = [];
+  let i = 0;
+  if (algo === "0" || algo === "1") {
+    while (
+      i < last100Headers.length &&
+      last100Headers[i].pow.pow_algo !== algo
+    ) {
+      i++;
+      blocktimes.push(0);
+    }
+  }
+  if (i >= last100Headers.length) {
+    // This happens if there are no blocks for a specific algorithm in last100headers
+    return blocktimes;
+  }
+  let lastBlockTime = parseInt(last100Headers[i].timestamp);
+  i++;
+  while (i < last100Headers.length && blocktimes.length < 60) {
+    if (!algo || last100Headers[i].pow.pow_algo === algo) {
+      blocktimes.push(
+        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
+          targetTime,
+      );
+      lastBlockTime = parseInt(last100Headers[i].timestamp);
+    } else {
+      blocktimes.push(targetTime);
+    }
+    i++;
+  }
+  return blocktimes;
+}
+
+export async function getIndexData(from, limit) {
+  const client = createClient();
 
   const [
     version_result,
@@ -122,16 +195,14 @@ router.get("/", async function (req, res) {
   const request = { heights: [tipHeight] };
   const block = await cache.get(client.getBlocks, request);
   if (!block || block.length === 0) {
-    res.status(404);
-    res.render("404", { message: `Block at height ${tipHeight} not found` });
-    return;
+    return null;
   }
 
   // Calculate statistics
   const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
     miningStats(block);
 
-  const json = {
+  return {
     title: "Blocks",
     version,
     tipInfo,
@@ -159,59 +230,8 @@ router.get("/", async function (req, res) {
     totalCoinbaseXtm,
     numCoinbases,
     numOutputsNoCoinbases,
+    lastUpdate: new Date(),
   };
-  if (req.query.json !== undefined) {
-    res.json(json);
-  } else {
-    res.render("index", json);
-  }
-});
-
-function getHashRates(difficulties, properties) {
-  const end_idx = difficulties.length - 1;
-  const start_idx = end_idx - 720;
-
-  return difficulties
-    .map((d) =>
-      properties.reduce(
-        (sum, property) => sum + (parseInt(d[property]) || 0),
-        0,
-      ),
-    )
-    .slice(start_idx, end_idx);
-}
-
-function getBlockTimes(last100Headers, algo, targetTime) {
-  const blocktimes = [];
-  let i = 0;
-  if (algo === "0" || algo === "1") {
-    while (
-      i < last100Headers.length &&
-      last100Headers[i].pow.pow_algo !== algo
-    ) {
-      i++;
-      blocktimes.push(0);
-    }
-  }
-  if (i >= last100Headers.length) {
-    // This happens if there are no blocks for a specific algorithm in last100headers
-    return blocktimes;
-  }
-  let lastBlockTime = parseInt(last100Headers[i].timestamp);
-  i++;
-  while (i < last100Headers.length && blocktimes.length < 60) {
-    if (!algo || last100Headers[i].pow.pow_algo === algo) {
-      blocktimes.push(
-        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
-          targetTime,
-      );
-      lastBlockTime = parseInt(last100Headers[i].timestamp);
-    } else {
-      blocktimes.push(targetTime);
-    }
-    i++;
-  }
-  return blocktimes;
 }
 
 export default router;

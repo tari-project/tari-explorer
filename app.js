@@ -21,6 +21,7 @@ import healthz from "./routes/healthz.js";
 import statsRouter from "./routes/stats.js";
 import assetsRouter from "./routes/assets.js";
 
+import BackgrounUpdater from "./utils/updater.js";
 import { hex, script } from "./script.js";
 
 // Register HBS helpers
@@ -85,6 +86,9 @@ hbs.registerPartials(path.join(import.meta.dirname, "partials"));
 
 const app = express();
 
+const updater = new BackgrounUpdater();
+updater.start();
+
 // view engine setup
 app.set("views", path.join(import.meta.dirname, "views"));
 app.set("view engine", "hbs");
@@ -99,6 +103,10 @@ app.use(
 );
 app.use(express.static(path.join(import.meta.dirname, "public")));
 app.use(cors());
+app.use((req, res, next) => {
+  res.locals.backgroundUpdater = updater;
+  next();
+});
 
 app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);

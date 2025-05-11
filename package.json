@@ -11,12 +11,12 @@
     "lint-fix": "eslint --fix ."
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.1",
-    "@tariproject/base-node-grpc-client": "^0.0.1",
+    "@grpc/grpc-js": "^1.13.3",
     "asciichart": "^1.5.25",
     "cors": "^2.8.5",
     "express": "~5.1.0",
     "fast-csv": "^5.0.2",
+    "grpc-promise": "^1.4.0",
     "hbs": "^4.1.2",
     "pino-http": "^10.4.0",
     "serve-favicon": "^2.5.0"

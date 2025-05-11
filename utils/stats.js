@@ -1,4 +1,4 @@
-function miningStats(block) {
+export function miningStats(block) {
   // Handle both object and array cases
   const blockData = Array.isArray(block) ? block[0] : block;
 
@@ -16,9 +16,9 @@ function miningStats(block) {
     powAlgo = "Monero";
   } else {
     powAlgo = "SHA-3";
-  };
+  }
 
-  let outputs = blockData.block.body.outputs;
+  const outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;
   let numCoinbases = 0;
 
@@ -32,12 +32,12 @@ function miningStats(block) {
     }
   });
 
-  let numOutputsNoCoinbases = outputs.length - numCoinbases;
-  let totalCoinbaseXtm = (totalCoinbase / 1e6).toLocaleString(undefined, {
+  const numOutputsNoCoinbases = outputs.length - numCoinbases;
+  const totalCoinbaseXtm = (totalCoinbase / 1e6).toLocaleString(undefined, {
     minimumFractionDigits: 6,
     maximumFractionDigits: 6,
   });
-  let numInputs = blockData.block.body.inputs.length;
+  const numInputs = blockData.block.body.inputs.length;
 
   return {
     totalCoinbaseXtm,
@@ -47,5 +47,3 @@ function miningStats(block) {
     powAlgo,
   };
 }
-
-module.exports = { miningStats };

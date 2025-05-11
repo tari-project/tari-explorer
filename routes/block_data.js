@@ -20,12 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-const cache = require("../cache");
-const cacheSettings = require("../cacheSettings");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+import cache from "../cache.js";
+import cacheSettings from "../cacheSettings.js";
+const router = express.Router();
 
 function fromHexString(hexString) {
   const res = [];
@@ -93,4 +92,4 @@ router.get("/:height_or_hash", async function (req, res) {
   res.json(json);
 });
 
-module.exports = router;
+export default router;

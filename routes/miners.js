@@ -1,7 +1,6 @@
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+const router = express.Router();
 
 router.get("/", async function (req, res) {
   const client = createClient();
@@ -117,4 +116,4 @@ router.get("/", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

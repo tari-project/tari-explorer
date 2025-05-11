@@ -20,10 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var { createClient: createBaseNodeClient } = require("../baseNodeClient");
-
-var express = require("express");
-var router = express.Router();
+import { createClient as createBaseNodeClient } from "../baseNodeClient.js";
+import express from "express";
+const router = express.Router();
 
 /* GET home page. */
 router.get("/:asset_public_key", async function (req, res) {
@@ -55,4 +54,4 @@ router.get("/:asset_public_key", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

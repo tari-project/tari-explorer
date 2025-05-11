@@ -13,6 +13,10 @@ export default defineConfig([
         ...globals.node,
         ...globals.commonjs,
       },
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
     },
     files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
     rules: {

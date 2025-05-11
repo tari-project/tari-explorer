@@ -253,4 +253,4 @@ function script(data) {
   return s.join("<br/>");
 }
 
-module.exports = [hex, script];
+export { hex, script };

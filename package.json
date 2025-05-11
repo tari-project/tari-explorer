@@ -2,6 +2,7 @@
   "name": "tari-explorer",
   "version": "0.0.2",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node --watch ./bin/www",
     "fmt": "prettier --end-of-line auto -w **/*.{js,hbs}",

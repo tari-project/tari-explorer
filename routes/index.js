@@ -1,13 +1,12 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-var { createClient } = require("../baseNodeClient");
-const { miningStats } = require("../utils/stats");
-
-var express = require("express");
-const cacheSettings = require("../cacheSettings");
-const cache = require("../cache");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import { miningStats } from "../utils/stats.js";
+import express from "express";
+import cacheSettings from "../cacheSettings.js";
+import cache from "../cache.js";
+const router = express.Router();
 
 /* GET home page. */
 router.get("/", async function (req, res) {
@@ -215,4 +214,4 @@ function getBlockTimes(last100Headers, algo, targetTime) {
   return blocktimes;
 }
 
-module.exports = router;
+export default router;

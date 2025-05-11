@@ -20,11 +20,11 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var express = require("express");
-const { createClient } = require("../baseNodeClient");
-const cache = require("../cache");
-const { miningStats } = require("../utils/stats");
-var router = express.Router();
+import express from "express";
+import { createClient } from "../baseNodeClient.js";
+import cache from "../cache.js";
+import { miningStats } from "../utils/stats.js";
+const router = express.Router();
 
 const NUM_BLOCKS = 100;
 
@@ -64,4 +64,4 @@ router.get("/", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

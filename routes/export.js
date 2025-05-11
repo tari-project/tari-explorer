@@ -1,8 +1,7 @@
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-const { format } = require("@fast-csv/format");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+import { format } from "@fast-csv/format";
+const router = express.Router();
 
 router.get("/", async function (req, res) {
   const client = createClient();

@@ -1,10 +1,10 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-var express = require("express");
-const { createClient } = require("../baseNodeClient");
-const cacheSettings = require("../cacheSettings");
-var router = express.Router();
+import express from "express";
+import { createClient } from "../baseNodeClient.js";
+import cacheSettings from "../cacheSettings.js";
+const router = express.Router();
 
 /* GET mempool page. */
 router.get("/:excessSigs", async function (req, res) {
@@ -49,4 +49,4 @@ router.get("/:excessSigs", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

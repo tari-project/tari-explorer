@@ -18,10 +18,7 @@ router.get("/", async function (req, res) {
   }
 
   let json = null;
-  if (
-    Object.keys(req.query).length == 0 &&
-    res.locals.backgroundUpdater.isHealthy()
-  ) {
+  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
     json = res.locals.backgroundUpdater.getData().indexData;
   } else {

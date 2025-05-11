@@ -11,6 +11,9 @@ export default class BackgroundUpdater {
     this.data = null;
     this.isUpdating = false;
     this.lastSuccessfulUpdate = null;
+
+    this.from = 0;
+    this.limit = 20;
   }
 
   async start() {
@@ -31,7 +34,7 @@ export default class BackgroundUpdater {
     while (attempts < this.maxRetries) {
       try {
         const startTs = Date.now();
-        const newData = await getIndexData(0, 20);
+        const newData = await getIndexData(this.from, this.limit);
         if (newData) {
           this.data = newData;
           this.lastSuccessfulUpdate = new Date();
@@ -70,7 +73,9 @@ export default class BackgroundUpdater {
     };
   }
 
-  isHealthy() {
+  isHealthy(settings) {
+    if (settings.from !== this.from || settings.limit !== this.limit)
+      return false;
     if (!this.lastSuccessfulUpdate) return false;
 
     const timeSinceLastUpdate =

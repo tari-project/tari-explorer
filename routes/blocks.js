@@ -37,7 +37,6 @@ function fromHexString(hexString) {
 }
 
 router.get("/:height_or_hash", async function (req, res) {
-  try {
     let client = createClient();
     let height_or_hash = req.params.height_or_hash;
     let height;
@@ -242,14 +241,6 @@ router.get("/:height_or_hash", async function (req, res) {
     } else {
       res.render("blocks", json);
     }
-  } catch (error) {
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-  }
 });
 
 module.exports = router;

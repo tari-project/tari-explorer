@@ -31,7 +31,6 @@ router.get("/:asset_public_key", async function (req, res) {
   // let validatorNodeClient = createValidatorNodeClient()
   let asset_public_key = req.params.asset_public_key;
 
-  try {
     let tokens = await baseNodeClient.getTokens({
       asset_public_key: Buffer.from(asset_public_key, "hex"),
     });
@@ -54,14 +53,6 @@ router.get("/:asset_public_key", async function (req, res) {
     } else {
       res.render("assets", json);
     }
-  } catch (error) {
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-  }
 });
 
 module.exports = router;

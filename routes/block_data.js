@@ -36,7 +36,6 @@ function fromHexString(hexString) {
 }
 
 router.get("/:height_or_hash", async function (req, res) {
-  try {
     let from = +(req.query.from || 0);
     let to = +(req.query.to || 10);
     let what = req.query.what;
@@ -92,10 +91,6 @@ router.get("/:height_or_hash", async function (req, res) {
       body: body,
     };
     res.json(json);
-  } catch (error) {
-    res.status(500);
-    res.json({ error: error });
-  }
 });
 
 module.exports = router;

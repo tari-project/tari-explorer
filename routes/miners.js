@@ -4,7 +4,6 @@ var express = require("express");
 var router = express.Router();
 
 router.get("/", async function (req, res) {
-    try {
         let client = createClient();
         let lastDifficulties = await client.getNetworkDifficulty({ from_tip: 720 });
 
@@ -116,14 +115,6 @@ router.get("/", async function (req, res) {
         } else {
             res.render("miners", data);
         }
-    } catch (error) {
-        res.status(500);
-        if (req.query.json !== undefined) {
-            res.json({ error: error });
-        } else {
-            res.render("error", { error: error });
-        }
-    }
 });
 
 

@@ -5,7 +5,6 @@ const { format } = require("@fast-csv/format");
 var router = express.Router();
 
 router.get("/", async function (req, res) {
-  try {
     let client = createClient();
     let lastDifficulties = await client.getNetworkDifficulty({
       from_tip: 1000,
@@ -24,12 +23,4 @@ router.get("/", async function (req, res) {
     }
 
     csvStream.end();
-  } catch (error) {
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-  }
 });

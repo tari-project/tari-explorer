@@ -29,7 +29,6 @@ var router = express.Router();
 const NUM_BLOCKS = 100;
 
 router.get("/", async function (req, res) {
-  try {
     let client = createClient();
     let tipInfo = await client.getTipInfo({});
 
@@ -63,15 +62,6 @@ router.get("/", async function (req, res) {
     } else {
       res.render("stats", json);
     }
-  } catch (error) {
-    console.error("Error fetching stats:", error); // Error logging
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error.message });
-    } else {
-      res.render("error", { error: error.message });
-    }
-  }
 });
 
 module.exports = router;

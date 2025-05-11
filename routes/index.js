@@ -12,7 +12,6 @@ var router = express.Router();
 /* GET home page. */
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.index);
-  try {
     let client = createClient();
     let from = parseInt(req.query.from || 0);
     let limit = parseInt(req.query.limit || "20");
@@ -161,14 +160,6 @@ router.get("/", async function (req, res) {
     } else {
       res.render("index", json);
     }
-  } catch (error) {
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-  }
 });
 
 function getHashRates(difficulties, properties) {

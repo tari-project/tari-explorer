@@ -9,7 +9,6 @@ var router = express.Router();
 /* GET mempool page. */
 router.get("/:excessSigs", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.mempool);
-  try {
     let client = createClient();
     let txId = req.params.excessSigs.split("+");
     let mempool = await client.getMempoolTransactions({});
@@ -48,14 +47,6 @@ router.get("/:excessSigs", async function (req, res) {
     } else {
       res.render("Mempool", json);
     }
-  } catch (error) {
-    res.status(500);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-  }
 });
 
 module.exports = router;

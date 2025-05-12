@@ -16,7 +16,17 @@ export function miningStats(block) {
     powAlgo = "Monero";
   } else {
     powAlgo = "SHA-3";
-  }
+  };
+  let timestamp = blockData.block.header.timestamp;
+  timestamp = new Date(timestamp * 1000).toLocaleString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 
   const outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;
@@ -45,5 +55,6 @@ export function miningStats(block) {
     numOutputsNoCoinbases,
     numInputs,
     powAlgo,
+    timestamp,
   };
 }

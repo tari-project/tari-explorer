@@ -7,7 +7,7 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{hex this.offset}}</td></tr>
+        <td style="vertical-align: top;">{{hex this.offset}}</td></tr>
     </tbody>
   </table>
   <h3>Inputs</h3>
@@ -26,19 +26,17 @@
     <tbody>
       {{#each this.body.inputs}}
         <tr>
-          <td><i>Flags</i><br />
+          <td style="vertical-align: top;"><i>Flags</i><br />
             {{features.flags}}<hr /><i>Maturity</i><br />
             {{features.maturity}}</td>
-          <td>{{hex commitment}}</td>
-          <td>{{hex hash}}</td>
-          <td>{{hex script}}</td>
-          <td>{{hex input_data}}</td>
-          <td><i>Public Nonce Commitment</i><br />
-            {{hex script_signature.public_nonce_commitment}}<hr /><i>Signature U</i><br
-            />
-            {{hex script_signature.signature_u}}<hr /><i>Signature V</i><br />
-            {{hex script_signature.signature_v}}</td>
-          <td>{{hex sender_offset_public_key}}</td>
+          <td style="vertical-align: top;">{{hex commitment}}</td>
+          <td style="vertical-align: top;">{{hex hash}}</td>
+          <td style="vertical-align: top;">{{hex script}}</td>
+          <td style="vertical-align: top;">{{hex input_data}}</td>
+          <td style="vertical-align: top;">
+            {{>ComSignature script_signature}}
+          </td>
+          <td style="vertical-align: top;">{{hex sender_offset_public_key}}</td>
         </tr>
       {{/each}}
     </tbody>
@@ -61,15 +59,19 @@
     <tbody>
       {{#each this.body.outputs}}
         <tr>
-          <td><i>Flags</i><br />
+          <td style="vertical-align: top;"><i>Flags</i><br />
             {{features.flags}}<hr /><i>Maturity</i><br />
             {{features.maturity}}</td>
-          <td>{{hex commitment}}</td>
-          <td style="width:500px;display:block;word-break:break-all;">{{hex range_proof.proof_bytes }}</td>
-          <td>{{hex hash}}</td>
-          <td>{{hex script}}</td>
-          <td>{{hex sender_offset_public_key}}</td>
-          <td>{{>ComSignature metadata_signature}}</td>
+          <td style="vertical-align: top;">{{hex commitment}}</td>
+          <td style="width:850px;display:block;word-break:break-all;">{{
+              range_proof
+            }}</td>
+          <td style="vertical-align: top;">{{hex hash}}</td>
+          <td style="vertical-align: top;">{{hex script}}</td>
+          <td style="vertical-align: top;">{{hex sender_offset_public_key}}</td>
+          <td style="vertical-align: top;">
+            {{>ComSignature metadata_signature}}
+          </td>
         </tr>
       {{/each}}
     </tbody>
@@ -91,14 +93,14 @@
     <tbody>
       {{#each this.body.kernels}}
         <tr>
-          <td>{{features}}</td>
-          <td>{{fee}}</td>
-          <td>{{lock_height}}</td>
-          <td>{{hex excess}}</td>
-          <td><i>Nonce</i>
+          <td style="vertical-align: top;">{{features}}</td>
+          <td style="vertical-align: top;">{{fee}}</td>
+          <td style="vertical-align: top;">{{lock_height}}</td>
+          <td style="vertical-align: top;">{{hex excess}}</td>
+          <td style="vertical-align: top;"><i>Nonce</i>
             {{hex excess_sig.public_nonce}}<hr /><i>Sig</i>
             {{hex excess_sig.signature}}</td>
-          <td>{{hex hash}}</td>
+          <td style="vertical-align: top;">{{hex hash}}</td>
         </tr>
       {{/each}}
     </tbody>

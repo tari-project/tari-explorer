@@ -31,8 +31,7 @@ function connect(address) {
   return client;
 }
 
-function Client(address = "127.0.0.1:18142") {
-  console.log("Connecting to base node at " + address);
+function Client(address = "localhost:18142") {
   this.inner = connect(address);
   const methods = [
     "getVersion",
@@ -51,7 +50,7 @@ function Client(address = "127.0.0.1:18142") {
     this[method] = (arg) => this.inner[method]().sendMessage(arg);
   });
 }
-const client = new Client(process.env.BASE_NODE_GRPC_URL || "localhost:18142");
+const client = new Client(process.env.BASE_NODE_GRPC_URL);
 
 function createClient() {
   return client;

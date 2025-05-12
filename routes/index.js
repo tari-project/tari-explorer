@@ -188,15 +188,24 @@ export async function getIndexData(from, limit) {
     }))
     .sort((a, b) => b.height - a.height);
   // Append the stats to the headers array
-  headers.forEach((header) => {
+  for (const header of headers) {
     const stat = stats.find((s) => s.height === header.height);
     if (stat) {
       header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
       header.numCoinbases = stat.numCoinbases;
       header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
       header.numInputs = stat.numInputs;
+    } else {
+      let block = await cache.get(client.getBlocks, {
+        heights: [header.height],
+      });
+      const stat = miningStats(block);
+      header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
+      header.numCoinbases = stat.numCoinbases;
+      header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
+      header.numInputs = stat.numInputs;
     }
-  });
+  }
 
   // list of active validator nodes
   const activeVns = await cache.get(client.getActiveValidatorNodes, {

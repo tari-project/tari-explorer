@@ -65,16 +65,11 @@
             {{features.flags}}<hr /><i>Maturity</i><br />
             {{features.maturity}}</td>
           <td>{{hex commitment}}</td>
-          <td style="width:500px;display:block;word-break:break-all;">{{hex
-              range_proof
-            }}</td>
+          <td style="width:500px;display:block;word-break:break-all;">{{hex range_proof.proof_bytes }}</td>
           <td>{{hex hash}}</td>
           <td>{{hex script}}</td>
           <td>{{hex sender_offset_public_key}}</td>
-          <td>
-            {{>ComSignature metadata_signature}}
-
-          </td>
+          <td>{{>ComSignature metadata_signature}}</td>
         </tr>
       {{/each}}
     </tbody>

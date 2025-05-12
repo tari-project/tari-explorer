@@ -18,7 +18,6 @@ import minersRouter from "./routes/miners.js";
 import searchCommitmentsRouter from "./routes/search_commitments.js";
 import searchKernelsRouter from "./routes/search_kernels.js";
 import healthz from "./routes/healthz.js";
-import statsRouter from "./routes/stats.js";
 import assetsRouter from "./routes/assets.js";
 
 import BackgrounUpdater from "./utils/updater.js";
@@ -110,7 +109,6 @@ app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
 app.use("/search_kernels", searchKernelsRouter);
 app.use("/healthz", healthz);
-app.use("/stats", statsRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res) => {

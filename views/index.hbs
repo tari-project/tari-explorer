@@ -10,42 +10,14 @@
   </thead>
   <tbody>
     <tr>
-      <td>{{this.tipInfo.metadata.best_block_height}}</td>
-      <td>{{hex this.tipInfo.metadata.best_block_hash}}</td>
-      <td>{{this.tipInfo.metadata.pruned_height}}</td>
-      <td>{{this.version}}</td>
+      <td style="text-align: center;">{{this.tipInfo.metadata.best_block_height}}</td>
+      <td style="text-align: center;">{{hex this.tipInfo.metadata.best_block_hash}}</td>
+      <td style="text-align: center;">{{this.tipInfo.metadata.pruned_height}}</td>
+      <td style="text-align: center;">{{this.version}}</td>
     </tr>
   </tbody>
 </table>
 <br />
-
-<h3><a href="/stats#mining-stats">Mining Stats</a></h3>
-<table>
-  <tr>
-    <th style="text-align: left; width: 400px;">Block height</th>
-    <td style="text-align: left;">{{this.tipInfo.metadata.best_block_height}}</td>
-  </tr>
-  <tr>
-    <th style="text-align: left; width: 400px;">Number of inputs</th>
-    <td style="text-align: left;">{{this.numInputs}}</td>
-  </tr>
-  <tr>
-    <th style="text-align: left; width: 400px;">Number of outputs (excl. coinbases)</th>
-    <td style="text-align: left;">{{this.numOutputsNoCoinbases}}</td>
-  </tr>
-  <tr>
-    <th style="text-align: left; width: 400px;">Number of coinbases</th>
-    <td style="text-align: left;">{{this.numCoinbases}}</td>
-  </tr>
-  <tr>
-    <th style="text-align: left; width: 400px;">Total coinbase value (XTM)</th>
-    <td style="text-align: left;">{{this.totalCoinbaseXtm}}</td>
-  </tr>
-  <tr>
-    <th style="text-align: left; width: 400px;">PoW algorithm</th>
-    <td style="text-align: left;">{{this.powAlgo}}</td>
-  </tr>
-</table>
 
 <h3>Proof of work split</h3>
 <table>
@@ -66,25 +38,24 @@
   <tbody>
     <tr>
       <th>Monero (RandomX)</th>
-      <td>{{this.algoSplit.monero10}}
+      <td style="text-align: center;">{{this.algoSplit.monero10}}
         {{percentbar this.algoSplit.monero10 this.algoSplit.sha10}}</td>
-      <td>{{this.algoSplit.monero20}}
+      <td style="text-align: center;">{{this.algoSplit.monero20}}
         {{percentbar this.algoSplit.monero20 this.algoSplit.sha20}}</td>
-      <td>{{this.algoSplit.monero50}}
+      <td style="text-align: center;">{{this.algoSplit.monero50}}
         {{percentbar this.algoSplit.monero50 this.algoSplit.sha50}}</td>
-      <td>{{this.algoSplit.monero100}}
+      <td style="text-align: center;">{{this.algoSplit.monero100}}
         {{percentbar this.algoSplit.monero100 this.algoSplit.sha100}}</td>
     </tr>
     <tr>
       <th>SHA-3</th>
-
-      <td>{{this.algoSplit.sha10}}
+      <td style="text-align: center;">{{this.algoSplit.sha10}}
         {{percentbar this.algoSplit.sha10 this.algoSplit.monero10}}</td>
-      <td>{{this.algoSplit.sha20}}
+      <td style="text-align: center;">{{this.algoSplit.sha20}}
         {{percentbar this.algoSplit.sha20 this.algoSplit.monero20}}</td>
-      <td>{{this.algoSplit.sha50}}
+      <td style="text-align: center;">{{this.algoSplit.sha50}}
         {{percentbar this.algoSplit.sha50 this.algoSplit.monero50}}</td>
-      <td>{{this.algoSplit.sha100}}
+      <td style="text-align: center;">{{this.algoSplit.sha100}}
         {{percentbar this.algoSplit.sha100 this.algoSplit.monero100}}</td>
     </tr>
   </tbody>
@@ -152,24 +123,30 @@
       <th>Time</th>
       <th>Proof of Work</th>
       <th>Hash</th>
+      <th>Total Coinbase (XTM)</th>
       <th>Kernels</th>
-      <th>Δ of Outputs</th>
+      <th>Coinbase Outputs</th>
+      <th>Other Outputs</th>
+      <th>Inputs</th>
     </tr>
   </thead>
   <tbody>
     {{#each this.headers}}
     <tr>
       <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
-      <td>{{timestamp this.timestamp}}</td>
-
-      <td>{{this.powText}}</td>
-      <td>{{hex this.hash}}</td>
-      <td>{{kernels}}</td>
-      <td>{{outputs}}</td>
+      <td style="text-align: center;">{{timestamp this.timestamp}}</td>
+      <td style="text-align: center;">{{this.powText}}</td>
+      <td style="text-align: center;">{{hex this.hash}}</td>
+      <td style="text-align: center;">{{totalCoinbaseXtm}}</td>
+      <td style="text-align: center;">{{kernels}}</td>
+      <td style="text-align: center;">{{numCoinbases}}</td>
+      <td style="text-align: center;">{{numOutputsNoCoinbases}}</td>
+      <td style="text-align: center;">{{numInputs}}</td>
     </tr>
     {{/each}}
   </tbody>
 </table>
+
 <p>
   <a href="/?from={{prevPage}}&limit={{limit}}">&lt; Prev</a>
   <a href="/?limit={{limit}}">Tip</a>
@@ -202,10 +179,10 @@
       <td><a href="/mempool/{{hex this.signature}}">{{hex
           this.signature
           }}</a></td>
-      <td>{{this.total_fees}}</td>
-      <td>{{this.outputs.length}}</td>
-      <td>{{this.kernels.length}}</td>
-      <td>{{this.inputs.length}}</td>
+      <td style="text-align: center;">{{this.total_fees}}</td>
+      <td style="text-align: center;">{{this.outputs.length}}</td>
+      <td style="text-align: center;">{{this.kernels.length}}</td>
+      <td style="text-align: center;">{{this.inputs.length}}</td>
     </tr>
     {{/with}}
     {{/each}}

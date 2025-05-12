@@ -26,18 +26,7 @@ const router = express.Router();
 
 router.get("/", async function (req, res) {
   const client = createClient();
-  let result;
-  try {
-    result = await client.getVersion({});
-  } catch (error) {
-    res.status(404);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-    return;
-  }
+  const result = await client.getVersion({});
   const json = { version: result.value };
   if (req.query.json !== undefined) {
     res.json(json);

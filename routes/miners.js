@@ -17,7 +17,7 @@ router.get("/", async function (req, res) {
   };
 
   for (let i = 0; i < lastDifficulties.length; i++) {
-    const extra = lastDifficulties[i].first_coinbase_extra.toString();
+    const extra = lastDifficulties[i]?.first_coinbase_extra?.toString();
     const split = extra.split(",");
 
     let unique_id =

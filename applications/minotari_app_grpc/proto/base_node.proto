@@ -218,7 +218,7 @@ message NetworkDifficultyResponse {
     uint64 sha3x_estimated_hash_rate = 6;
     uint64 randomx_estimated_hash_rate = 7;
     uint64 num_coinbases = 8;
-    bytes first_coinbase_extra = 9;
+    repeated  bytes coinbase_extras = 9;
 }
 
 // A generic single value response for a specific height
@@ -358,6 +358,8 @@ message SyncProgressResponse {
     uint64 tip_height = 1;
     uint64 local_height = 2;
     SyncState state = 3;
+    string short_desc = 4;
+    uint64 initial_connected_peers = 5;
 }
 
 enum SyncState {
@@ -517,4 +519,3 @@ message GetSideChainUtxosResponse {
     BlockInfo block_info = 1;
     repeated TransactionOutput outputs = 2;
 }
-

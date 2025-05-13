@@ -1,8 +1,11 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
+import cacheSettings from "../cacheSettings.js";
+import cache from "../cache.js";
 const router = express.Router();
 
 router.get("/", async function (req, res) {
+  res.setHeader("Cache-Control", cacheSettings.index);
   const client = createClient();
   const lastDifficulties = await client.getNetworkDifficulty({ from_tip: 720 });
 
@@ -17,7 +20,8 @@ router.get("/", async function (req, res) {
   };
 
   for (let i = 0; i < lastDifficulties.length; i++) {
-    const extra = lastDifficulties[i]?.first_coinbase_extra?.toString();
+    //console.log(lastDifficulties[i].coinbase_extras);
+    let extra = lastDifficulties[i].coinbase_extras.join("|");
     const split = extra.split(",");
 
     let unique_id =

@@ -20,7 +20,6 @@ router.get("/", async function (req, res) {
   };
 
   for (let i = 0; i < lastDifficulties.length; i++) {
-    //console.log(lastDifficulties[i].coinbase_extras);
     let extra = lastDifficulties[i].coinbase_extras.join("|");
     const split = extra.split(",");
 

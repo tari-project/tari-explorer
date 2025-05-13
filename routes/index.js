@@ -46,7 +46,7 @@ function getHashRates(difficulties, properties) {
         0,
       ),
     )
-    .slice(start_idx, end_idx);
+    ?.slice(start_idx, end_idx);
 }
 
 function getBlockTimes(last100Headers, algo, targetTime) {
@@ -95,23 +95,23 @@ export async function getIndexData(from, limit) {
     lastDifficulties,
     blocks,
   ] = await Promise.all([
-    await cache.get(client.getVersion, {}),
-    await cache.get(client.listHeaders, {
+    cache.get(client.getVersion, {}),
+    cache.get(client.listHeaders, {
       from_height: 0,
       num_headers: 101,
     }),
     // Get one more header than requested so we can work out the difference in MMR_size
-    await cache.get(client.listHeaders, {
+    cache.get(client.listHeaders, {
       from_height: from,
       num_headers: limit + 1,
     }),
-    await cache.get(client.getMempoolTransactions, {}),
-    await cache.get(client.getNetworkDifficulty, { from_tip: 180 }),
-    await cache.get(client.getBlocks, {
+    cache.get(client.getMempoolTransactions, {}),
+    cache.get(client.getNetworkDifficulty, { from_tip: 180 }),
+    cache.get(client.getBlocks, {
       heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
     }),
   ]);
-  const version = version_result.value.slice(0, 25);
+  const version = version_result.value?.slice(0, 25);
 
   // Algo split
   const last100Headers = listHeaders.map((r) => r.header);
@@ -187,6 +187,7 @@ export async function getIndexData(from, limit) {
       ...miningStats(block),
     }))
     .sort((a, b) => b.height - a.height);
+
   // Append the stats to the headers array
   for (const header of headers) {
     const stat = stats.find((s) => s.height === header.height);
@@ -196,7 +197,7 @@ export async function getIndexData(from, limit) {
       header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
       header.numInputs = stat.numInputs;
     } else {
-      let block = await cache.get(client.getBlocks, {
+      const block = await cache.get(client.getBlocks, {
         heights: [header.height],
       });
       const stat = miningStats(block);

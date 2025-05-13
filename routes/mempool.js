@@ -41,6 +41,22 @@ router.get("/:excessSigs", async function (req, res) {
     }
     return;
   }
+
+  tx.body.outputs.forEach((output) => {
+    if (output.features.range_proof_type === 0) {
+      // BulletProofPlus
+      const proofHex = Buffer.from(output.range_proof.proof_bytes).toString(
+        "hex",
+      );
+      output.range_proof = proofHex;
+    } else {
+      // RevealedValue
+      output.range_proof = "RevealedValue";
+    }
+  });
+
+  // console.log("tx.body.outputs[0]: ", tx.body.outputs[0]);
+
   const json = { tx };
   if (req.query.json !== undefined) {
     res.json(json);

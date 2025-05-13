@@ -46,7 +46,7 @@ function getHashRates(difficulties, properties) {
         0,
       ),
     )
-    .slice(start_idx, end_idx);
+    ?.slice(start_idx, end_idx);
 }
 
 function getBlockTimes(last100Headers, algo, targetTime) {
@@ -85,29 +85,33 @@ function getBlockTimes(last100Headers, algo, targetTime) {
 export async function getIndexData(from, limit) {
   const client = createClient();
 
+  const tipInfo = await client.getTipInfo({});
+  const tipHeight = tipInfo.metadata.best_block_height;
   const [
     version_result,
-    tipInfo,
     listHeaders,
     headersResp,
     mempool,
     lastDifficulties,
+    blocks,
   ] = await Promise.all([
-    client.getVersion({}),
-    client.getTipInfo({}),
-    client.listHeaders({
+    cache.get(client.getVersion, {}),
+    cache.get(client.listHeaders, {
       from_height: 0,
       num_headers: 101,
     }),
     // Get one more header than requested so we can work out the difference in MMR_size
-    client.listHeaders({
+    cache.get(client.listHeaders, {
       from_height: from,
       num_headers: limit + 1,
     }),
-    client.getMempoolTransactions({}),
-    client.getNetworkDifficulty({ from_tip: 180 }),
+    cache.get(client.getMempoolTransactions, {}),
+    cache.get(client.getNetworkDifficulty, { from_tip: 180 }),
+    cache.get(client.getBlocks, {
+      heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
+    }),
   ]);
-  const version = version_result.value.slice(0, 25);
+  const version = version_result.value?.slice(0, 25);
 
   // Algo split
   const last100Headers = listHeaders.map((r) => r.header);
@@ -173,9 +177,39 @@ export async function getIndexData(from, limit) {
     "sha3x_estimated_hash_rate",
   ]);
 
+  // Get mining stats
+  if (!blocks || blocks.length === 0) {
+    return null;
+  }
+  const stats = blocks
+    .map((block) => ({
+      height: block.block.header.height,
+      ...miningStats(block),
+    }))
+    .sort((a, b) => b.height - a.height);
+
+  // Append the stats to the headers array
+  for (const header of headers) {
+    const stat = stats.find((s) => s.height === header.height);
+    if (stat) {
+      header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
+      header.numCoinbases = stat.numCoinbases;
+      header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
+      header.numInputs = stat.numInputs;
+    } else {
+      const block = await cache.get(client.getBlocks, {
+        heights: [header.height],
+      });
+      const stat = miningStats(block);
+      header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
+      header.numCoinbases = stat.numCoinbases;
+      header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
+      header.numInputs = stat.numInputs;
+    }
+  }
+
   // list of active validator nodes
-  const tipHeight = tipInfo.metadata.best_block_height;
-  const activeVns = await client.getActiveValidatorNodes({
+  const activeVns = await cache.get(client.getActiveValidatorNodes, {
     height: tipHeight,
   });
 
@@ -189,15 +223,10 @@ export async function getIndexData(from, limit) {
     mempool[i].transaction.body.total_fees = sum;
   }
 
-  const request = { heights: [tipHeight] };
-  const block = await cache.get(client.getBlocks, request);
+  const block = await cache.get(client.getBlocks, { heights: [tipHeight] });
   if (!block || block.length === 0) {
     return null;
   }
-
-  // Calculate statistics
-  const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
-    miningStats(block);
 
   return {
     title: "Blocks",
@@ -223,11 +252,8 @@ export async function getIndexData(from, limit) {
     averageMoneroMiners: moneroHashRates[moneroHashRates.length - 1] / 2700, // Average apple m1 hashrate
     moneroHashRates,
     activeVns,
-    numInputs,
-    totalCoinbaseXtm,
-    numCoinbases,
-    numOutputsNoCoinbases,
     lastUpdate: new Date(),
+    stats,
   };
 }
 

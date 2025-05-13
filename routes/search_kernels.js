@@ -20,17 +20,16 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-const cacheSettings = require("../cacheSettings");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+import cacheSettings from "../cacheSettings.js";
+const router = express.Router();
 
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
-  let client = createClient();
-  let nonces = (req.query.nonces || "").split(",");
-  let signatures = (req.query.signatures || "").split(",");
+  const client = createClient();
+  const nonces = (req.query.nonces || "").split(",");
+  const signatures = (req.query.signatures || "").split(",");
 
   if (
     nonces.length === 0 ||
@@ -40,7 +39,7 @@ router.get("/", async function (req, res) {
     res.status(404);
     return;
   }
-  let params = [];
+  const params = [];
   for (let i = 0; i < nonces.length; i++) {
     params.push({
       public_nonce: Buffer.from(nonces[i], "hex"),
@@ -59,7 +58,7 @@ router.get("/", async function (req, res) {
     }
     return;
   }
-  let json = {
+  const json = {
     items: result,
   };
   if (req.query.json !== undefined) {
@@ -69,4 +68,4 @@ router.get("/", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

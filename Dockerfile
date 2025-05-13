@@ -11,7 +11,7 @@ ARG BASE_NODE_PROTO=../proto/base_node.proto
 RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 WORKDIR /usr/src/app
 COPY --chown=node:node . .
 #RUN npm ci --only=production --omit=dev ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/
@@ -19,7 +19,7 @@ COPY --chown=node:node . .
 RUN npm install ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/
 RUN npm install
 # Hack - bring proto files in
-RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto node_modules/\@tariproject/base-node-grpc-client/proto
+RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto applications/minotari_app_grpc/proto
 #RUN npm install debug
 
 ENV BASE_NODE_PROTO=${BASE_NODE_PROTO}

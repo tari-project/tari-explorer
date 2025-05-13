@@ -1,4 +1,4 @@
-var cacheSettings = {
+const cacheSettings = {
   index:
     process.env.TARI_EXPLORER_INDEX_CACHE_SETTINGS ||
     "public, max-age=120, s-maxage=60, stale-while-revalidate=30",
@@ -15,4 +15,4 @@ var cacheSettings = {
     process.env.TARI_EXPLORER_OLD_BLOCK_DELTA_TIP || 30 * 24 * 7,
 };
 
-module.exports = cacheSettings;
+export default cacheSettings;

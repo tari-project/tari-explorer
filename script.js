@@ -75,7 +75,7 @@ function hex(data) {
 function script(data) {
   data = [...data];
   let i = 0;
-  let s = [];
+  const s = [];
   let m, n, msg, public_keys;
   while (i < data.length) {
     switch (data[i]) {
@@ -211,7 +211,7 @@ function script(data) {
         msg = data.slice(i, i + 32);
         i += 32;
         s.push(
-          `CHECK_MULTI_SIG_VERIFY ${m} ${n} [${public_keys.join(",")}] ${msg}`
+          `CHECK_MULTI_SIG_VERIFY ${m} ${n} [${public_keys.join(",")}] ${msg}`,
         );
         break;
       case OP_HASH_BLAKE256:
@@ -253,4 +253,4 @@ function script(data) {
   return s.join("<br/>");
 }
 
-module.exports = [hex, script];
+export { hex, script };

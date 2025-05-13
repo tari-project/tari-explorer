@@ -20,26 +20,14 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+const router = express.Router();
 
 router.get("/", async function (req, res) {
-  let client = createClient();
-  let result;
-  try {
-    result = await client.getVersion({});
-  } catch (error) {
-    res.status(404);
-    if (req.query.json !== undefined) {
-      res.json({ error: error });
-    } else {
-      res.render("error", { error: error });
-    }
-    return;
-  }
-  let json = { version: result.value };
+  const client = createClient();
+  const result = await client.getVersion({});
+  const json = { version: result.value };
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
@@ -47,4 +35,4 @@ router.get("/", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

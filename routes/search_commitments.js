@@ -20,16 +20,15 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var { createClient } = require("../baseNodeClient");
-
-var express = require("express");
-const cacheSettings = require("../cacheSettings");
-var router = express.Router();
+import { createClient } from "../baseNodeClient.js";
+import express from "express";
+import cacheSettings from "../cacheSettings.js";
+const router = express.Router();
 
 router.get("/", async function (req, res) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
-  let client = createClient();
-  let commitments = (
+  const client = createClient();
+  const commitments = (
     req.query.comm ||
     req.query.commitment ||
     req.query.c ||
@@ -40,7 +39,7 @@ router.get("/", async function (req, res) {
     res.status(404);
     return;
   }
-  let hexCommitments = [];
+  const hexCommitments = [];
   for (let i = 0; i < commitments.length; i++) {
     hexCommitments.push(Buffer.from(commitments[i], "hex"));
   }
@@ -56,7 +55,7 @@ router.get("/", async function (req, res) {
     }
     return;
   }
-  let json = {
+  const json = {
     items: result,
   };
   if (req.query.json !== undefined) {
@@ -66,4 +65,4 @@ router.get("/", async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

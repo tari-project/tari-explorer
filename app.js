@@ -1,38 +1,35 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-const createError = require("http-errors");
-const express = require("express");
-const path = require("path");
-const cookieParser = require("cookie-parser");
-const logger = require("morgan");
-const asciichart = require("asciichart");
-const cors = require("cors");
+import express from "express";
+import path from "path";
+import pinoHttp from "pino-http";
+import asciichart from "asciichart";
+import cors from "cors";
+import favicon from "serve-favicon";
+import hbs from "hbs";
 
-var favicon = require("serve-favicon");
-var indexRouter = require("./routes/index");
-var blockDataRouter = require("./routes/block_data");
-var blocksRouter = require("./routes/blocks");
-var exportRouter = require("./routes/export");
-var mempoolRouter = require("./routes/mempool");
-var minersRouter = require("./routes/miners");
-var searchCommitmentsRouter = require("./routes/search_commitments");
-var searchKernelsRouter = require("./routes/search_kernels");
-var healthz = require("./routes/healthz");
+// Route imports
+import indexRouter from "./routes/index.js";
+import blockDataRouter from "./routes/block_data.js";
+import blocksRouter from "./routes/blocks.js";
+import mempoolRouter from "./routes/mempool.js";
+import minersRouter from "./routes/miners.js";
+import searchCommitmentsRouter from "./routes/search_commitments.js";
+import searchKernelsRouter from "./routes/search_kernels.js";
+import healthz from "./routes/healthz.js";
+import assetsRouter from "./routes/assets.js";
 
-var assetsRouter = require("./routes/assets");
+import BackgrounUpdater from "./utils/updater.js";
+import { hex, script } from "./script.js";
 
-var hbs = require("hbs");
-const [hex, script] = require("./script");
+// Register HBS helpers
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
 
-hbs.registerHelper("json", function (obj) {
-  return Buffer.from(JSON.stringify(obj)).toString("base64");
-});
 
 hbs.registerHelper("timestamp", function (timestamp) {
-  var dateObj = new Date(timestamp * 1000);
+  const dateObj = new Date(timestamp * 1000);
   const day = dateObj.getUTCDate();
   const month = dateObj.getUTCMonth() + 1;
   const year = dateObj.getUTCFullYear();
@@ -56,10 +53,10 @@ hbs.registerHelper("timestamp", function (timestamp) {
 });
 
 hbs.registerHelper("percentbar", function (a, b) {
-  var percent = (a / (a + b)) * 100;
-  var barWidth = percent / 10;
-  var bar = "**********".slice(0, barWidth);
-  var space = "...........".slice(0, 10 - barWidth);
+  const percent = (a / (a + b)) * 100;
+  const barWidth = percent / 10;
+  const bar = "**********".slice(0, barWidth);
+  const space = "...........".slice(0, 10 - barWidth);
   return bar + space + " " + parseInt(percent) + "% ";
 });
 
@@ -73,38 +70,40 @@ hbs.registerHelper("chart", function (data, height) {
   }
 });
 
-hbs.registerHelper("json", function (obj) {
-  return JSON.stringify(obj);
-});
 hbs.registerHelper("add", function (a, b) {
   return a + b;
 });
 
-hbs.registerPartials(path.join(__dirname, "partials"));
+hbs.registerPartials(path.join(import.meta.dirname, "partials"));
 
-var app = express();
+const app = express();
+
+const updater = new BackgrounUpdater();
+updater.start();
 
 // view engine setup
-app.set("views", path.join(__dirname, "views"));
+app.set("views", path.join(import.meta.dirname, "views"));
 app.set("view engine", "hbs");
 
-app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
-app.use(logger("dev"));
+app.use(favicon(path.join(import.meta.dirname, "public", "favicon.ico")));
+app.use(pinoHttp());
 app.use(express.json());
 app.use(
   express.urlencoded({
     extended: false,
-  })
+  }),
 );
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(import.meta.dirname, "public")));
 app.use(cors());
+app.use((req, res, next) => {
+  res.locals.backgroundUpdater = updater;
+  next();
+});
 
 app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);
 app.use("/block_data", blockDataRouter);
 app.use("/assets", assetsRouter);
-// app.use("/export", exportRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
@@ -112,19 +111,22 @@ app.use("/search_kernels", searchKernelsRouter);
 app.use("/healthz", healthz);
 
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
+app.use((req, res) => {
+  res.status(404).send("Not found");
 });
 
 // error handler
-app.use(function (err, req, res) {
+app.use(function (err, req, res, next) {
+  if (res.headersSent) {
+    return next(err);
+  }
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
   // render the error page
-  res.status(err.status || 500);
-  res.render("error");
+  res.err = err;
+  res.status(err.status || 500).render("error");
 });
 
-module.exports = app;
+export default app;

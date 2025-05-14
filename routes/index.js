@@ -97,10 +97,12 @@ export async function getIndexData(from, limit) {
   ] = await Promise.all([
     cache.get(client.getVersion, {}),
     cache.get(client.listHeaders, {
+      tip_height: tipHeight,
       from_height: 0,
       num_headers: 101,
     }),
     // Get one more header than requested so we can work out the difference in MMR_size
+    // TODO: Add cache headers properly here
     cache.get(client.listHeaders, {
       from_height: from,
       num_headers: limit + 1,

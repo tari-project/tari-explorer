@@ -104,6 +104,7 @@ export async function getIndexData(from, limit) {
     // Get one more header than requested so we can work out the difference in MMR_size
     // TODO: Add cache headers properly here
     cache.get(client.listHeaders, {
+      tip_height: tipHeight,
       from_height: from,
       num_headers: limit + 1,
     }),

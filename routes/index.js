@@ -39,7 +39,7 @@ function getHashRates(difficulties, properties) {
   const end_idx = difficulties.length - 1;
   const start_idx = end_idx - 720;
 
-  return difficulties
+  const hashRates = difficulties
     .map((d) =>
       properties.reduce(
         (sum, property) => sum + (parseInt(d[property]) || 0),
@@ -47,6 +47,15 @@ function getHashRates(difficulties, properties) {
       ),
     )
     ?.slice(start_idx, end_idx);
+
+  // Assign zero values to the next non-zero value
+  for (let i = hashRates.length - 2; i >= 0; i--) {
+    if (hashRates[i] === 0) {
+      hashRates[i] = hashRates[i + 1];
+    }
+  }
+
+  return hashRates;
 }
 
 function getBlockTimes(last100Headers, algo, targetTime) {
@@ -118,11 +127,13 @@ export async function getIndexData(from, limit) {
 
   // Algo split
   const last100Headers = listHeaders.map((r) => r.header);
-  const monero = [0, 0, 0, 0];
-  const sha = [0, 0, 0, 0];
+  const moneroRx = [0, 0, 0, 0];
+  const sha3X = [0, 0, 0, 0];
+  const tariRx = [0, 0, 0, 0];
 
   for (let i = 0; i < last100Headers.length - 1; i++) {
-    const arr = last100Headers[i].pow.pow_algo === "0" ? monero : sha;
+    const algo = last100Headers[i].pow.pow_algo;
+    const arr = algo === "0" ? sha3X : algo === "1" ? moneroRx : tariRx;
     if (i < 10) {
       arr[0] += 1;
     }
@@ -135,19 +146,23 @@ export async function getIndexData(from, limit) {
     arr[3] += 1;
   }
   const algoSplit = {
-    monero10: monero[0],
-    monero20: monero[1],
-    monero50: monero[2],
-    monero100: monero[3],
-    sha10: sha[0],
-    sha20: sha[1],
-    sha50: sha[2],
-    sha100: sha[3],
+    moneroRx10: moneroRx[0],
+    moneroRx20: moneroRx[1],
+    moneroRx50: moneroRx[2],
+    moneroRx100: moneroRx[3],
+    sha3X10: sha3X[0],
+    sha3X20: sha3X[1],
+    sha3X50: sha3X[2],
+    sha3X100: sha3X[3],
+    tariRx10: tariRx[0],
+    tariRx20: tariRx[1],
+    tariRx50: tariRx[2],
+    tariRx100: tariRx[3],
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
   const headers = headersResp.map((r) => r.header);
-  const pows = { 0: "Monero", 1: "SHA-3" };
+  const pows = { 0: "MoneroRx", 1: "SHA-3X", 2: "TariRx" };
   for (var i = headers.length - 2; i >= 0; i--) {
     headers[i].kernels =
       headers[i].kernel_mmr_size - headers[i + 1].kernel_mmr_size;
@@ -171,13 +186,14 @@ export async function getIndexData(from, limit) {
   const totalHashRates = getHashRates(lastDifficulties, [
     "estimated_hash_rate",
   ]);
-  const moneroHashRates = getHashRates(lastDifficulties, [
-    "monero_estimated_hash_rate",
-    "randomx_estimated_hash_rate",
-  ]);
-  const shaHashRates = getHashRates(lastDifficulties, [
-    "sha3_estimated_hash_rate",
+  const sha3xHashRates = getHashRates(lastDifficulties, [
     "sha3x_estimated_hash_rate",
+  ]);
+  const moneroRandomxHashRates = getHashRates(lastDifficulties, [
+    "monero_randomx_estimated_hash_rate",
+  ]);
+  const tariRandomxHashRates = getHashRates(lastDifficulties, [
+    "tari_randomx_estimated_hash_rate",
   ]);
 
   // Get mining stats
@@ -244,16 +260,33 @@ export async function getIndexData(from, limit) {
     from,
     algoSplit,
     blockTimes: getBlockTimes(last100Headers, null, 2),
-    moneroTimes: getBlockTimes(last100Headers, "0", 4),
-    shaTimes: getBlockTimes(last100Headers, "1", 4),
+    moneroRandomxTimes: getBlockTimes(last100Headers, "0", 6),
+    sha3xTimes: getBlockTimes(last100Headers, "1", 6),
+    tariRandomxTimes: getBlockTimes(last100Headers, "2", 6),
     currentHashRate: totalHashRates[totalHashRates.length - 1],
     totalHashRates,
-    currentShaHashRate: shaHashRates[shaHashRates.length - 1],
-    shaHashRates,
-    averageShaMiners: shaHashRates[shaHashRates.length - 1] / 200_000_000, // Hashrate of an NVidia 1070
-    currentMoneroHashRate: moneroHashRates[moneroHashRates.length - 1],
-    averageMoneroMiners: moneroHashRates[moneroHashRates.length - 1] / 2700, // Average apple m1 hashrate
-    moneroHashRates,
+    currentSha3xHashRate:
+      sha3xHashRates[sha3xHashRates.length - 1].toLocaleString("en-US"),
+    sha3xHashRates: sha3xHashRates,
+    averageSha3xMiners: Math.floor(
+      sha3xHashRates[sha3xHashRates.length - 1] / 200_000_000,
+    ).toLocaleString("en-US"), // Hashrate of an NVidia 1070
+    currentMoneroRandomxHashRate:
+      moneroRandomxHashRates[moneroRandomxHashRates.length - 1].toLocaleString(
+        "en-US",
+      ),
+    averageMoneroRandomxMiners: Math.floor(
+      moneroRandomxHashRates[moneroRandomxHashRates.length - 1] / 2700,
+    ).toLocaleString("en-US"), // Average apple m1 hashrate
+    moneroRandomxHashRates: moneroRandomxHashRates,
+    currentTariRandomxHashRate:
+      tariRandomxHashRates[tariRandomxHashRates.length - 1].toLocaleString(
+        "en-US",
+      ),
+    averageTariRandomxMiners: Math.floor(
+      tariRandomxHashRates[tariRandomxHashRates.length - 1] / 2700,
+    ).toLocaleString("en-US"), // Average apple m1 hashrate
+    tariRandomxHashRates: tariRandomxHashRates,
     activeVns,
     lastUpdate: new Date(),
     stats,

@@ -38,25 +38,36 @@
   <tbody>
     <tr>
       <th>Monero (RandomX)</th>
-      <td style="text-align: center;">{{this.algoSplit.monero10}}
-        {{percentbar this.algoSplit.monero10 this.algoSplit.sha10}}</td>
-      <td style="text-align: center;">{{this.algoSplit.monero20}}
-        {{percentbar this.algoSplit.monero20 this.algoSplit.sha20}}</td>
-      <td style="text-align: center;">{{this.algoSplit.monero50}}
-        {{percentbar this.algoSplit.monero50 this.algoSplit.sha50}}</td>
-      <td style="text-align: center;">{{this.algoSplit.monero100}}
-        {{percentbar this.algoSplit.monero100 this.algoSplit.sha100}}</td>
+      <td style="text-align: center;">{{this.algoSplit.moneroRx10}}
+        {{percentbar this.algoSplit.moneroRx10 this.algoSplit.sha3X10 this.algoSplit.tariRx10}}</td>
+      <td style="text-align: center;">{{this.algoSplit.moneroRx20}}
+        {{percentbar this.algoSplit.moneroRx20 this.algoSplit.sha3X20 this.algoSplit.tariRx20}}</td>
+      <td style="text-align: center;">{{this.algoSplit.moneroRx50}}
+        {{percentbar this.algoSplit.moneroRx50 this.algoSplit.sha3X50 this.algoSplit.tariRx50}}</td>
+      <td style="text-align: center;">{{this.algoSplit.moneroRx100}}
+        {{percentbar this.algoSplit.moneroRx100 this.algoSplit.sha3X100 this.algoSplit.tariRx100}}</td>
     </tr>
     <tr>
-      <th>SHA-3</th>
-      <td style="text-align: center;">{{this.algoSplit.sha10}}
-        {{percentbar this.algoSplit.sha10 this.algoSplit.monero10}}</td>
-      <td style="text-align: center;">{{this.algoSplit.sha20}}
-        {{percentbar this.algoSplit.sha20 this.algoSplit.monero20}}</td>
-      <td style="text-align: center;">{{this.algoSplit.sha50}}
-        {{percentbar this.algoSplit.sha50 this.algoSplit.monero50}}</td>
-      <td style="text-align: center;">{{this.algoSplit.sha100}}
-        {{percentbar this.algoSplit.sha100 this.algoSplit.monero100}}</td>
+      <th>SHA-3X</th>
+      <td style="text-align: center;">{{this.algoSplit.sha3X10}}
+        {{percentbar this.algoSplit.sha3X10 this.algoSplit.moneroRx10 this.algoSplit.tariRx10}}</td>
+      <td style="text-align: center;">{{this.algoSplit.sha3X20}}
+        {{percentbar this.algoSplit.sha3X20 this.algoSplit.moneroRx20 this.algoSplit.tariRx20}}</td>
+      <td style="text-align: center;">{{this.algoSplit.sha3X50}}
+        {{percentbar this.algoSplit.sha3X50 this.algoSplit.moneroRx50 this.algoSplit.tariRx50}}</td>
+      <td style="text-align: center;">{{this.algoSplit.sha3X100}}
+        {{percentbar this.algoSplit.sha3X100 this.algoSplit.moneroRx100 this.algoSplit.tariRx100}}</td>
+    </tr>
+    <tr>
+      <th>Tari (RandomX)</th>
+      <td style="text-align: center;">{{this.algoSplit.tariRx10}}
+        {{percentbar this.algoSplit.tariRx10 this.algoSplit.moneroRx10 this.algoSplit.sha3X10}}</td>
+      <td style="text-align: center;">{{this.algoSplit.tariRx20}}
+        {{percentbar this.algoSplit.tariRx20 this.algoSplit.moneroRx20 this.algoSplit.sha3X20}}</td>
+      <td style="text-align: center;">{{this.algoSplit.tariRx50}}
+        {{percentbar this.algoSplit.tariRx50 this.algoSplit.moneroRx50 this.algoSplit.sha3X50}}</td>
+      <td style="text-align: center;">{{this.algoSplit.tariRx100}}
+        {{percentbar this.algoSplit.tariRx100 this.algoSplit.moneroRx100 this.algoSplit.sha3X100}}</td>
     </tr>
   </tbody>
 </table>
@@ -76,15 +87,21 @@
   </tr>
   <tr>
     <td>
-      <h3>Monero</h3>
-      Target time: 4 minutes
-      <pre>{{chart this.moneroTimes 15}}
+      <h3>Monero RandomX</h3>
+      Target time: 6 minutes
+      <pre>{{chart this.moneroRandomxTimes 15}}
       </pre>
     </td>
     <td>
-      <h3>SHA3</h3>
-      Target time: 4 minutes
-      <pre>{{chart this.shaTimes 15}}
+      <h3>SHA3X</h3>
+      Target time: 6 minutes
+      <pre>{{chart this.sha3xTimes 15}}
+      </pre>
+    </td>
+    <td>
+      <h3>Tari RandomX</h3>
+      Target time: 6 minutes
+      <pre>{{chart this.tariRandomxTimes 15}}
       </pre>
     </td>
   </tr>
@@ -94,21 +111,31 @@
 <table class="noborder">
   <tr>
     <td>
-      <h3>Monero</h3>
+      <h3>Monero RandomX</h3>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{this.currentMoneroHashRate}}
-      H/s ({{this.averageMoneroMiners}} average miners)
-      <pre>{{chart this.moneroHashRates 15}}
+      {{this.currentMoneroRandomxHashRate}}
+      H/s ({{this.averageMoneroRandomxMiners}} average miners)
+      <pre>{{chart this.moneroRandomxHashRates 15}}
       </pre>
     </td>
   </tr>
   <tr>
     <td>
-      <h3>SHA3</h3>
+      <h3>SHA3X</h3>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{this.currentShaHashRate}}
-      H/s ({{this.averageShaMiners}} average miners)
-      <pre>{{chart this.shaHashRates 15}}
+      {{this.currentSha3xHashRate}}
+      H/s ({{this.averageSha3xMiners}} average miners)
+      <pre>{{chart this.sha3xHashRates 15}}
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>Tari RandomX</h3>
+      Current estimated Hash Rate (180 blocks, 1.5 hours):
+      {{this.currentTariRandomxHashRate}}
+      H/s ({{this.averageTariRandomxMiners}} average miners)
+      <pre>{{chart this.tariRandomxHashRates 15}}
       </pre>
     </td>
   </tr>

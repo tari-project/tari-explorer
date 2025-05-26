@@ -52,11 +52,13 @@ hbs.registerHelper("timestamp", function (timestamp) {
   );
 });
 
-hbs.registerHelper("percentbar", function (a, b) {
-  const percent = (a / (a + b)) * 100;
-  const barWidth = percent / 10;
+hbs.registerHelper("percentbar", function (a, b, c) {
+  const total = a + b + c;
+  if (total === 0) return ".......... 0% ";
+  const percent = (a / total) * 100;
+  const barWidth = Math.round(percent / 10);
   const bar = "**********".slice(0, barWidth);
-  const space = "...........".slice(0, 10 - barWidth);
+  const space = "..........".slice(0, 10 - barWidth);
   return bar + space + " " + parseInt(percent) + "% ";
 });
 

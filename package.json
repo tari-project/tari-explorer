@@ -11,7 +11,7 @@
     "lint-fix": "eslint --fix ."
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.13.3",
+    "@grpc/grpc-js": "^1.13.4",
     "asciichart": "^1.5.25",
     "cors": "^2.8.5",
     "express": "~5.1.0",

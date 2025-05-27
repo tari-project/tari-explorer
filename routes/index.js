@@ -58,37 +58,63 @@ function getHashRates(difficulties, properties) {
   return hashRates;
 }
 
+// function getBlockTimes(last100Headers, algo, targetTime) {
+//   const blocktimes = [];
+//   let i = 0;
+//   if (algo === "0" || algo === "1" || algo === "2") {
+//     while (
+//       i < last100Headers.length &&
+//       last100Headers[i].pow.pow_algo !== algo
+//     ) {
+//       i++;
+//       blocktimes.push(0);
+//     }
+//   }
+//   if (i >= last100Headers.length) {
+//     // This happens if there are no blocks for a specific algorithm in last100headers
+//     return blocktimes;
+//   }
+//   let lastBlockTime = parseInt(last100Headers[i].timestamp);
+//   i++;
+//   while (i < last100Headers.length && blocktimes.length < 60) {
+//     if (!algo || last100Headers[i].pow.pow_algo === algo) {
+//       blocktimes.push(
+//         (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
+//           targetTime,
+//       );
+//       lastBlockTime = parseInt(last100Headers[i].timestamp);
+//     } else {
+//       blocktimes.push(targetTime);
+//     }
+//     i++;
+//   }
+//   return blocktimes;
+// }
+
 function getBlockTimes(last100Headers, algo, targetTime) {
-  const blocktimes = [];
-  let i = 0;
-  if (algo === "0" || algo === "1") {
-    while (
-      i < last100Headers.length &&
-      last100Headers[i].pow.pow_algo !== algo
-    ) {
-      i++;
-      blocktimes.push(0);
-    }
+  // Filter headers for the specific algorithm if provided
+  let filteredHeaders = last100Headers;
+  if (algo) {
+    filteredHeaders = last100Headers.filter(
+      (header) => header.pow.pow_algo === algo,
+    );
   }
-  if (i >= last100Headers.length) {
-    // This happens if there are no blocks for a specific algorithm in last100headers
-    return blocktimes;
+
+  // Calculate block times as the difference between consecutive timestamps
+  const actualBlockTimes = [];
+  const relativeBlockTimes = [];
+  for (let i = 1; i < filteredHeaders.length; i++) {
+    const blockTime = (parseInt(filteredHeaders[i - 1].timestamp) - parseInt(filteredHeaders[i].timestamp)) / 60;
+    actualBlockTimes.push(blockTime);
+    relativeBlockTimes.push(blockTime - targetTime);
   }
-  let lastBlockTime = parseInt(last100Headers[i].timestamp);
-  i++;
-  while (i < last100Headers.length && blocktimes.length < 60) {
-    if (!algo || last100Headers[i].pow.pow_algo === algo) {
-      blocktimes.push(
-        (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
-          targetTime,
-      );
-      lastBlockTime = parseInt(last100Headers[i].timestamp);
-    } else {
-      blocktimes.push(targetTime);
-    }
-    i++;
-  }
-  return blocktimes;
+
+  // Calculate the average block time
+  const average =
+    (actualBlockTimes.reduce((sum, time) => sum + time, 0) /
+    actualBlockTimes.length || 0).toFixed(2);
+
+  return { series: relativeBlockTimes, average };
 }
 
 export async function getIndexData(from, limit) {
@@ -265,27 +291,22 @@ export async function getIndexData(from, limit) {
     tariRandomxTimes: getBlockTimes(last100Headers, "2", 6),
     currentHashRate: totalHashRates[totalHashRates.length - 1],
     totalHashRates,
-    currentSha3xHashRate:
-      sha3xHashRates[sha3xHashRates.length - 1].toLocaleString("en-US"),
+    currentSha3xHashRate: sha3xHashRates[sha3xHashRates.length - 1],
     sha3xHashRates: sha3xHashRates,
     averageSha3xMiners: Math.floor(
       sha3xHashRates[sha3xHashRates.length - 1] / 200_000_000,
-    ).toLocaleString("en-US"), // Hashrate of an NVidia 1070
+    ), // Hashrate of an NVidia 1070
     currentMoneroRandomxHashRate:
-      moneroRandomxHashRates[moneroRandomxHashRates.length - 1].toLocaleString(
-        "en-US",
-      ),
+      moneroRandomxHashRates[moneroRandomxHashRates.length - 1],
     averageMoneroRandomxMiners: Math.floor(
       moneroRandomxHashRates[moneroRandomxHashRates.length - 1] / 2700,
-    ).toLocaleString("en-US"), // Average apple m1 hashrate
+    ), // Average apple m1 hashrate
     moneroRandomxHashRates: moneroRandomxHashRates,
     currentTariRandomxHashRate:
-      tariRandomxHashRates[tariRandomxHashRates.length - 1].toLocaleString(
-        "en-US",
-      ),
+      tariRandomxHashRates[tariRandomxHashRates.length - 1],
     averageTariRandomxMiners: Math.floor(
       tariRandomxHashRates[tariRandomxHashRates.length - 1] / 2700,
-    ).toLocaleString("en-US"), // Average apple m1 hashrate
+    ), // Average apple m1 hashrate
     tariRandomxHashRates: tariRandomxHashRates,
     activeVns,
     lastUpdate: new Date(),

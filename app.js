@@ -27,7 +27,6 @@ import { hex, script } from "./script.js";
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
 
-
 hbs.registerHelper("timestamp", function (timestamp) {
   const dateObj = new Date(timestamp * 1000);
   const day = dateObj.getUTCDate();
@@ -62,9 +61,12 @@ hbs.registerHelper("percentbar", function (a, b, c) {
   return bar + space + " " + parseInt(percent) + "% ";
 });
 
-hbs.registerHelper("chart", function (data, height) {
+hbs.registerHelper("chart", function (data, height, formatThousands) {
   if (data.length > 0) {
-    return asciichart.plot(data, {
+    return asciichart.plot(data, formatThousands ? {
+      height: height,
+      format: (x) => Math.floor(x).toLocaleString("en-US").padStart(15, "  "),
+    } : {
       height: height,
     });
   } else {
@@ -76,6 +78,12 @@ hbs.registerHelper("add", function (a, b) {
   return a + b;
 });
 
+hbs.registerHelper("format_thousands", function (value) {
+  if (value == null) {
+    return value;
+  }
+  return Math.floor(value).toLocaleString("en-US");
+});
 hbs.registerPartials(path.join(import.meta.dirname, "partials"));
 
 const app = express();

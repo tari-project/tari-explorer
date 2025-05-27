@@ -1,4 +1,4 @@
-<h3>Tip</h3>
+<h2>Tip</h2>
 <table>
   <thead>
     <tr>
@@ -19,7 +19,7 @@
 </table>
 <br />
 
-<h3>Proof of work split</h3>
+<h2>Proof of work split</h2>
 <table>
   <thead>
     <tr>
@@ -73,69 +73,67 @@
 </table>
 <br />
 
+<h2>Relative block times (minutes) - last 100 blocks</h2>
 <table class="noborder">
   <tr>
     <td>
-      <h3>Block times (minutes)</h3>
-      Target time: 2 minutes
-      <h3>All</h3>
-      <pre>{{chart this.blockTimes 15}}
-      </pre>
-    </td>
-    <td>
+      <h4>All</h4>
+      Target time: 2 minutes (avg {{this.blockTimes.average}})
+      <pre>{{chart this.blockTimes.series 15 false}}</pre>
     </td>
   </tr>
+</table>
+<br />
+<table class="noborder">
   <tr>
     <td>
-      <h3>Monero RandomX</h3>
-      Target time: 6 minutes
-      <pre>{{chart this.moneroRandomxTimes 15}}
-      </pre>
+      <h4>Monero RandomX</h4>
+      Target time: 6 minutes (avg {{this.moneroRandomxTimes.average}})
+      <pre>{{chart this.moneroRandomxTimes.series 15 false}}</pre>
     </td>
     <td>
-      <h3>SHA3X</h3>
-      Target time: 6 minutes
-      <pre>{{chart this.sha3xTimes 15}}
-      </pre>
+      <h4>SHA3X</h4>
+      Target time: 6 minutes (avg {{this.sha3xTimes.average}})
+      <pre>{{chart this.sha3xTimes.series 15 false}}</pre>
     </td>
     <td>
-      <h3>Tari RandomX</h3>
-      Target time: 6 minutes
-      <pre>{{chart this.tariRandomxTimes 15}}
-      </pre>
+      <h4>Tari RandomX</h4>
+      Target time: 6 minutes (avg {{this.tariRandomxTimes.average}})
+      <pre>{{chart this.tariRandomxTimes.series 15 false}}</pre>
     </td>
   </tr>
 </table>
 <br />
 
+<h2>Estimated Hash rates</h2>
 <table class="noborder">
   <tr>
     <td>
-      <h3>Monero RandomX</h3>
+      <h4>Monero RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{this.currentMoneroRandomxHashRate}}
-      H/s ({{this.averageMoneroRandomxMiners}} average miners)
-      <pre>{{chart this.moneroRandomxHashRates 15}}
+      {{format_thousands this.currentMoneroRandomxHashRate}}
+      H/s ({{format_thousands this.averageMoneroRandomxMiners}} average miners)
+      <pre>{{chart this.moneroRandomxHashRates 15 true}}
       </pre>
     </td>
   </tr>
   <tr>
     <td>
-      <h3>SHA3X</h3>
+      <h4>SHA3X</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{this.currentSha3xHashRate}}
-      H/s ({{this.averageSha3xMiners}} average miners)
-      <pre>{{chart this.sha3xHashRates 15}}
+      {{format_thousands this.currentSha3xHashRate}}
+      H/s ({{format_thousands this.averageSha3xMiners}} average miners)
+      <pre>{{chart this.sha3xHashRates 15 true}}
       </pre>
     </td>
   </tr>
   <tr>
     <td>
-      <h3>Tari RandomX</h3>
+      <h4>Tari RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{this.currentTariRandomxHashRate}}
-      H/s ({{this.averageTariRandomxMiners}} average miners)
-      <pre>{{chart this.tariRandomxHashRates 15}}
+      {{format_thousands this.currentTariRandomxHashRate}}
+      H/s ({{format_thousands this.averageTariRandomxMiners}} average miners)
+      <pre>{{chart this.tariRandomxHashRates 15 true}}
       </pre>
     </td>
   </tr>

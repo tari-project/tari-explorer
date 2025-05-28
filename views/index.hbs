@@ -111,9 +111,10 @@
     <td>
       <h4>Monero RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{format_thousands this.currentMoneroRandomxHashRate}}
-      H/s ({{format_thousands this.averageMoneroRandomxMiners}} average miners)
-      <pre>{{chart this.moneroRandomxHashRates 15 true}}
+      {{unitFormat this.currentMoneroRandomxHashRate "giga" 3}}
+      GH/s ({{format_thousands this.averageMoneroRandomxMiners}}
+      average miners)
+      <pre>{{chart this.moneroRandomxHashRates 15 false "giga"}}
       </pre>
     </td>
   </tr>
@@ -121,9 +122,10 @@
     <td>
       <h4>SHA3X</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{format_thousands this.currentSha3xHashRate}}
-      H/s ({{format_thousands this.averageSha3xMiners}} average miners)
-      <pre>{{chart this.sha3xHashRates 15 true}}
+      {{unitFormat this.currentSha3xHashRate "tera" 3}}
+      TH/s ({{format_thousands this.averageSha3xMiners}}
+      average miners)
+      <pre>{{chart this.sha3xHashRates 15 false "tera"}}
       </pre>
     </td>
   </tr>
@@ -131,9 +133,10 @@
     <td>
       <h4>Tari RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{format_thousands this.currentTariRandomxHashRate}}
-      H/s ({{format_thousands this.averageTariRandomxMiners}} average miners)
-      <pre>{{chart this.tariRandomxHashRates 15 true}}
+      {{unitFormat this.currentTariRandomxHashRate "giga" 3}}
+      GH/s ({{format_thousands this.averageTariRandomxMiners}}
+      average miners)
+      <pre>{{chart this.tariRandomxHashRates 15 false "giga"}}
       </pre>
     </td>
   </tr>
@@ -157,17 +160,17 @@
   </thead>
   <tbody>
     {{#each this.headers}}
-    <tr>
-      <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
-      <td style="text-align: center;">{{timestamp this.timestamp}}</td>
-      <td style="text-align: center;">{{this.powText}}</td>
-      <td style="text-align: center;">{{hex this.hash}}</td>
-      <td style="text-align: center;">{{totalCoinbaseXtm}}</td>
-      <td style="text-align: center;">{{kernels}}</td>
-      <td style="text-align: center;">{{numCoinbases}}</td>
-      <td style="text-align: center;">{{numOutputsNoCoinbases}}</td>
-      <td style="text-align: center;">{{numInputs}}</td>
-    </tr>
+      <tr>
+        <td><a href="blocks/{{this.height}}">{{this.height}}</a></td>
+        <td style="text-align: center;">{{timestamp this.timestamp}}</td>
+        <td style="text-align: center;">{{this.powText}}</td>
+        <td style="text-align: center;">{{hex this.hash}}</td>
+        <td style="text-align: center;">{{totalCoinbaseXtm}}</td>
+        <td style="text-align: center;">{{kernels}}</td>
+        <td style="text-align: center;">{{numCoinbases}}</td>
+        <td style="text-align: center;">{{numOutputsNoCoinbases}}</td>
+        <td style="text-align: center;">{{numInputs}}</td>
+      </tr>
     {{/each}}
   </tbody>
 </table>
@@ -199,17 +202,17 @@
   </thead>
   <tbody>
     {{#each mempool}}
-    {{#with this.transaction.body}}
-    <tr>
-      <td><a href="/mempool/{{hex this.signature}}">{{hex
-          this.signature
-          }}</a></td>
-      <td style="text-align: center;">{{this.total_fees}}</td>
-      <td style="text-align: center;">{{this.outputs.length}}</td>
-      <td style="text-align: center;">{{this.kernels.length}}</td>
-      <td style="text-align: center;">{{this.inputs.length}}</td>
-    </tr>
-    {{/with}}
+      {{#with this.transaction.body}}
+        <tr>
+          <td><a href="/mempool/{{hex this.signature}}">{{hex
+                this.signature
+              }}</a></td>
+          <td style="text-align: center;">{{this.total_fees}}</td>
+          <td style="text-align: center;">{{this.outputs.length}}</td>
+          <td style="text-align: center;">{{this.kernels.length}}</td>
+          <td style="text-align: center;">{{this.inputs.length}}</td>
+        </tr>
+      {{/with}}
     {{/each}}
   </tbody>
 </table>
@@ -225,10 +228,10 @@
   </thead>
   <tbody>
     {{#each this.activeVns}}
-    <tr>
-      <td>{{hex this.public_key}}</td>
-      <td>{{hex this.shard_key}}</td>
-    </tr>
+      <tr>
+        <td>{{hex this.public_key}}</td>
+        <td>{{hex this.shard_key}}</td>
+      </tr>
     {{/each}}
   </tbody>
 </table>

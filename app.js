@@ -61,18 +61,104 @@ hbs.registerHelper("percentbar", function (a, b, c) {
   return bar + space + " " + parseInt(percent) + "% ";
 });
 
-hbs.registerHelper("chart", function (data, height, formatThousands) {
+const transformNumberToFormat = (value, unit, toFixedDecimal) => {
+  if (value == null) {
+    return value;
+  }
+  let formatting = (val) => val.toLocaleString("en-US");
+
+  if (toFixedDecimal && typeof toFixedDecimal === "number") {
+    formatting = (val) => val.toFixed(toFixedDecimal).toLocaleString("en-US");
+  }
+
+  return formatting(transformValueToUnit(value, unit, toFixedDecimal));
+};
+
+const transformValueToUnit = (value, unit, toFixedDecimal) => {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  let transformLength = (val) => val;
+
+  if (toFixedDecimal && !isNaN(toFixedDecimal)) {
+    const toDecimalPoint = (val) => {
+      const factor = Math.pow(10, toFixedDecimal);
+      return Math.round(val * factor) / factor;
+    };
+    transformLength = toDecimalPoint;
+  }
+
+  switch (unit) {
+    case "kilo":
+      return transformLength(value / 1000);
+    case "mega":
+      return transformLength(value / 1000000);
+    case "giga":
+      return transformLength(value / 1000000000);
+    case "tera":
+      return transformLength(value / 1000000000000);
+    default:
+      return transformLength(value);
+  }
+};
+
+const getPrefixOfUnit = (unit) => {
+  switch (unit) {
+    case "kilo":
+      return "K";
+    case "mega":
+      return "M";
+    case "giga":
+      return "G";
+    case "tera":
+      return "T";
+    default:
+      return "";
+  }
+};
+
+hbs.registerHelper("chart", function (data, height, formatThousands, unitStr) {
   if (data.length > 0) {
-    return asciichart.plot(data, formatThousands ? {
-      height: height,
-      format: (x) => Math.floor(x).toLocaleString("en-US").padStart(15, "  "),
-    } : {
-      height: height,
-    });
+    let dataTransformed = data;
+    const formatThousandsBool = formatThousands
+      ? Boolean(formatThousands) === true
+      : false;
+
+    const unitStrBool =
+      typeof unitStr === "string" ? Boolean(unitStr) === true : false;
+
+    if (unitStr) {
+      dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 3));
+    }
+
+    return asciichart.plot(
+      dataTransformed,
+      formatThousandsBool
+        ? {
+            height: height,
+            format: (x) => {
+              return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
+            },
+          }
+        : {
+            height: height,
+            format: unitStrBool
+              ? (x) => {
+                  const valueStr =
+                    x.toFixed(2).toLocaleString("en-US") +
+                    ` ${getPrefixOfUnit(unitStr)}H/s`;
+                  return valueStr.padStart(12, "  ");
+                }
+              : undefined,
+          },
+    );
   } else {
     return "**No data**";
   }
 });
+
+hbs.registerHelper("unitFormat", transformNumberToFormat);
 
 hbs.registerHelper("add", function (a, b) {
   return a + b;

@@ -130,22 +130,21 @@ export async function getIndexData(from, limit) {
     lastDifficulties,
     blocks,
   ] = await Promise.all([
-    cache.get(client.getVersion, {}),
-    cache.get(client.listHeaders, {
+    client.getVersion({}),
+    client.listHeaders({
       tip_height: tipHeight,
       from_height: 0,
       num_headers: 101,
     }),
     // Get one more header than requested so we can work out the difference in MMR_size
-    // TODO: Add cache headers properly here
-    cache.get(client.listHeaders, {
+    client.listHeaders({
       tip_height: tipHeight,
       from_height: from,
       num_headers: limit + 1,
     }),
-    cache.get(client.getMempoolTransactions, {}),
-    cache.get(client.getNetworkDifficulty, { from_tip: 180 }),
-    cache.get(client.getBlocks, {
+    client.getMempoolTransactions({}),
+    client.getNetworkDifficulty({ from_tip: 180 }),
+    client.getBlocks({
       heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
     }),
   ]);

@@ -3,7 +3,7 @@
 
 import express from "express";
 import path from "path";
-import pinoHttp from "pino-http";
+import { pinoHttp } from "pino-http";
 import asciichart from "asciichart";
 import cors from "cors";
 import favicon from "serve-favicon";
@@ -73,7 +73,7 @@ const transformNumberToFormat = (
 
   if (toFixedDecimal && typeof toFixedDecimal === "number") {
     formatting = (val: number) =>
-      val.toFixed(toFixedDecimal).toLocaleString("en-US");
+      val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
   }
 
   return formatting(transformValueToUnit(value, unit, toFixedDecimal));
@@ -162,7 +162,7 @@ hbs.registerHelper(
               format: unitStrBool
                 ? (x: number) => {
                     const valueStr =
-                      x.toFixed(2).toLocaleString("en-US") +
+                      x.toFixed(2).toLocaleLowerCase("en-US") +
                       ` ${getPrefixOfUnit(unitStr)}H/s`;
                     return valueStr.padStart(12, "  ");
                   }

@@ -1,28 +1,47 @@
-// Copyright 2022 The Tari Project
-// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2021. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { createClient } from "../baseNodeClient.js";
 import { miningStats } from "../utils/stats.js";
-import express from "express";
+import express, { Request, Response } from "express";
 import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
 const router = express.Router();
 
 /* GET home page. */
-router.get("/", async function (req, res) {
+router.get("/", async function (req: Request, res: Response) {
   res.setHeader("Cache-Control", cacheSettings.index);
-  const from = parseInt(req.query.from || 0);
-  let limit = parseInt(req.query.limit || "20");
+  const from = parseInt((req.query.from as string | undefined) || "0");
+  let limit = parseInt((req.query.limit as string | undefined) || "20");
   if (limit > 100) {
     limit = 100;
   }
 
-  let json = null;
+  let json: Record<string, unknown> | undefined;
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
     json = res.locals.backgroundUpdater.getData().indexData;
   } else {
-    json = await getIndexData(from, limit);
+    json = (await getIndexData(from, limit)) ?? undefined;
   }
   if (json === null) {
     res.status(404).send("Block not found");
@@ -35,7 +54,7 @@ router.get("/", async function (req, res) {
   }
 });
 
-function getHashRates(difficulties, properties) {
+function getHashRates(difficulties: any[], properties: string[]): number[] {
   const end_idx = difficulties.length - 1;
   const start_idx = end_idx - 720;
 
@@ -58,40 +77,11 @@ function getHashRates(difficulties, properties) {
   return hashRates;
 }
 
-// function getBlockTimes(last100Headers, algo, targetTime) {
-//   const blocktimes = [];
-//   let i = 0;
-//   if (algo === "0" || algo === "1" || algo === "2") {
-//     while (
-//       i < last100Headers.length &&
-//       last100Headers[i].pow.pow_algo !== algo
-//     ) {
-//       i++;
-//       blocktimes.push(0);
-//     }
-//   }
-//   if (i >= last100Headers.length) {
-//     // This happens if there are no blocks for a specific algorithm in last100headers
-//     return blocktimes;
-//   }
-//   let lastBlockTime = parseInt(last100Headers[i].timestamp);
-//   i++;
-//   while (i < last100Headers.length && blocktimes.length < 60) {
-//     if (!algo || last100Headers[i].pow.pow_algo === algo) {
-//       blocktimes.push(
-//         (lastBlockTime - parseInt(last100Headers[i].timestamp)) / 60 -
-//           targetTime,
-//       );
-//       lastBlockTime = parseInt(last100Headers[i].timestamp);
-//     } else {
-//       blocktimes.push(targetTime);
-//     }
-//     i++;
-//   }
-//   return blocktimes;
-// }
-
-function getBlockTimes(last100Headers, algo, targetTime) {
+function getBlockTimes(
+  last100Headers: any[],
+  algo: string | null,
+  targetTime: number,
+) {
   // Filter headers for the specific algorithm if provided
   let filteredHeaders = last100Headers;
   if (algo) {
@@ -101,23 +91,27 @@ function getBlockTimes(last100Headers, algo, targetTime) {
   }
 
   // Calculate block times as the difference between consecutive timestamps
-  const actualBlockTimes = [];
-  const relativeBlockTimes = [];
+  const actualBlockTimes: number[] = [];
+  const relativeBlockTimes: number[] = [];
   for (let i = 1; i < filteredHeaders.length; i++) {
-    const blockTime = (parseInt(filteredHeaders[i - 1].timestamp) - parseInt(filteredHeaders[i].timestamp)) / 60;
+    const blockTime =
+      (parseInt(filteredHeaders[i - 1].timestamp) -
+        parseInt(filteredHeaders[i].timestamp)) /
+      60;
     actualBlockTimes.push(blockTime);
     relativeBlockTimes.push(blockTime - targetTime);
   }
 
   // Calculate the average block time
-  const average =
-    (actualBlockTimes.reduce((sum, time) => sum + time, 0) /
-    actualBlockTimes.length || 0).toFixed(2);
+  const average = (
+    actualBlockTimes.reduce((sum, time) => sum + time, 0) /
+      actualBlockTimes.length || 0
+  ).toFixed(2);
 
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from, limit) {
+export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});
@@ -151,7 +145,7 @@ export async function getIndexData(from, limit) {
   const version = version_result.value?.slice(0, 25);
 
   // Algo split
-  const last100Headers = listHeaders.map((r) => r.header);
+  const last100Headers = listHeaders.map((r: any) => r.header);
   const moneroRx = [0, 0, 0, 0];
   const sha3X = [0, 0, 0, 0];
   const tariRx = [0, 0, 0, 0];
@@ -186,7 +180,7 @@ export async function getIndexData(from, limit) {
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
-  const headers = headersResp.map((r) => r.header);
+  const headers = headersResp.map((r: any) => r.header);
   const pows = { 0: "MoneroRx", 1: "SHA-3X", 2: "TariRx" };
   for (var i = headers.length - 2; i >= 0; i--) {
     headers[i].kernels =
@@ -226,15 +220,15 @@ export async function getIndexData(from, limit) {
     return null;
   }
   const stats = blocks
-    .map((block) => ({
+    .map((block: any) => ({
       height: block.block.header.height,
       ...miningStats(block),
     }))
-    .sort((a, b) => b.height - a.height);
+    .sort((a: any, b: any) => b.height - a.height);
 
   // Append the stats to the headers array
   for (const header of headers) {
-    const stat = stats.find((s) => s.height === header.height);
+    const stat = stats.find((s: any) => s.height === header.height);
     if (stat) {
       header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
       header.numCoinbases = stat.numCoinbases;

@@ -21,24 +21,24 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { createClient } from "../baseNodeClient.js";
-import express from "express";
+import express, { Request, Response } from "express";
 import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
 import { miningStats } from "../utils/stats.js";
 const router = express.Router();
 
-function fromHexString(hexString) {
-  const res = [];
+function fromHexString(hexString: string): number[] {
+  const res: number[] = [];
   for (let i = 0; i < hexString.length; i += 2) {
     res.push(Number("0x" + hexString.substring(i, i + 2)));
   }
   return res;
 }
 
-router.get("/:height_or_hash", async function (req, res) {
+router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const client = createClient();
   const height_or_hash = req.params.height_or_hash;
-  let height;
+  let height: number;
   if (height_or_hash.length === 64) {
     const block = await client.getHeaderByHash({
       hash: fromHexString(height_or_hash),
@@ -80,20 +80,20 @@ router.get("/:height_or_hash", async function (req, res) {
     outputs: block[0].block.body.outputs.slice(outputs_from, outputs_to),
     inputs: block[0].block.body.inputs.slice(inputs_from, inputs_to),
     kernels: block[0].block.body.kernels.slice(kernels_from, kernels_to),
-    outputsNext: null,
-    outputsNextLink: null,
-    outputsPrev: null,
-    outputsPrevLink: null,
+    outputsNext: null as string | null,
+    outputsNextLink: null as string | null,
+    outputsPrev: null as string | null,
+    outputsPrevLink: null as string | null,
     outputsFrom: outputs_from,
-    inputsNext: null,
-    inputsNextLink: null,
-    inputsPrev: null,
-    inputsPrevLink: null,
+    inputsNext: null as string | null,
+    inputsNextLink: null as string | null,
+    inputsPrev: null as string | null,
+    inputsPrevLink: null as string | null,
     inputsFrom: inputs_from,
-    kernelsNext: null,
-    kernelsNextLink: null,
-    kernelsPrev: null,
-    kernelsPrevLink: null,
+    kernelsNext: null as string | null,
+    kernelsNextLink: null as string | null,
+    kernelsPrev: null as string | null,
+    kernelsPrevLink: null as string | null,
     kernelsFrom: kernels_from,
   };
   if (outputs_from > 0) {
@@ -205,14 +205,14 @@ router.get("/:height_or_hash", async function (req, res) {
       (kernels_to + 10);
   }
   const tipInfo = await client.getTipInfo({});
-  const tipHeight = parseInt(tipInfo.metadata.best_block_height);
+  const tipHeight: number = parseInt(tipInfo.metadata.best_block_height);
 
   const prevHeight = height - 1;
-  let prevLink = `/blocks/${prevHeight}`;
+  let prevLink: string | null = `/blocks/${prevHeight}`;
   if (height === 0) prevLink = null;
 
   const nextHeight = height + 1;
-  let nextLink = `/blocks/${nextHeight}`;
+  let nextLink: string | null = `/blocks/${nextHeight}`;
   if (height === tipHeight) nextLink = null;
 
   if (tipHeight - height >= cacheSettings.oldBlockDeltaTip) {

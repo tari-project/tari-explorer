@@ -11,8 +11,8 @@ const cacheSettings = {
   newBlocks:
     process.env.TARI_EXPLORER_NEW_BLOCKS_CACHE_SETTINGS ||
     "public, max-age=120, s-maxage=60, stale-while-revalidate=30",
-  oldBlockDeltaTip:
-    process.env.TARI_EXPLORER_OLD_BLOCK_DELTA_TIP || 30 * 24 * 7,
+  oldBlockDeltaTip: (process.env.TARI_EXPLORER_OLD_BLOCK_DELTA_TIP ||
+    30 * 24 * 7) as number,
 };
 
 export default cacheSettings;

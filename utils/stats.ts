@@ -20,28 +20,63 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { createClient } from "../baseNodeClient.js";
-import express from "express";
-import { format } from "@fast-csv/format";
-const router = express.Router();
+export function miningStats(block: any) {
+  // Handle both object and array cases
+  const blockData = Array.isArray(block) ? block[0] : block;
 
-router.get("/", async function (req: express.Request, res: express.Response) {
-  const client = createClient();
-  const lastDifficulties = await client.getNetworkDifficulty({
-    from_tip: 1000,
-  });
-
-  const csvStream = format({ headers: true });
-  res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
-  res.setHeader("Content-Type", "text/csv");
-
-  csvStream.pipe(res);
-
-  for (let i = 0; i < lastDifficulties.length; i++) {
-    csvStream.write(lastDifficulties[i]);
+  if (
+    !blockData ||
+    typeof blockData !== "object" ||
+    !blockData.block?.body?.outputs ||
+    !Array.isArray(blockData.block.body.outputs)
+  ) {
+    throw new Error("Invalid block data");
   }
 
-  csvStream.end();
-});
+  let powAlgo: string;
+  if (blockData.block.header.pow.pow_algo == "0") {
+    powAlgo = "Monero";
+  } else {
+    powAlgo = "SHA-3";
+  }
+  let timestamp = blockData.block.header.timestamp;
+  timestamp = new Date(timestamp * 1000).toLocaleString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 
-export default router;
+  const outputs = blockData.block.body.outputs;
+  let totalCoinbase = 0;
+  let numCoinbases = 0;
+
+  outputs.forEach((output: any) => {
+    if (
+      output.features?.output_type === 1 &&
+      output.features?.range_proof_type === 1
+    ) {
+      totalCoinbase += parseInt(output.minimum_value_promise || 0, 10);
+      numCoinbases++;
+    }
+  });
+
+  const numOutputsNoCoinbases = outputs.length - numCoinbases;
+  const totalCoinbaseXtm = (totalCoinbase / 1e6).toLocaleString(undefined, {
+    minimumFractionDigits: 6,
+    maximumFractionDigits: 6,
+  });
+  const numInputs = blockData.block.body.inputs.length;
+
+  return {
+    totalCoinbaseXtm,
+    numCoinbases,
+    numOutputsNoCoinbases,
+    numInputs,
+    powAlgo,
+    timestamp,
+  };
+}

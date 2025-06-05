@@ -8,7 +8,7 @@ import { promisifyAll } from "grpc-promise";
 
 const packageDefinition = protoLoader.loadSync(
   path.resolve(
-    import.meta.dirname,
+    (import.meta as any).dirname,
     "applications/minotari_app_grpc/proto/base_node.proto",
   ),
   {
@@ -20,9 +20,9 @@ const packageDefinition = protoLoader.loadSync(
   },
 );
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
-const tariGrpc = protoDescriptor.tari.rpc;
+const tariGrpc = (protoDescriptor as any).tari.rpc;
 
-function connect(address) {
+function connect(address: string) {
   const client = new tariGrpc.BaseNode(
     address,
     grpc.credentials.createInsecure(),
@@ -32,24 +32,28 @@ function connect(address) {
   return client;
 }
 
-function Client(address = "localhost:18142") {
-  this.inner = connect(address);
-  const methods = [
-    "getVersion",
-    "listHeaders",
-    "getBlocks",
-    "getMempoolTransactions",
-    "getTipInfo",
-    "searchUtxos",
-    "getTokens",
-    "getNetworkDifficulty",
-    "getActiveValidatorNodes",
-    "getHeaderByHash",
-    "searchKernels",
-  ];
-  methods.forEach((method) => {
-    this[method] = (arg) => this.inner[method]().sendMessage(arg);
-  });
+class Client {
+  inner: any;
+  [key: string]: any;
+  constructor(address: string = "localhost:18142") {
+    this.inner = connect(address);
+    const methods = [
+      "getVersion",
+      "listHeaders",
+      "getBlocks",
+      "getMempoolTransactions",
+      "getTipInfo",
+      "searchUtxos",
+      "getTokens",
+      "getNetworkDifficulty",
+      "getActiveValidatorNodes",
+      "getHeaderByHash",
+      "searchKernels",
+    ];
+    methods.forEach((method) => {
+      this[method] = (arg: any) => this.inner[method]().sendMessage(arg);
+    });
+  }
 }
 const client = new Client(process.env.BASE_NODE_GRPC_URL);
 

@@ -24,34 +24,32 @@ import { createClient as createBaseNodeClient } from "../baseNodeClient.js";
 import express from "express";
 const router = express.Router();
 
-/* GET home page. */
-router.get("/:asset_public_key", async function (req, res) {
-  const baseNodeClient = createBaseNodeClient();
-  // let validatorNodeClient = createValidatorNodeClient()
-  const asset_public_key = req.params.asset_public_key;
+router.get(
+  "/:asset_public_key",
+  async function (req: express.Request, res: express.Response) {
+    const baseNodeClient = createBaseNodeClient();
+    const asset_public_key = req.params.asset_public_key;
 
-  const tokens = await baseNodeClient.getTokens({
-    asset_public_key: Buffer.from(asset_public_key, "hex"),
-  });
+    const tokens = await baseNodeClient.getTokens({
+      asset_public_key: Buffer.from(asset_public_key, "hex"),
+    });
 
-  if (!tokens || tokens.length === 0) {
-    res.status(404);
-    res.render("404", { message: `No tokens for asset found` });
-    return;
-  }
+    if (!tokens || tokens.length === 0) {
+      res.status(404);
+      res.render("404", { message: `No tokens for asset found` });
+      return;
+    }
 
-  // let headers = validatorNodeClient.listHeaders({ from_height: 0, num_headers: 101 })
-
-  const json = {
-    title: `Asset with pub key: ${asset_public_key}`,
-    tokens: tokens,
-    // headers
-  };
-  if (req.query.json !== undefined) {
-    res.json(json);
-  } else {
-    res.render("assets", json);
-  }
-});
+    const json = {
+      title: `Asset with pub key: ${asset_public_key}`,
+      tokens: tokens,
+    };
+    if (req.query.json !== undefined) {
+      res.json(json);
+    } else {
+      res.render("assets", json);
+    }
+  },
+);
 
 export default router;

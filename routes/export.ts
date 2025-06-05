@@ -3,7 +3,7 @@ import express from "express";
 import { format } from "@fast-csv/format";
 const router = express.Router();
 
-router.get("/", async function (req, res) {
+router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
   const lastDifficulties = await client.getNetworkDifficulty({
     from_tip: 1000,
@@ -15,11 +15,11 @@ router.get("/", async function (req, res) {
 
   csvStream.pipe(res);
 
-  // Example data
-
   for (let i = 0; i < lastDifficulties.length; i++) {
     csvStream.write(lastDifficulties[i]);
   }
 
   csvStream.end();
 });
+
+export default router;

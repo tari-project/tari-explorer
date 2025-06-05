@@ -24,7 +24,7 @@ import { createClient } from "../baseNodeClient.js";
 import express from "express";
 const router = express.Router();
 
-router.get("/", async function (req, res) {
+router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
   const result = await client.getVersion({});
   const json = { version: result.value };

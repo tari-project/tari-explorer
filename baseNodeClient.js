@@ -26,6 +26,7 @@ function connect(address) {
   const client = new tariGrpc.BaseNode(
     address,
     grpc.credentials.createInsecure(),
+    { "grpc.max_receive_message_length": 10 * 1024 * 1024 }, // 10 MB
   );
   promisifyAll(client, { metadata: new grpc.Metadata(), timeout: 10_000 });
   return client;

@@ -235,7 +235,7 @@ app.use((req, res) => {
 
 // error handler
 app.use(function (
-  err: any,
+  err: Record<string, unknown>,
   req: express.Request,
   res: express.Response,
   next: express.NextFunction,

@@ -23,7 +23,7 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
-import cache from "../cache.js";
+
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
@@ -42,7 +42,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   };
 
   for (let i = 0; i < lastDifficulties.length; i++) {
-    let extra = lastDifficulties[i].coinbase_extras.join("|");
+    const extra = lastDifficulties[i].coinbase_extras.join("|");
     const split = extra.split(",");
 
     let unique_id =

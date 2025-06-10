@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* eslint-disable no-undef */
+
 /**
  * Module dependencies.
  */
@@ -55,6 +57,7 @@ function normalizePort(val: string): number | string | false {
  * Event listener for HTTP server "error" event.
  */
 
+/* eslint-disable no-undef */
 function onError(error: NodeJS.ErrnoException): void {
   if (error.syscall !== "listen") {
     throw error;

@@ -16,6 +16,9 @@
     "forceConsistentCasingInFileNames": true /* Ensure that casing is okay in imports */,
     "skipLibCheck": true,
     "sourceMap": true,
+    "types": [
+      "node"
+    ] /* Specify type definitions to be included in the compilation */,
     "typeRoots": [
       "@types",
       "node_modules/@types"

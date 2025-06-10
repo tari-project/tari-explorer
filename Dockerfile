@@ -21,10 +21,12 @@ RUN npm install
 # Hack - bring proto files in
 RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto applications/minotari_app_grpc/proto
 #RUN npm install debug
+RUN npm run build
+
 
 ENV BASE_NODE_PROTO=${BASE_NODE_PROTO}
 
 EXPOSE 4000
 
 USER node
-CMD ["dumb-init", "node", "./bin/www"]
+CMD ["dumb-init", "node", "./build/index.js"]

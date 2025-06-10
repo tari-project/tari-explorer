@@ -23,6 +23,11 @@ import assetsRouter from "./routes/assets.js";
 import BackgrounUpdater from "./utils/updater.js";
 import { hex, script } from "./script.js";
 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Register HBS helpers
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
@@ -187,20 +192,18 @@ hbs.registerHelper("format_thousands", function (value: number) {
   }
   return Math.floor(value).toLocaleString("en-US");
 });
-hbs.registerPartials(path.join((<any>import.meta).dirname, "partials"));
+hbs.registerPartials(path.join(__dirname, "../partials"));
 
-const app = express();
+export const app = express();
 
 const updater = new BackgrounUpdater();
 updater.start();
 
 // view engine setup
-app.set("views", path.join((<any>import.meta).dirname, "views"));
+app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "hbs");
 
-app.use(
-  favicon(path.join((<any>import.meta).dirname, "public", "favicon.ico")),
-);
+app.use(favicon(path.join(__dirname, "../public", "favicon.ico")));
 app.use(pinoHttp());
 app.use(express.json());
 app.use(
@@ -208,7 +211,7 @@ app.use(
     extended: false,
   }),
 );
-app.use(express.static(path.join((<any>import.meta).dirname, "public")));
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(cors());
 app.use((req, res, next) => {
   res.locals.backgroundUpdater = updater;
@@ -248,5 +251,3 @@ app.use(function (
   res.err = err;
   res.status(err.status || 500).render("error");
 });
-
-export default app;

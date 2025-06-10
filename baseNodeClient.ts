@@ -5,20 +5,22 @@ import path from "path";
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
 import { promisifyAll } from "grpc-promise";
+import { fileURLToPath } from "url";
 
-const packageDefinition = protoLoader.loadSync(
-  path.resolve(
-    (import.meta as any).dirname,
-    "applications/minotari_app_grpc/proto/base_node.proto",
-  ),
-  {
-    keepCase: true,
-    longs: String,
-    enums: String,
-    defaults: true,
-    oneofs: true,
-  },
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const pathToProtoFiles = path.resolve(
+  __dirname,
+  "../applications/minotari_app_grpc/proto/base_node.proto",
 );
+
+const packageDefinition = protoLoader.loadSync(pathToProtoFiles, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const tariGrpc = (protoDescriptor as any).tari.rpc;
 

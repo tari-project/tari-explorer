@@ -3,11 +3,14 @@
   "version": "0.0.2",
   "private": true,
   "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "node --watch ./bin/www",
-    "fmt": "prettier --end-of-line auto -w **/*.{js,hbs}",
+    "start": "node ./build/index.js",
+    "dev": "nodemon --watch . --exec node --loader ts-node/esm src/index.ts",
+    "build": "rm -rf ./build && tsc --build tsconfig.json",
+    "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",
-    "lint": "eslint .",
+    "lint": "eslint . ",
     "lint-fix": "eslint --fix ."
   },
   "dependencies": {
@@ -22,8 +25,15 @@
     "serve-favicon": "^2.5.0"
   },
   "devDependencies": {
+    "@types/node": "^22.15.18",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-prettier": "^5.4.1"
+    "eslint-plugin-prettier": "^5.4.1",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }

@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "node ./build/index.js",
-    "dev": "nodemon --watch . --exec node --loader ts-node/esm src/index.ts",
+    "dev": "nodemon --watch './**/*.ts' --ignore './build/**' --ext ts --exec 'npm run build && node ./build/index.js'",
     "build": "rm -rf ./build && tsc --build tsconfig.json",
     "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",

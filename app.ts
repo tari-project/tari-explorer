@@ -150,7 +150,7 @@ hbs.registerHelper(
         typeof unitStr === "string" ? Boolean(unitStr) === true : false;
 
       if (unitStr) {
-        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 3));
+        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
       }
 
       return asciichart.plot(

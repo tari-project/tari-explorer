@@ -1,6 +1,7 @@
 // Copyright 2022 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Opcode constants: Block Height Checks
 const OP_CHECK_HEIGHT_VERIFY = 0x66;
 const OP_CHECK_HEIGHT = 0x67;
 const OP_COMPARE_HEIGHT_VERIFY = 0x68;
@@ -46,7 +47,7 @@ const OP_IF_THEN = 0x61;
 const OP_ELSE = 0x62;
 const OP_END_IF = 0x63;
 
-function u64(data) {
+function u64(data: Uint8Array | Array<number>): string {
   let n = BigInt(0);
   for (let i = 7; i >= 0; --i) {
     n <<= BigInt(8);
@@ -55,7 +56,7 @@ function u64(data) {
   return n.toString();
 }
 
-function i64(data) {
+function i64(data: Uint8Array | Array<number>): string {
   let n = BigInt(data[7] & 127);
   for (let i = 6; i >= 0; --i) {
     n <<= BigInt(8);
@@ -68,15 +69,15 @@ function i64(data) {
   return n.toString();
 }
 
-function hex(data) {
+function hex(data: Uint8Array | Buffer | Array<number> | undefined): string {
   return data ? Buffer.from(data).toString("hex") : "";
 }
 
-function script(data) {
-  data = [...data];
+function script(data: Uint8Array | Buffer | Array<number>): string {
+  data = Array.from(data);
   let i = 0;
-  const s = [];
-  let m, n, msg, public_keys;
+  const s: string[] = [];
+  let m: number, n: number, msg: Array<number>, public_keys: string[];
   while (i < data.length) {
     switch (data[i]) {
       // Opcode constants: Block Height Checks
@@ -192,12 +193,14 @@ function script(data) {
         public_keys = [];
         i += 3;
         for (let j = 0; j < n; ++j) {
-          public_keys = hex(data.slice(i, i + 32));
+          public_keys.push(hex(data.slice(i, i + 32)));
           i += 32;
         }
         msg = data.slice(i, i + 32);
         i += 32;
-        s.push(`CHECK_MULTI_SIG ${m} ${n} [${public_keys.join(",")}] ${msg}`);
+        s.push(
+          `CHECK_MULTI_SIG ${m} ${n} [${public_keys.join(",")}] ${hex(msg)}`,
+        );
         break;
       case OP_CHECK_MULTI_SIG_VERIFY:
         m = data[i + 1];
@@ -205,13 +208,13 @@ function script(data) {
         public_keys = [];
         i += 3;
         for (let j = 0; j < n; ++j) {
-          public_keys = hex(data.slice(i, i + 32));
+          public_keys.push(hex(data.slice(i, i + 32)));
           i += 32;
         }
         msg = data.slice(i, i + 32);
         i += 32;
         s.push(
-          `CHECK_MULTI_SIG_VERIFY ${m} ${n} [${public_keys.join(",")}] ${msg}`,
+          `CHECK_MULTI_SIG_VERIFY ${m} ${n} [${public_keys.join(",")}] ${hex(msg)}`,
         );
         break;
       case OP_HASH_BLAKE256:

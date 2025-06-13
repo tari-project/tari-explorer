@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig to read more about this file */
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
+    "module": "NodeNext" /* Specifies which module code is generated */,
+    "target": "ESNext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+    "lib": ["ESNext"],
+    "outDir": "build" /* Specifies the folder for the emitted code */,
+    "strict": true /* Enables all the strict type-checking options */,
+    "noImplicitAny": false /* Enables errors with expressions using 'any' */,
+    "resolveJsonModule": true /* Enables importing json files */,
+    "moduleResolution": "NodeNext" /* Specifies how typescript looks up a file for a given module */,
+    "forceConsistentCasingInFileNames": true /* Ensure that casing is okay in imports */,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "types": [
+      "node"
+    ] /* Specify type definitions to be included in the compilation */,
+    "typeRoots": [
+      "@types",
+      "node_modules/@types"
+    ] /* Specify a set of folders that contain type definitions */,
+    "paths": {
+      "@/*": ["./*"],
+      "@app/*": ["./src/*"]
+    },
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/src"
+  },
+  "compileOnSave": true,
+  "include": ["/**/*"],
+  "exclude": ["node_modules"]
+}

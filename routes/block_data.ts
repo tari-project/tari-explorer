@@ -26,70 +26,73 @@ import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
 const router = express.Router();
 
-function fromHexString(hexString) {
-  const res = [];
+function fromHexString(hexString: string): number[] {
+  const res: number[] = [];
   for (let i = 0; i < hexString.length; i += 2) {
     res.push(Number("0x" + hexString.substring(i, i + 2)));
   }
   return res;
 }
 
-router.get("/:height_or_hash", async function (req, res) {
-  const from = +(req.query.from || 0);
-  const to = +(req.query.to || 10);
-  const what = req.query.what;
-  if (what === undefined) {
-    res.status(404);
-    res.render("404", { message: `Invalid request` });
-    return;
-  }
-  const client = createClient();
-  const height_or_hash = req.params.height_or_hash;
-  let block;
-  let height;
-  if (height_or_hash.length === 64) {
-    block = await client.getHeaderByHash({
-      hash: fromHexString(height_or_hash),
-    });
-    if (!block) {
+router.get(
+  "/:height_or_hash",
+  async function (req: express.Request, res: express.Response) {
+    const from = +(req.query.from || 0);
+    const to = +(req.query.to || 10);
+    const what = req.query.what as string | undefined;
+    if (what === undefined) {
       res.status(404);
-      res.render("404", {
-        message: `Block with hash ${height_or_hash} not found`,
-      });
+      res.render("404", { message: `Invalid request` });
       return;
     }
-    height = parseInt(block.header.height);
-  } else {
-    height = parseInt(height_or_hash);
-  }
+    const client = createClient();
+    const height_or_hash = req.params.height_or_hash;
+    let block;
+    let height;
+    if (height_or_hash.length === 64) {
+      block = await client.getHeaderByHash({
+        hash: fromHexString(height_or_hash),
+      });
+      if (!block) {
+        res.status(404);
+        res.render("404", {
+          message: `Block with hash ${height_or_hash} not found`,
+        });
+        return;
+      }
+      height = parseInt(block.header.height);
+    } else {
+      height = parseInt(height_or_hash);
+    }
 
-  const request = { heights: [height] };
-  block = await cache.get(client.getBlocks, request);
-  if (!block || block.length === 0) {
-    res.status(404);
-    res.render("404", { message: `Block at height ${height} not found` });
-    return;
-  }
+    const request = { heights: [height] };
+    block = await cache.get(client.getBlocks, request);
+    if (!block || block.length === 0) {
+      res.status(404);
+      res.render("404", { message: `Block at height ${height} not found` });
+      return;
+    }
 
-  const body = {
-    length: block[0].block.body[what].length,
-    data: block[0].block.body[what].slice(from, to),
-  };
+    const body = {
+      length: block[0].block.body[what].length,
+      data: block[0].block.body[what].slice(from, to),
+    };
 
-  const tipInfo = await client.getTipInfo({});
-  const tipHeight = parseInt(tipInfo.metadata.best_block_height);
+    const tipInfo = await client.getTipInfo({});
+    const tipHeight = parseInt(tipInfo.metadata.best_block_height);
 
-  if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
-    res.setHeader("Cache-Control", cacheSettings.oldBlocks);
-  } else {
-    res.setHeader("Cache-Control", cacheSettings.newBlocks);
-  }
+    if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
+      res.setHeader("Cache-Control", cacheSettings.oldBlocks);
+    } else {
+      res.setHeader("Cache-Control", cacheSettings.newBlocks);
+    }
 
-  const json = {
-    height,
-    body: body,
-  };
-  res.json(json);
-});
+    const json = {
+      height,
+      body: body,
+    };
+    res.json(json);
+  },
+);
 
 export default router;

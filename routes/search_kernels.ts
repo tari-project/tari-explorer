@@ -25,27 +25,30 @@ import express from "express";
 import cacheSettings from "../cacheSettings.js";
 const router = express.Router();
 
-router.get("/", async function (req, res) {
+router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
   const client = createClient();
-  const commitments = (
-    req.query.comm ||
-    req.query.commitment ||
-    req.query.c ||
-    ""
-  ).split(",");
+  const nonces = ((req.query.nonces || "") as string).split(",");
+  const signatures = ((req.query.signatures || "") as string).split(",");
 
-  if (commitments.length === 0) {
+  if (
+    nonces.length === 0 ||
+    signatures.length === 0 ||
+    nonces.length !== signatures.length
+  ) {
     res.status(404);
     return;
   }
-  const hexCommitments = [];
-  for (let i = 0; i < commitments.length; i++) {
-    hexCommitments.push(Buffer.from(commitments[i], "hex"));
+  const params: { public_nonce: Buffer; signature: Buffer }[] = [];
+  for (let i = 0; i < nonces.length; i++) {
+    params.push({
+      public_nonce: Buffer.from(nonces[i], "hex"),
+      signature: Buffer.from(signatures[i], "hex"),
+    });
   }
   let result;
   try {
-    result = await client.searchUtxos({ commitments: hexCommitments });
+    result = await client.searchKernels({ signatures: params });
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {

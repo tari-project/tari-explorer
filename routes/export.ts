@@ -20,38 +20,28 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { createClient as createBaseNodeClient } from "../baseNodeClient.js";
+import { createClient } from "../baseNodeClient.js";
 import express from "express";
+import { format } from "@fast-csv/format";
 const router = express.Router();
 
-/* GET home page. */
-router.get("/:asset_public_key", async function (req, res) {
-  const baseNodeClient = createBaseNodeClient();
-  // let validatorNodeClient = createValidatorNodeClient()
-  const asset_public_key = req.params.asset_public_key;
-
-  const tokens = await baseNodeClient.getTokens({
-    asset_public_key: Buffer.from(asset_public_key, "hex"),
+router.get("/", async function (req: express.Request, res: express.Response) {
+  const client = createClient();
+  const lastDifficulties = await client.getNetworkDifficulty({
+    from_tip: 1000,
   });
 
-  if (!tokens || tokens.length === 0) {
-    res.status(404);
-    res.render("404", { message: `No tokens for asset found` });
-    return;
+  const csvStream = format({ headers: true });
+  res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
+  res.setHeader("Content-Type", "text/csv");
+
+  csvStream.pipe(res);
+
+  for (let i = 0; i < lastDifficulties.length; i++) {
+    csvStream.write(lastDifficulties[i]);
   }
 
-  // let headers = validatorNodeClient.listHeaders({ from_height: 0, num_headers: 101 })
-
-  const json = {
-    title: `Asset with pub key: ${asset_public_key}`,
-    tokens: tokens,
-    // headers
-  };
-  if (req.query.json !== undefined) {
-    res.json(json);
-  } else {
-    res.render("assets", json);
-  }
+  csvStream.end();
 });
 
 export default router;

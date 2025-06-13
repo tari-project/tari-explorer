@@ -3,7 +3,7 @@
 
 import express from "express";
 import path from "path";
-import pinoHttp from "pino-http";
+import { pinoHttp } from "pino-http";
 import asciichart from "asciichart";
 import cors from "cors";
 import favicon from "serve-favicon";
@@ -23,11 +23,16 @@ import assetsRouter from "./routes/assets.js";
 import BackgrounUpdater from "./utils/updater.js";
 import { hex, script } from "./script.js";
 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Register HBS helpers
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
 
-hbs.registerHelper("timestamp", function (timestamp) {
+hbs.registerHelper("timestamp", function (timestamp: number) {
   const dateObj = new Date(timestamp * 1000);
   const day = dateObj.getUTCDate();
   const month = dateObj.getUTCMonth() + 1;
@@ -51,38 +56,47 @@ hbs.registerHelper("timestamp", function (timestamp) {
   );
 });
 
-hbs.registerHelper("percentbar", function (a, b, c) {
+hbs.registerHelper("percentbar", function (a: number, b: number, c: number) {
   const total = a + b + c;
   if (total === 0) return ".......... 0% ";
   const percent = (a / total) * 100;
   const barWidth = Math.round(percent / 10);
   const bar = "**********".slice(0, barWidth);
   const space = "..........".slice(0, 10 - barWidth);
-  return bar + space + " " + parseInt(percent) + "% ";
+  return bar + space + " " + parseInt(percent.toString()) + "% ";
 });
 
-const transformNumberToFormat = (value, unit, toFixedDecimal) => {
+const transformNumberToFormat = (
+  value: number,
+  unit: string,
+  toFixedDecimal?: number,
+) => {
   if (value == null) {
     return value;
   }
-  let formatting = (val) => val.toLocaleString("en-US");
+  let formatting = (val: number) => val.toLocaleString("en-US");
 
   if (toFixedDecimal && typeof toFixedDecimal === "number") {
-    formatting = (val) => val.toFixed(toFixedDecimal).toLocaleString("en-US");
+    formatting = (val: number) =>
+      val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
   }
 
   return formatting(transformValueToUnit(value, unit, toFixedDecimal));
 };
 
-const transformValueToUnit = (value, unit, toFixedDecimal) => {
+const transformValueToUnit = (
+  value: number,
+  unit: string,
+  toFixedDecimal?: number,
+) => {
   if (value === null || value === undefined) {
     return 0;
   }
 
-  let transformLength = (val) => val;
+  let transformLength = (val: number) => val;
 
   if (toFixedDecimal && !isNaN(toFixedDecimal)) {
-    const toDecimalPoint = (val) => {
+    const toDecimalPoint = (val: number) => {
       const factor = Math.pow(10, toFixedDecimal);
       return Math.round(val * factor) / factor;
     };
@@ -103,7 +117,7 @@ const transformValueToUnit = (value, unit, toFixedDecimal) => {
   }
 };
 
-const getPrefixOfUnit = (unit) => {
+const getPrefixOfUnit = (unit: string) => {
   switch (unit) {
     case "kilo":
       return "K";
@@ -118,70 +132,78 @@ const getPrefixOfUnit = (unit) => {
   }
 };
 
-hbs.registerHelper("chart", function (data, height, formatThousands, unitStr) {
-  if (data.length > 0) {
-    let dataTransformed = data;
-    const formatThousandsBool = formatThousands
-      ? Boolean(formatThousands) === true
-      : false;
+hbs.registerHelper(
+  "chart",
+  function (
+    data: number[],
+    height: number,
+    formatThousands: boolean,
+    unitStr: string,
+  ) {
+    if (data.length > 0) {
+      let dataTransformed = data;
+      const formatThousandsBool = formatThousands
+        ? Boolean(formatThousands) === true
+        : false;
 
-    const unitStrBool =
-      typeof unitStr === "string" ? Boolean(unitStr) === true : false;
+      const unitStrBool =
+        typeof unitStr === "string" ? Boolean(unitStr) === true : false;
 
-    if (unitStr) {
-      dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 3));
-    }
+      if (unitStr) {
+        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 3));
+      }
 
-    return asciichart.plot(
-      dataTransformed,
-      formatThousandsBool
-        ? {
-            height: height,
-            format: (x) => {
-              return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
+      return asciichart.plot(
+        dataTransformed,
+        formatThousandsBool
+          ? {
+              height: height,
+              format: (x: number) => {
+                return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
+              },
+            }
+          : {
+              height: height,
+              format: unitStrBool
+                ? (x: number) => {
+                    const valueStr =
+                      x.toFixed(2).toLocaleLowerCase("en-US") +
+                      ` ${getPrefixOfUnit(unitStr)}H/s`;
+                    return valueStr.padStart(12, "  ");
+                  }
+                : undefined,
             },
-          }
-        : {
-            height: height,
-            format: unitStrBool
-              ? (x) => {
-                  const valueStr =
-                    x.toFixed(2).toLocaleString("en-US") +
-                    ` ${getPrefixOfUnit(unitStr)}H/s`;
-                  return valueStr.padStart(12, "  ");
-                }
-              : undefined,
-          },
-    );
-  } else {
-    return "**No data**";
-  }
-});
+      );
+    } else {
+      return "**No data**";
+    }
+  },
+);
 
 hbs.registerHelper("unitFormat", transformNumberToFormat);
 
-hbs.registerHelper("add", function (a, b) {
+hbs.registerHelper("add", function (a: number, b: number) {
   return a + b;
 });
 
-hbs.registerHelper("format_thousands", function (value) {
+hbs.registerHelper("format_thousands", function (value: number) {
   if (value == null) {
     return value;
   }
   return Math.floor(value).toLocaleString("en-US");
 });
-hbs.registerPartials(path.join(import.meta.dirname, "partials"));
+hbs.registerPartials(path.join(__dirname, "../partials"));
 
-const app = express();
+export const app = express();
 
 const updater = new BackgrounUpdater();
 updater.start();
 
 // view engine setup
-app.set("views", path.join(import.meta.dirname, "views"));
+app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "hbs");
 
-app.use(favicon(path.join(import.meta.dirname, "public", "favicon.ico")));
+app.use(favicon(path.join(__dirname, "../public", "favicon.ico")));
 app.use(pinoHttp());
 app.use(express.json());
 app.use(
@@ -189,7 +211,7 @@ app.use(
     extended: false,
   }),
 );
-app.use(express.static(path.join(import.meta.dirname, "public")));
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(cors());
 app.use((req, res, next) => {
   res.locals.backgroundUpdater = updater;
@@ -212,7 +234,12 @@ app.use((req, res) => {
 });
 
 // error handler
-app.use(function (err, req, res, next) {
+app.use(function (
+  err: Record<string, unknown>,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
   if (res.headersSent) {
     return next(err);
   }
@@ -224,5 +251,3 @@ app.use(function (err, req, res, next) {
   res.err = err;
   res.status(err.status || 500).render("error");
 });
-
-export default app;

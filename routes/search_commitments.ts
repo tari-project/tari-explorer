@@ -25,30 +25,24 @@ import express from "express";
 import cacheSettings from "../cacheSettings.js";
 const router = express.Router();
 
-router.get("/", async function (req, res) {
+router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
   const client = createClient();
-  const nonces = (req.query.nonces || "").split(",");
-  const signatures = (req.query.signatures || "").split(",");
+  const commitments = (
+    (req.query.comm || req.query.commitment || req.query.c || "") as string
+  ).split(",");
 
-  if (
-    nonces.length === 0 ||
-    signatures.length === 0 ||
-    nonces.length !== signatures.length
-  ) {
+  if (commitments.length === 0) {
     res.status(404);
     return;
   }
-  const params = [];
-  for (let i = 0; i < nonces.length; i++) {
-    params.push({
-      public_nonce: Buffer.from(nonces[i], "hex"),
-      signature: Buffer.from(signatures[i], "hex"),
-    });
+  const hexCommitments: Buffer[] = [];
+  for (let i = 0; i < commitments.length; i++) {
+    hexCommitments.push(Buffer.from(commitments[i], "hex"));
   }
   let result;
   try {
-    result = await client.searchKernels({ signatures: params });
+    result = await client.searchUtxos({ commitments: hexCommitments });
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {

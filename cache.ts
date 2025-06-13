@@ -1,21 +1,23 @@
-class Cache {
-  constructor(limit) {
+class Cache<T> {
+  limit: number;
+  cache: Map<string, T>;
+  constructor(limit: number) {
     this.limit = limit;
     this.cache = new Map();
   }
 
-  set(key, value) {
+  set(key: string, value: T) {
     if (this.cache.size >= this.limit) {
-      const firstItemKey = this.cache.keys().next().value;
+      const firstItemKey = this.cache.keys().next().value!;
       this.cache.delete(firstItemKey);
     }
     this.cache.set(key, value);
   }
 
-  async get(func, args) {
+  async get(func: (args: any) => Promise<T>, args: any): Promise<T> {
     const cache_key = JSON.stringify(args);
     if (this.cache.has(cache_key)) {
-      const temp = this.cache.get(cache_key);
+      const temp = this.cache.get(cache_key)!;
       this.cache.delete(cache_key);
       this.cache.set(cache_key, temp);
       return temp;
@@ -27,7 +29,7 @@ class Cache {
   }
 }
 
-const cache = new Cache(
-  +process.env.TARI_EXPLORER_OLD_BLOCKS_CACHE_SETTINGS || 1000,
+const cache = new Cache<any>(
+  +(process.env.TARI_EXPLORER_OLD_BLOCKS_CACHE_SETTINGS || 1000),
 );
 export default cache;

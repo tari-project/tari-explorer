@@ -51,6 +51,7 @@ class Client {
       "getActiveValidatorNodes",
       "getHeaderByHash",
       "searchKernels",
+      "searchPaymentReferences",
     ];
     methods.forEach((method) => {
       this[method] = (arg: any) => this.inner[method]().sendMessage(arg);

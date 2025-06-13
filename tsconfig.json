@@ -35,6 +35,11 @@
     "sourceRoot": "/src"
   },
   "compileOnSave": true,
-  "include": ["/**/*"],
+  "include": [
+    "*.ts",
+    "routes/**/*.ts",
+    "utils/**/*.ts",
+    "applications/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

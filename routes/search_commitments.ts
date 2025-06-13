@@ -28,9 +28,14 @@ const router = express.Router();
 router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
   const client = createClient();
-  const commitments = (
-    (req.query.comm || req.query.commitment || req.query.c || "") as string
-  ).split(",");
+  const commitments = Array.from(
+    new Set(
+      ((req.query.comm || req.query.commitment || req.query.c || "") as string)
+        .split(",")
+        .map((ref) => ref.trim())
+        .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref)),
+    ),
+  );
 
   if (commitments.length === 0) {
     res.status(404);

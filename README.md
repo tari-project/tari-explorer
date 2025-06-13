@@ -6,15 +6,15 @@
 
 - `npm install`
 
-### Development (nodemon reload)
-
-- `npm run dev`
-
-### Start server
+### Build
 
 - `npm run build`
 
-### Start server in dev mode watch
+### Start server
+
+- `npm start`
+
+### Build and run the server in dev mode watch
 
 - `npm run dev`
 

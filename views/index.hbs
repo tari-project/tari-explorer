@@ -10,9 +10,15 @@
   </thead>
   <tbody>
     <tr>
-      <td style="text-align: center;">{{this.tipInfo.metadata.best_block_height}}</td>
-      <td style="text-align: center;">{{hex this.tipInfo.metadata.best_block_hash}}</td>
-      <td style="text-align: center;">{{this.tipInfo.metadata.pruned_height}}</td>
+      <td
+        style="text-align: center;"
+      >{{this.tipInfo.metadata.best_block_height}}</td>
+      <td style="text-align: center;">{{hex
+          this.tipInfo.metadata.best_block_hash
+        }}</td>
+      <td
+        style="text-align: center;"
+      >{{this.tipInfo.metadata.pruned_height}}</td>
       <td style="text-align: center;">{{this.version}}</td>
     </tr>
   </tbody>
@@ -39,35 +45,83 @@
     <tr>
       <th>Monero (RandomX)</th>
       <td style="text-align: center;">{{this.algoSplit.moneroRx10}}
-        {{percentbar this.algoSplit.moneroRx10 this.algoSplit.sha3X10 this.algoSplit.tariRx10}}</td>
+        {{percentbar
+          this.algoSplit.moneroRx10
+          this.algoSplit.sha3X10
+          this.algoSplit.tariRx10
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx20}}
-        {{percentbar this.algoSplit.moneroRx20 this.algoSplit.sha3X20 this.algoSplit.tariRx20}}</td>
+        {{percentbar
+          this.algoSplit.moneroRx20
+          this.algoSplit.sha3X20
+          this.algoSplit.tariRx20
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx50}}
-        {{percentbar this.algoSplit.moneroRx50 this.algoSplit.sha3X50 this.algoSplit.tariRx50}}</td>
+        {{percentbar
+          this.algoSplit.moneroRx50
+          this.algoSplit.sha3X50
+          this.algoSplit.tariRx50
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx100}}
-        {{percentbar this.algoSplit.moneroRx100 this.algoSplit.sha3X100 this.algoSplit.tariRx100}}</td>
+        {{percentbar
+          this.algoSplit.moneroRx100
+          this.algoSplit.sha3X100
+          this.algoSplit.tariRx100
+        }}</td>
     </tr>
     <tr>
       <th>SHA-3X</th>
       <td style="text-align: center;">{{this.algoSplit.sha3X10}}
-        {{percentbar this.algoSplit.sha3X10 this.algoSplit.moneroRx10 this.algoSplit.tariRx10}}</td>
+        {{percentbar
+          this.algoSplit.sha3X10
+          this.algoSplit.moneroRx10
+          this.algoSplit.tariRx10
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X20}}
-        {{percentbar this.algoSplit.sha3X20 this.algoSplit.moneroRx20 this.algoSplit.tariRx20}}</td>
+        {{percentbar
+          this.algoSplit.sha3X20
+          this.algoSplit.moneroRx20
+          this.algoSplit.tariRx20
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X50}}
-        {{percentbar this.algoSplit.sha3X50 this.algoSplit.moneroRx50 this.algoSplit.tariRx50}}</td>
+        {{percentbar
+          this.algoSplit.sha3X50
+          this.algoSplit.moneroRx50
+          this.algoSplit.tariRx50
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X100}}
-        {{percentbar this.algoSplit.sha3X100 this.algoSplit.moneroRx100 this.algoSplit.tariRx100}}</td>
+        {{percentbar
+          this.algoSplit.sha3X100
+          this.algoSplit.moneroRx100
+          this.algoSplit.tariRx100
+        }}</td>
     </tr>
     <tr>
       <th>Tari (RandomX)</th>
       <td style="text-align: center;">{{this.algoSplit.tariRx10}}
-        {{percentbar this.algoSplit.tariRx10 this.algoSplit.moneroRx10 this.algoSplit.sha3X10}}</td>
+        {{percentbar
+          this.algoSplit.tariRx10
+          this.algoSplit.moneroRx10
+          this.algoSplit.sha3X10
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx20}}
-        {{percentbar this.algoSplit.tariRx20 this.algoSplit.moneroRx20 this.algoSplit.sha3X20}}</td>
+        {{percentbar
+          this.algoSplit.tariRx20
+          this.algoSplit.moneroRx20
+          this.algoSplit.sha3X20
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx50}}
-        {{percentbar this.algoSplit.tariRx50 this.algoSplit.moneroRx50 this.algoSplit.sha3X50}}</td>
+        {{percentbar
+          this.algoSplit.tariRx50
+          this.algoSplit.moneroRx50
+          this.algoSplit.sha3X50
+        }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx100}}
-        {{percentbar this.algoSplit.tariRx100 this.algoSplit.moneroRx100 this.algoSplit.sha3X100}}</td>
+        {{percentbar
+          this.algoSplit.tariRx100
+          this.algoSplit.moneroRx100
+          this.algoSplit.sha3X100
+        }}</td>
     </tr>
   </tbody>
 </table>
@@ -78,7 +132,8 @@
   <tr>
     <td>
       <h4>All</h4>
-      Target time: 2 minutes (avg {{this.blockTimes.average}})
+      Target time: 2 minutes (avg
+      {{this.blockTimes.average}})
       <pre>{{chart this.blockTimes.series 15 false}}</pre>
     </td>
   </tr>
@@ -88,17 +143,20 @@
   <tr>
     <td>
       <h4>Monero RandomX</h4>
-      Target time: 6 minutes (avg {{this.moneroRandomxTimes.average}})
+      Target time: 6 minutes (avg
+      {{this.moneroRandomxTimes.average}})
       <pre>{{chart this.moneroRandomxTimes.series 15 false}}</pre>
     </td>
     <td>
       <h4>SHA3X</h4>
-      Target time: 6 minutes (avg {{this.sha3xTimes.average}})
+      Target time: 6 minutes (avg
+      {{this.sha3xTimes.average}})
       <pre>{{chart this.sha3xTimes.series 15 false}}</pre>
     </td>
     <td>
       <h4>Tari RandomX</h4>
-      Target time: 6 minutes (avg {{this.tariRandomxTimes.average}})
+      Target time: 6 minutes (avg
+      {{this.tariRandomxTimes.average}})
       <pre>{{chart this.tariRandomxTimes.series 15 false}}</pre>
     </td>
   </tr>
@@ -238,14 +296,20 @@
 <br />
 
 <form method="get" action="search_commitments">
-  <label for="c">Find commitment</label>
-  <input id="c" name="c" type="text" />
+  <label for="c">Find commitment(s)</label>
+  <input id="c" name="c" type="text" style="width: 450px;" />
   <button type="submit">search</button>
 </form>
 
 <form method="get" action="search_kernels">
-  <label for="c">Find kernel</label>
-  <input id="nonces" name="nonces" type="text" />
-  <input id="signatures" name="signatures" type="text" />
+  <label for="c">Find kernel(s)</label>
+  <input id="nonces" name="nonces" type="text" style="width: 450px;" />
+  <input id="signatures" name="signatures" type="text" style="width: 450px;" />
   <button type="submit">search</button>
+</form>
+
+<form method="get" action="search_outputs_by_payref">
+  <label for="payment_ref">Find payment reference(s)</label>
+  <input id="payment_ref" name="payref" type="text" style="width: 450px;" />
+  <button type="submit">search_payref</button>
 </form>

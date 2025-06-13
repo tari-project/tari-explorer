@@ -28,33 +28,29 @@ const router = express.Router();
 router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
   const client = createClient();
-  const nonces = ((req.query.nonces || "") as string)
-    .split(",")
-    .map((ref) => ref.trim())
-    .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
-  const signatures = ((req.query.signatures || "") as string)
-    .split(",")
-    .map((ref) => ref.trim())
-    .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
+  const rawPayrefs = (req.query.pay ||
+    req.query.payref ||
+    req.query.p ||
+    "") as string;
+  const payrefs = Array.from(
+    new Set(
+      rawPayrefs
+        .split(",")
+        .map((ref) => ref.trim()) // Remove extra spaces
+        .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref)), // Validate format
+    ),
+  );
 
-  if (
-    nonces.length === 0 ||
-    signatures.length === 0 ||
-    nonces.length !== signatures.length
-  ) {
+  if (payrefs.length === 0) {
     res.status(404);
     return;
   }
-  const params: { public_nonce: Buffer; signature: Buffer }[] = [];
-  for (let i = 0; i < nonces.length; i++) {
-    params.push({
-      public_nonce: Buffer.from(nonces[i], "hex"),
-      signature: Buffer.from(signatures[i], "hex"),
-    });
-  }
   let result;
   try {
-    result = await client.searchKernels({ signatures: params });
+    result = await client.searchPaymentReferences({
+      payment_reference_hex: payrefs,
+      include_spent: true,
+    });
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {
@@ -64,13 +60,14 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     }
     return;
   }
+  console.log("Payrefs received:", result);
   const json = {
     items: result,
   };
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("search", json);
+    res.render("search_payref", json);
   }
 });
 

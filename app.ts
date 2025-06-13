@@ -17,6 +17,7 @@ import mempoolRouter from "./routes/mempool.js";
 import minersRouter from "./routes/miners.js";
 import searchCommitmentsRouter from "./routes/search_commitments.js";
 import searchKernelsRouter from "./routes/search_kernels.js";
+import searchPaymentRefsRouter from "./routes/search_outputs_by_payref.js";
 import healthz from "./routes/healthz.js";
 import assetsRouter from "./routes/assets.js";
 
@@ -225,6 +226,7 @@ app.use("/assets", assetsRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
+app.use("/search_outputs_by_payref", searchPaymentRefsRouter);
 app.use("/search_kernels", searchKernelsRouter);
 app.use("/healthz", healthz);
 

@@ -139,3 +139,6 @@ dist
 external_libs
 
 build
+
+#Grpc generated types
+grpc-gen

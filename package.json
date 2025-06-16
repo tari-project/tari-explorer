@@ -8,6 +8,8 @@
     "start": "node ./build/index.js",
     "dev": "nodemon --watch './**/*.ts' --ignore './build/**' --ext ts --exec 'npm run build && node ./build/index.js'",
     "build": "rm -rf ./build && tsc --build tsconfig.json",
+    "grpc:gen": "npx proto-loader-gen-types --longs=String --enums=String --defaults --oneofs --keepCase --outDir=./grpc-gen ./applications/minotari_app_grpc/proto/*.proto",
+    "grpc:refresh": "node bin/refreshGrpcFiles.js",
     "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",
     "lint": "eslint . ",

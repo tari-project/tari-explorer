@@ -1,3 +1,4 @@
 partials
 views/blocks.hbs
 build
+grpc-gen

@@ -76,36 +76,35 @@ async function fetchProtoFiles() {
   console.log("✅ All proto files downloaded successfully");
 }
 
+async function fetchMinotariNode() {
+  const apiUrl = `https://api.github.com/repos/${REPO}/releases/latest`;
+  const json = await getJSON(apiUrl);
+
+  const tariSuiteForHw = json.assets.find((a) =>
+    TARI_SUITE_PATTERN.test(a.name),
+  );
+  if (!tariSuiteForHw) {
+    console.error(`❌ No asset found matching pattern ${TARI_SUITE_PATTERN}`);
+    process.exit(1);
+  }
+
+  const tariSuiteFileName = path.basename(tariSuiteForHw.browser_download_url);
+
+  console.log(`   ⬇️ Downloading Tari Suite: ${tariSuiteFileName}...`);
+  await fs.promises.mkdir("./applications/minotari-node", {
+    recursive: true,
+  });
+  await downloadFile(
+    tariSuiteForHw.browser_download_url,
+    path.join("./applications/minotari-node", tariSuiteFileName),
+  );
+  console.log(`✅ Downloaded Tari Suite: ./${tariSuiteFileName}`);
+}
+
 async function fetchLatestSuite() {
   try {
-    // Download proto files first
     await fetchProtoFiles();
-
-    //Download minotari_node latest
-    const apiUrl = `https://api.github.com/repos/${REPO}/releases/latest`;
-    const json = await getJSON(apiUrl);
-
-    const tariSuiteForHw = json.assets.find((a) =>
-      TARI_SUITE_PATTERN.test(a.name),
-    );
-    if (!tariSuiteForHw) {
-      console.error(`❌ No asset found matching pattern ${TARI_SUITE_PATTERN}`);
-      process.exit(1);
-    }
-
-    const tariSuiteFileName = path.basename(
-      tariSuiteForHw.browser_download_url,
-    );
-
-    console.log(`   ⬇️ Downloading Tari Suite: ${tariSuiteFileName}...`);
-    await fs.promises.mkdir("./applications/minotari-node", {
-      recursive: true,
-    });
-    await downloadFile(
-      tariSuiteForHw.browser_download_url,
-      path.join("./applications/minotari-node", tariSuiteFileName),
-    );
-    console.log(`✅ Downloaded Tari Suite: ./${tariSuiteFileName}`);
+    await fetchMinotariNode();
   } catch (err) {
     console.error("🚨 Error:", err.message);
     process.exit(1);

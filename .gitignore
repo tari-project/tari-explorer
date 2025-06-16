@@ -142,3 +142,6 @@ build
 
 #Grpc generated types
 grpc-gen
+
+#minotari-node
+applications/minotari-node

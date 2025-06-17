@@ -1,0 +1,37 @@
+<h2>{{title}}</h2>
+<br />
+<h1>Found in blocks:</h1>
+{{#if items.length}}
+  <table>
+    <thead>
+      <tr>
+        <th>Block Height</th>
+        <th>Payment Reference</th>
+        <th>Mined Timestamp</th>
+        <th>Is Spent</th>
+        <th>Min Value Promise</th>
+        <th>Commitment</th>
+        <th>Block Hash</th>
+        <th>Spent Block Hash</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+        <tr>
+          <td><a
+              href="/blocks/{{this.block_height}}"
+            >{{this.block_height}}</a></td>
+          <td>{{this.payment_reference_hex}}</td>
+          <td>{{this.mined_timestamp}}</td>
+          <td>{{this.is_spent}}</td>
+          <td>{{this.min_value_promise}}</td>
+          <td>{{hex this.commitment}}</td>
+          <td>{{hex this.block_hash}}</td>
+          <td>{{hex this.spent_block_hash}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+{{else}}
+  <h2>!!! No results found</h2>
+{{/if}}

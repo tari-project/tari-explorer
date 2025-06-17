@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npm run build && node ./build/index.js",
     "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ext ts --exec \"cross-env npm run build && node ./build/index.js\"",
-    "build": "npx rimraf ./build && tsc --build tsconfig.json",
+    "build": "rimraf ./build && tsc --build tsconfig.json",
     "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",
     "lint": "eslint . ",

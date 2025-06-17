@@ -3,15 +3,31 @@ import path from "node:path";
 import os from "node:os";
 import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
+import AdmZip from "adm-zip";
 
 const PLATFORM = os.platform(); // 'linux', 'darwin', 'win32'
 const HARDWARE_ARCH = os.arch(); // 'x64', 'arm64', etc.
 const REPO = "tari-project/tari";
 const TARI_SUITE_PATTERN = new RegExp(`tari_suite-.*-${getTariArch()}\\.zip`);
 const PROTO_BRANCH_REF = "mainnet";
+const MINOTARI_NODE_EXEC_NAME = "minotari_node";
+const MINOTARI_NODE_PATH = "./applications/minotari-node";
+
+interface GithubFileType {
+  name: string;
+  type: string;
+  download_url: string;
+}
+
+interface GithubAssetJson {
+  assets: {
+    name: string;
+    browser_download_url;
+  }[];
+}
 
 function getTariArch() {
-  let tariPlatform = PLATFORM;
+  let tariPlatform: string = PLATFORM;
   let tariArch = HARDWARE_ARCH;
 
   // Normalize platform names
@@ -36,15 +52,19 @@ function getTariArch() {
   return `${tariPlatform}-${tariArch}`;
 }
 
-const getJSON = (url) =>
+const getJSON = <T>(url) =>
   fetch(url, {
     headers: { "User-Agent": "node.js" },
-  }).then((res) => res.json());
+  }).then((res) => res.json() as T);
 
 const downloadFile = async (url, destination) => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.status}`);
+  }
+
+  if (!response.body) {
+    throw new Error("Failed to find the body of the file");
   }
 
   const fileStream = fs.createWriteStream(destination);
@@ -61,7 +81,8 @@ async function fetchProtoFiles() {
 
   // Get the contents of the proto directory from GitHub API
   const contentsUrl = `https://api.github.com/repos/${REPO}/contents/applications/minotari_app_grpc/proto?ref=${PROTO_BRANCH_REF}`;
-  const files = await getJSON(contentsUrl);
+
+  const files: GithubFileType[] = await getJSON(contentsUrl);
 
   console.log(`Found ${files.length} proto files`);
 
@@ -78,7 +99,7 @@ async function fetchProtoFiles() {
 
 async function fetchMinotariNode() {
   const apiUrl = `https://api.github.com/repos/${REPO}/releases/latest`;
-  const json = await getJSON(apiUrl);
+  const json: GithubAssetJson = await getJSON(apiUrl);
 
   const tariSuiteForHw = json.assets.find((a) =>
     TARI_SUITE_PATTERN.test(a.name),
@@ -91,14 +112,32 @@ async function fetchMinotariNode() {
   const tariSuiteFileName = path.basename(tariSuiteForHw.browser_download_url);
 
   console.log(`   ⬇️ Downloading Tari Suite: ${tariSuiteFileName}...`);
-  await fs.promises.mkdir("./applications/minotari-node", {
+  await fs.promises.mkdir(MINOTARI_NODE_PATH, {
     recursive: true,
   });
-  await downloadFile(
-    tariSuiteForHw.browser_download_url,
-    path.join("./applications/minotari-node", tariSuiteFileName),
-  );
+
+  const tariSuiteLocalPath = path.join(MINOTARI_NODE_PATH, tariSuiteFileName);
+
+  await downloadFile(tariSuiteForHw.browser_download_url, tariSuiteLocalPath);
   console.log(`✅ Downloaded Tari Suite: ./${tariSuiteFileName}`);
+
+  //Extract minotari Node
+  var zip = new AdmZip(tariSuiteLocalPath);
+
+  const zipEntries = zip.getEntries();
+  const minotariNodeEntry = zipEntries.find(
+    (entry) => (entry.name as string) === MINOTARI_NODE_EXEC_NAME,
+  );
+
+  if (!minotariNodeEntry) {
+    throw new Error(`no ${MINOTARI_NODE_EXEC_NAME} found as executable`);
+  }
+
+  zip.extractEntryTo(minotariNodeEntry, MINOTARI_NODE_PATH, true, true);
+  console.log(`✅ Exctracted Minotari Node to: ${MINOTARI_NODE_PATH}`);
+
+  //Delete suite
+  fs.unlinkSync(tariSuiteLocalPath);
 }
 
 async function fetchLatestSuite() {
@@ -106,7 +145,7 @@ async function fetchLatestSuite() {
     await fetchProtoFiles();
     await fetchMinotariNode();
   } catch (err) {
-    console.error("🚨 Error:", err.message);
+    console.error("🚨 Error:", (err as Error).message);
     process.exit(1);
   }
 }

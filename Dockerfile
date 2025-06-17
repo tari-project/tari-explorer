@@ -7,6 +7,7 @@ ARG EXTERNAL_LIBS_LOCATION=./external_libs
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci
+RUN npm install ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/
 COPY . .
 RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto applications/minotari_app_grpc/proto
 RUN npm run build

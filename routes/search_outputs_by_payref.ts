@@ -60,7 +60,6 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     }
     return;
   }
-  console.log("Payrefs received:", result);
   const json = {
     items: result,
   };

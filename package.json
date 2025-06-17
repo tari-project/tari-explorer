@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "node ./build/index.js",
-    "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ext ts --exec \"cmd /c npm run build && node ./build/index.js\"",
+    "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ext ts --exec \"cross-env npm run build && node ./build/index.js\"",
     "build": "rimraf ./build && tsc --build tsconfig.json",
     "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",
@@ -28,6 +28,7 @@
     "@types/node": "^22.15.18",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",

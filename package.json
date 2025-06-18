@@ -5,10 +5,10 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "start": "node ./build/index.js",
-    "dev": "nodemon --watch './**/*.ts' --ignore './build/**' --ext ts --exec 'npm run grpc:generate && npm run build && node ./build/index.js'",
-    "build": "npm run grpc:generate && rm -rf ./build && tsc --build tsconfig.json",
-    "grpc:generate": "shx mkdir -p grpc-gen && npx grpc_tools_node_protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./grpc-gen --ts_proto_opt=env=node,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=false,useAsyncIterable=false,importSuffix=.js,snakeToCamel=false --proto_path=./applications/minotari_app_grpc/proto/ base_node.proto",
+    "start": "npm run build && node ./build/index.js",
+    "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ext ts --exec \"cross-env npm run build && node ./build/index.js\"",
+    "build": "npm run grpc:generate && rimraf -rf ./build && tsc --build tsconfig.json",
+    "grpc:generate": "shx mkdir -p grpc-gen && npx grpc_tools_node_protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./grpc-gen --ts_proto_opt=env=node,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=true,useAsyncIterable=false,importSuffix=.js,snakeToCamel=false,forceLong=bigint --proto_path=./applications/minotari_app_grpc/proto/ base_node.proto",
     "grpc:download": "npx tsx bin/refreshGrpcFiles.ts",
     "fmt": "prettier --end-of-line auto -w **/*.{ts,hbs}",
     "check-fmt": "prettier --end-of-line auto -c .",
@@ -32,9 +32,10 @@
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
-    "@types/node": "^22.15.18",
+    "@types/node": "^24.0.3",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",
@@ -44,6 +45,7 @@
     "shx": "^0.4.0",
     "ts-proto": "^2.7.5",
     "tsx": "^4.20.3",
+    "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   }
 }

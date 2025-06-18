@@ -1,47 +1,45 @@
 <h2>Versions</h2>
 <table>
+  <tr>
+    <th>Version</th>
+    <th>Blocks Mined</th>
+  </tr>
+  {{#each this.versions}}
     <tr>
-        <th>Version</th>
-        <th>Blocks Mined</th>
+      <td>{{@key}}</td>
+      <td>{{this}}</td>
     </tr>
-    {{#each this.versions}}
-    <tr>
-        <td>{{@key}}</td>
-        <td>{{this}}</td>
-    </tr>
-    {{/each}}
+  {{/each}}
 </table>
-
 
 <h2>Operating System</h2>
 <table>
+  <tr>
+    <th>OS</th>
+    <th>Blocks mined</th>
+  </tr>
+  {{#each this.os}}
     <tr>
-        <th>OS</th>
-        <th>Blocks mined</th>
+      <td>{{@key}}</td>
+      <td>{{this}}</td>
     </tr>
-    {{#each this.os}}
-    <tr>
-        <td>{{@key}}</td>
-        <td>{{this}}</td>
-    </tr>
-    {{/each}}
+  {{/each}}
 </table>
-
 
 <h2>Active miners</h2>
 <table>
-    <tr>
-        <th>Uniqueid</th>
-        <th>Resource</th>
-        <th>Blocks won (total)</th>
-        <th>Blocks won (last 2 hours)</th>
-        <th>Version</th>
-        <th>OS</th>
-        <th>Last block</th>
-    </tr>
-    {{#each this.active_miners}}
-    {{#if this.sha.count }}
-    <tr>
+  <tr>
+    <th>Uniqueid</th>
+    <th>Resource</th>
+    <th>Blocks won (total)</th>
+    <th>Blocks won (last 2 hours)</th>
+    <th>Version</th>
+    <th>OS</th>
+    <th>Last block</th>
+  </tr>
+  {{#each this.active_miners}}
+    {{#if this.sha.count}}
+      <tr>
         <td>{{@key}}</td>
         <td>gpu</td>
         <td>{{this.sha.count}}</td>
@@ -49,10 +47,10 @@
         <td>{{this.sha.version}}</td>
         <td>{{this.sha.os}}</td>
         <td>{{this.sha.time_since_last_block}} minutes ago</td>
-    </tr>
+      </tr>
     {{/if}}
-    {{#if this.randomx.count }}
-    <tr>
+    {{#if this.randomx.count}}
+      <tr>
         <td>{{@key}}</td>
         <td>cpu</td>
         <td>{{this.randomx.count}}</td>
@@ -60,49 +58,48 @@
         <td>{{this.randomx.version}}</td>
         <td>{{this.randomx.os}}</td>
         <td>{{this.randomx.time_since_last_block}} minutes ago</td>
-    </tr>
+      </tr>
     {{/if}}
-    {{/each}}
+  {{/each}}
 </table>
 
 <h2>Unique miners (GPU)</h2>
 <table>
-    <tr>
-        <th>Uniqueid</th>
-        <th>Resource</th>
-        <th>Blocks won</th>
-        <th>Version</th>
-        <th>OS</th>
-        <th>Last block</th>
-    </tr>
-    {{#each this.unique_ids}}
-    {{#if this.sha.count }}
-    <tr>
+  <tr>
+    <th>Uniqueid</th>
+    <th>Resource</th>
+    <th>Blocks won</th>
+    <th>Version</th>
+    <th>OS</th>
+    <th>Last block</th>
+  </tr>
+  {{#each this.unique_ids}}
+    {{#if this.sha.count}}
+      <tr>
         <td>{{@key}}</td>
         <td>gpu</td>
         <td>{{this.sha.count}}</td>
         <td>{{this.sha.version}}</td>
         <td>{{this.sha.os}}</td>
         <td>{{this.sha.time_since_last_block}} minutes ago</td>
-    </tr>
+      </tr>
     {{/if}}
-    {{/each}}
+  {{/each}}
 </table>
-
 
 <h2>Unique miners (CPU)</h2>
 <table>
-    <tr>
-        <th>Uniqueid</th>
-        <th>Resource</th>
-        <th>Blocks won</th>
-        <th>Version</th>
-        <th>OS</th>
-        <th>Last block</th>
-    </tr>
-    {{#each this.unique_ids}}
-    {{#if this.randomx.count }}
-    <tr>
+  <tr>
+    <th>Uniqueid</th>
+    <th>Resource</th>
+    <th>Blocks won</th>
+    <th>Version</th>
+    <th>OS</th>
+    <th>Last block</th>
+  </tr>
+  {{#each this.unique_ids}}
+    {{#if this.randomx.count}}
+      <tr>
         <td>{{@key}}</td>
         <td>cpu</td>
         <td>{{this.randomx.count}}</td>
@@ -110,23 +107,20 @@
         <td>{{this.randomx.os}}</td>
         <td>{{this.randomx.time_since_last_block}} minutes ago</td>
 
-    </tr>
+      </tr>
     {{/if}}
-    {{/each}}
+  {{/each}}
 </table>
-
-
-
 
 <h3>All extra fields</h3>
 <table>
-    {{# each this.extras}}
+  {{#each this.extras}}
     <tr>
-        <td>{{this.height}}</td>
-        <td>{{this.extra}}</td>
-        <td>{{this.unique_id}}</td>
-        <td>{{this.os}}</td>
-        <td>{{this.version}}</td>
+      <td>{{this.height}}</td>
+      <td>{{this.extra}}</td>
+      <td>{{this.unique_id}}</td>
+      <td>{{this.os}}</td>
+      <td>{{this.version}}</td>
     </tr>
-    {{/each}}
+  {{/each}}
 </table>

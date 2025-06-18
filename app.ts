@@ -17,6 +17,7 @@ import mempoolRouter from "./routes/mempool.js";
 import minersRouter from "./routes/miners.js";
 import searchCommitmentsRouter from "./routes/search_commitments.js";
 import searchKernelsRouter from "./routes/search_kernels.js";
+import searchPaymentRefsRouter from "./routes/search_outputs_by_payref.js";
 import healthz from "./routes/healthz.js";
 
 import BackgrounUpdater from "./utils/updater.js";
@@ -149,7 +150,7 @@ hbs.registerHelper(
         typeof unitStr === "string" ? Boolean(unitStr) === true : false;
 
       if (unitStr) {
-        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 3));
+        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
       }
 
       return asciichart.plot(
@@ -223,6 +224,7 @@ app.use("/block_data", blockDataRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/miners", minersRouter);
 app.use("/search_commitments", searchCommitmentsRouter);
+app.use("/search_outputs_by_payref", searchPaymentRefsRouter);
 app.use("/search_kernels", searchKernelsRouter);
 app.use("/healthz", healthz);
 

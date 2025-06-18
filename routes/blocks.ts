@@ -41,7 +41,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   let height: number;
   if (height_or_hash.length === 64) {
     const block = await client.getHeaderByHash({
-      hash: fromHexString(height_or_hash),
+      hash: Buffer.from(fromHexString(height_or_hash)),
     });
     if (!block) {
       res.status(404);
@@ -50,7 +50,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       });
       return;
     }
-    height = parseInt(block.header.height);
+    height = block.header?.height || 0;
   } else {
     height = parseInt(height_or_hash);
   }
@@ -205,7 +205,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       (kernels_to + 10);
   }
   const tipInfo = await client.getTipInfo({});
-  const tipHeight: number = parseInt(tipInfo.metadata.best_block_height);
+  const tipHeight: number = tipInfo?.metadata?.best_block_height || 0;
 
   const prevHeight = height - 1;
   let prevLink: string | null = `/blocks/${prevHeight}`;

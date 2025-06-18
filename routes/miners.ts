@@ -23,13 +23,16 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.index);
   const client = createClient();
-  const lastDifficulties = await client.getNetworkDifficulty({ from_tip: 720 });
+  const lastDifficulties = await collectAsyncIterable(
+    client.getNetworkDifficulty({ from_tip: 720 }),
+  );
 
   const data: any = {
     num_blocks: lastDifficulties.length,
@@ -46,9 +49,9 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     const split = extra.split(",");
 
     let unique_id =
-      lastDifficulties[i].first_coinbase_extra === ""
+      lastDifficulties[i]?.coinbase_extras[0]?.toString() || "" === ""
         ? "Non-universe miner"
-        : lastDifficulties[i].first_coinbase_extra;
+        : lastDifficulties[i]?.coinbase_extras[0]?.toString();
     let os = "Non-universe miner";
     let version = "Non-universe miner";
 
@@ -79,27 +82,27 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       };
     }
     data.unique_ids[unique_id][
-      lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+      lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
     ].count += 1;
     data.unique_ids[unique_id][
-      lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+      lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
     ].version = version;
     data.unique_ids[unique_id][
-      lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+      lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
     ].last_block_time = lastDifficulties[i].timestamp;
     data.unique_ids[unique_id][
-      lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+      lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
     ].time_since_last_block = Math.ceil(
       (data.now - lastDifficulties[i].timestamp) / 60,
     );
 
     if (
       data.unique_ids[unique_id][
-        lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+        lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
       ].time_since_last_block < 120
     ) {
       data.unique_ids[unique_id][
-        lastDifficulties[i].pow_algo === "0" ? "randomx" : "sha"
+        lastDifficulties[i].pow_algo === 0 ? "randomx" : "sha"
       ].recent_blocks += 1;
     }
 

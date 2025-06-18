@@ -20,36 +20,41 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { createClient as createBaseNodeClient } from "../baseNodeClient.js";
-import express from "express";
-const router = express.Router();
+//WE can probably remove this
+// import { collectAsyncIterable } from "@/utils/grpcHelpers.js";
+// import { createClient as createBaseNodeClient } from "../baseNodeClient.js";
+// import express from "express";
+// const router = express.Router();
 
-router.get(
-  "/:asset_public_key",
-  async function (req: express.Request, res: express.Response) {
-    const baseNodeClient = createBaseNodeClient();
-    const asset_public_key = req.params.asset_public_key;
+// router.get(
+//   "/:asset_public_key",
+//   async function (req: express.Request, res: express.Response) {
+//     const baseNodeClient = createBaseNodeClient();
+//     const asset_public_key = req.params.asset_public_key;
 
-    const tokens = await baseNodeClient.getTokens({
-      asset_public_key: Buffer.from(asset_public_key, "hex"),
-    });
+//     const tokens = await collectAsyncIterable(
+//       baseNodeClient.getTokensInCirculation({
+//         // heights:
+//         asset_public_key: Buffer.from(asset_public_key, "hex"),
+//       }),
+//     );
 
-    if (!tokens || tokens.length === 0) {
-      res.status(404);
-      res.render("404", { message: `No tokens for asset found` });
-      return;
-    }
+//     if (!tokens || tokens.length === 0) {
+//       res.status(404);
+//       res.render("404", { message: `No tokens for asset found` });
+//       return;
+//     }
 
-    const json = {
-      title: `Asset with pub key: ${asset_public_key}`,
-      tokens: tokens,
-    };
-    if (req.query.json !== undefined) {
-      res.json(json);
-    } else {
-      res.render("assets", json);
-    }
-  },
-);
+//     const json = {
+//       title: `Asset with pub key: ${asset_public_key}`,
+//       tokens: tokens,
+//     };
+//     if (req.query.json !== undefined) {
+//       res.json(json);
+//     } else {
+//       res.render("assets", json);
+//     }
+//   },
+// );
 
-export default router;
+// export default router;

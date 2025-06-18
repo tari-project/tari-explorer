@@ -25,7 +25,15 @@ import { miningStats } from "../utils/stats.js";
 import express, { Request, Response } from "express";
 import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import { AggregateBody } from "../grpc-gen/transaction.js";
+
 const router = express.Router();
+
+type AggregateBodyExtended = AggregateBody & {
+  signature: Buffer<ArrayBufferLike> | undefined;
+  total_fees: number;
+};
 
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
@@ -115,7 +123,7 @@ export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});
-  const tipHeight = tipInfo.metadata.best_block_height;
+  const tipHeight = tipInfo?.metadata?.best_block_height || 0;
   const [
     version_result,
     listHeaders,
@@ -125,22 +133,25 @@ export async function getIndexData(from: number, limit: number) {
     blocks,
   ] = await Promise.all([
     client.getVersion({}),
-    client.listHeaders({
-      tip_height: tipHeight,
-      from_height: 0,
-      num_headers: 101,
-    }),
+    collectAsyncIterable(
+      client.listHeaders({
+        num_headers: 101,
+      }),
+    ),
     // Get one more header than requested so we can work out the difference in MMR_size
-    client.listHeaders({
-      tip_height: tipHeight,
-      from_height: from,
-      num_headers: limit + 1,
-    }),
-    client.getMempoolTransactions({}),
-    client.getNetworkDifficulty({ from_tip: 180 }),
-    client.getBlocks({
-      heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
-    }),
+    collectAsyncIterable(
+      client.listHeaders({
+        from_height: from,
+        num_headers: limit + 1,
+      }),
+    ),
+    collectAsyncIterable(client.getMempoolTransactions({})),
+    collectAsyncIterable(client.getNetworkDifficulty({ from_tip: 180 })),
+    collectAsyncIterable(
+      client.getBlocks({
+        heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
+      }),
+    ),
   ]);
   const version = version_result.value?.slice(0, 25);
 
@@ -253,12 +264,17 @@ export async function getIndexData(from: number, limit: number) {
 
   for (let i = 0; i < mempool.length; i++) {
     let sum = 0;
-    for (let j = 0; j < mempool[i].transaction.body.kernels.length; j++) {
-      sum += parseInt(mempool[i].transaction.body.kernels[j].fee);
-      mempool[i].transaction.body.signature =
-        mempool[i].transaction.body.kernels[j].excess_sig.signature;
+    for (
+      let j = 0;
+      j < (mempool[i]?.transaction?.body?.kernels?.length || 0);
+      j++
+    ) {
+      sum += mempool[i]?.transaction?.body?.kernels[j]?.fee || 0;
+      //introducing signature prop
+      (mempool[i]?.transaction?.body as AggregateBodyExtended).signature =
+        mempool[i]?.transaction?.body?.kernels[j]?.excess_sig?.signature;
     }
-    mempool[i].transaction.body.total_fees = sum;
+    (mempool[i]?.transaction?.body as AggregateBodyExtended).total_fees = sum;
   }
 
   const block = await cache.get(client.getBlocks, { heights: [tipHeight] });

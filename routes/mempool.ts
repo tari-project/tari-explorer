@@ -23,6 +23,8 @@
 import express from "express";
 import { createClient } from "../baseNodeClient.js";
 import cacheSettings from "../cacheSettings.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import { Transaction } from "../grpc-gen/transaction.js";
 const router = express.Router();
 
 /* GET mempool page. */
@@ -32,15 +34,22 @@ router.get(
     res.setHeader("Cache-Control", cacheSettings.mempool);
     const client = createClient();
     const txId = req.params.excessSigs.split("+");
-    const mempool = await client.getMempoolTransactions({});
-    let tx: Record<string, any> | null = null;
+    const mempool = await collectAsyncIterable(
+      client.getMempoolTransactions({}),
+    );
+    let tx: Transaction | undefined = undefined;
     for (let i = 0; i < mempool.length; i++) {
-      for (let j = 0; j < mempool[i].transaction.body.kernels.length; j++) {
+      for (
+        let j = 0;
+        j < (mempool[i]?.transaction?.body?.kernels?.length || 0);
+        j++
+      ) {
         for (let k = 0; k < txId.length; k++) {
           if (
             txId[k] ===
             Buffer.from(
-              mempool[i].transaction.body.kernels[j].excess_sig.signature,
+              mempool[i]?.transaction?.body?.kernels[j]?.excess_sig
+                ?.signature || Buffer.from([]),
             ).toString("hex")
           ) {
             tx = mempool[i].transaction;
@@ -63,7 +72,7 @@ router.get(
       return;
     }
 
-    tx.body.outputs.forEach((output: any) => {
+    tx.body?.outputs.forEach((output: any) => {
       if (output.features.range_proof_type === 0) {
         // BulletProofPlus
         const proofHex = Buffer.from(output.range_proof.proof_bytes).toString(

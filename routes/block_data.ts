@@ -51,7 +51,7 @@ router.get(
     let height;
     if (height_or_hash.length === 64) {
       block = await client.getHeaderByHash({
-        hash: fromHexString(height_or_hash),
+        hash: Buffer.from(fromHexString(height_or_hash)),
       });
       if (!block) {
         res.status(404);
@@ -79,7 +79,7 @@ router.get(
     };
 
     const tipInfo = await client.getTipInfo({});
-    const tipHeight = parseInt(tipInfo.metadata.best_block_height);
+    const tipHeight = tipInfo?.metadata?.best_block_height || 0;
 
     if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
       res.setHeader("Cache-Control", cacheSettings.oldBlocks);

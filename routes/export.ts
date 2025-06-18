@@ -23,13 +23,16 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import { format } from "@fast-csv/format";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
-  const lastDifficulties = await client.getNetworkDifficulty({
-    from_tip: 1000,
-  });
+  const lastDifficulties = await collectAsyncIterable(
+    client.getNetworkDifficulty({
+      from_tip: 1000,
+    }),
+  );
 
   const csvStream = format({ headers: true });
   res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');

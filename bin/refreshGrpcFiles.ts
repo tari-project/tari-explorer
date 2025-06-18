@@ -28,7 +28,7 @@ interface GithubAssetJson {
 
 function getTariArch() {
   let tariPlatform: string = PLATFORM;
-  let tariArch = HARDWARE_ARCH;
+  let tariArch: string = HARDWARE_ARCH;
 
   // Normalize platform names
   if (tariPlatform === "win32") {
@@ -68,7 +68,9 @@ const downloadFile = async (url, destination) => {
   }
 
   const fileStream = fs.createWriteStream(destination);
-  await finished(Readable.fromWeb(response.body).pipe(fileStream));
+  await finished(
+    Readable.fromWeb(response.body as unknown as any).pipe(fileStream),
+  );
 };
 
 async function fetchProtoFiles() {

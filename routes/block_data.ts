@@ -24,6 +24,9 @@ import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
+import { HistoricalBlock } from "@/grpc-gen/block.js";
+import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
+import { AggregateBody } from "@/grpc-gen/transaction.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -47,8 +50,8 @@ router.get(
     }
     const client = createClient();
     const height_or_hash = req.params.height_or_hash;
-    let block;
-    let height;
+    let block: HistoricalBlock[] | BlockHeaderResponse;
+    let height: bigint;
     if (height_or_hash.length === 64) {
       block = await client.getHeaderByHash({
         hash: Buffer.from(fromHexString(height_or_hash)),
@@ -60,28 +63,29 @@ router.get(
         });
         return;
       }
-      height = parseInt(block.header.height);
+      height = block?.header?.height ?? 0n;
     } else {
-      height = parseInt(height_or_hash);
+      height = BigInt(parseInt(height_or_hash));
     }
 
     const request = { heights: [height] };
-    block = await cache.get(client.getBlocks, request);
+    block = (await cache.get(client.getBlocks, request)) as HistoricalBlock[];
     if (!block || block.length === 0) {
       res.status(404);
       res.render("404", { message: `Block at height ${height} not found` });
       return;
     }
 
+    const blockBody: AggregateBody = block[0]?.block?.body as AggregateBody;
     const body = {
-      length: block[0].block.body[what].length,
-      data: block[0].block.body[what].slice(from, to),
+      length: blockBody[what as keyof AggregateBody].length,
+      data: blockBody[what as keyof AggregateBody]?.slice(from, to),
     };
 
     const tipInfo = await client.getTipInfo({});
     const tipHeight = tipInfo?.metadata?.best_block_height || 0;
 
-    if (height + cacheSettings.oldBlockDeltaTip <= tipHeight) {
+    if (height + BigInt(cacheSettings.oldBlockDeltaTip) <= tipHeight) {
       res.setHeader("Cache-Control", cacheSettings.oldBlocks);
     } else {
       res.setHeader("Cache-Control", cacheSettings.newBlocks);

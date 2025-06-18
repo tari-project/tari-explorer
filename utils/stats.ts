@@ -20,7 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-export function miningStats(block: any) {
+import { HistoricalBlock } from "@/grpc-gen/block.js";
+
+export function miningStats(block: HistoricalBlock | HistoricalBlock[]) {
   // Handle both object and array cases
   const blockData = Array.isArray(block) ? block[0] : block;
 
@@ -34,13 +36,13 @@ export function miningStats(block: any) {
   }
 
   let powAlgo: string;
-  if (blockData.block.header.pow.pow_algo == "0") {
+  if (blockData?.block?.header?.pow?.pow_algo == 0n) {
     powAlgo = "Monero";
   } else {
     powAlgo = "SHA-3";
   }
-  let timestamp = blockData.block.header.timestamp;
-  timestamp = new Date(timestamp * 1000).toLocaleString("en-US", {
+  const timestampNumber: number = Number(blockData?.block?.header?.timestamp);
+  const timestamp = new Date(timestampNumber * 1000).toLocaleString("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

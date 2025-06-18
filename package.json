@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "npm run build && node ./build/index.js",
-    "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ext ts --exec \"cross-env npm run build && node ./build/index.js\"",
+    "dev": "nodemon --watch \"./**/*.ts\" --ignore \"./build/**\" --ignore \"./grpc-gen/**\" --ext ts --exec \"cross-env npm run build && node ./build/index.js\"",
     "build": "npm run grpc:generate && rimraf -rf ./build && tsc --build tsconfig.json",
     "grpc:generate": "shx mkdir -p grpc-gen && npx grpc_tools_node_protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./grpc-gen --ts_proto_opt=env=node,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=true,useAsyncIterable=false,importSuffix=.js,snakeToCamel=false,forceLong=bigint --proto_path=./applications/minotari_app_grpc/proto/ base_node.proto",
     "grpc:download": "npx tsx bin/refreshGrpcFiles.ts",
@@ -24,6 +24,7 @@
     "fast-csv": "^5.0.2",
     "grpc-promise": "^1.4.0",
     "hbs": "^4.1.2",
+    "json-bigint": "^1.0.0",
     "long": "^5.3.2",
     "nice-grpc": "^2.1.12",
     "pino-http": "^10.5.0",
@@ -42,10 +43,10 @@
     "grpc-tools": "^1.13.0",
     "nodemon": "^3.1.7",
     "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
     "shx": "^0.4.0",
     "ts-proto": "^2.7.5",
     "tsx": "^4.20.3",
-    "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   }
 }

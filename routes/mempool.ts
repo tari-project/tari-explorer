@@ -25,6 +25,7 @@ import { createClient } from "../baseNodeClient.js";
 import cacheSettings from "../cacheSettings.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { Transaction } from "../grpc-gen/transaction.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 /* GET mempool page. */
@@ -89,7 +90,7 @@ router.get(
     if (req.query.json !== undefined) {
       res.json(json);
     } else {
-      res.render("mempool", json);
+      res.render("mempool", sanitizeBigInts(json));
     }
   },
 );

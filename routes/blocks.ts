@@ -25,6 +25,8 @@ import express, { Request, Response } from "express";
 import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
 import { miningStats } from "../utils/stats.js";
+import { HistoricalBlock } from "@/grpc-gen/block.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -38,7 +40,7 @@ function fromHexString(hexString: string): number[] {
 router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const client = createClient();
   const height_or_hash = req.params.height_or_hash;
-  let height: number;
+  let height: bigint;
   if (height_or_hash.length === 64) {
     const block = await client.getHeaderByHash({
       hash: Buffer.from(fromHexString(height_or_hash)),
@@ -50,13 +52,14 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       });
       return;
     }
-    height = block.header?.height || 0;
+    height = block.header?.height || 0n;
   } else {
-    height = parseInt(height_or_hash);
+    height = BigInt(height_or_hash);
   }
 
   const request = { heights: [height] };
-  const block = await cache.get(client.getBlocks, request);
+
+  const block: HistoricalBlock[] = await cache.get(client.getBlocks, request);
   if (!block || block.length === 0) {
     res.status(404);
     res.render("404", { message: `Block at height ${height} not found` });
@@ -74,12 +77,12 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const kernels_from = +(req.query.kernels_from || 0);
   const kernels_to = +(req.query.kernels_to || 10);
   const body = {
-    outputs_length: block[0].block.body.outputs.length,
-    inputs_length: block[0].block.body.inputs.length,
-    kernels_length: block[0].block.body.kernels.length,
-    outputs: block[0].block.body.outputs.slice(outputs_from, outputs_to),
-    inputs: block[0].block.body.inputs.slice(inputs_from, inputs_to),
-    kernels: block[0].block.body.kernels.slice(kernels_from, kernels_to),
+    outputs_length: block[0]?.block?.body?.outputs.length,
+    inputs_length: block[0]?.block?.body?.inputs.length,
+    kernels_length: block[0]?.block?.body?.kernels.length,
+    outputs: block[0]?.block?.body?.outputs.slice(outputs_from, outputs_to),
+    inputs: block[0]?.block?.body?.inputs.slice(inputs_from, inputs_to),
+    kernels: block[0]?.block?.body?.kernels.slice(kernels_from, kernels_to),
     outputsNext: null as string | null,
     outputsNextLink: null as string | null,
     outputsPrev: null as string | null,
@@ -114,7 +117,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       "&kernels_to=" +
       kernels_to;
   }
-  if (outputs_to < body.outputs_length) {
+  if (outputs_to < (body.outputs_length || 0)) {
     body.outputsNext = `${outputs_to}..${outputs_to + 9}`;
     body.outputsNextLink =
       "/blocks/" +
@@ -150,7 +153,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       "&kernels_to=" +
       kernels_to;
   }
-  if (inputs_to < body.inputs_length) {
+  if (inputs_to < (body.inputs_length || 0)) {
     body.inputsNext = `${inputs_to}..${inputs_to + 9}`;
     body.inputsNextLink =
       "/blocks/" +
@@ -186,7 +189,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       "&kernels_to=" +
       (kernels_to - 10);
   }
-  if (kernels_to < body.kernels_length) {
+  if (kernels_to < (body.kernels_length || 0)) {
     body.kernelsNext = `${kernels_to}..${kernels_to + 9}`;
     body.kernelsNextLink =
       "/blocks/" +
@@ -205,13 +208,13 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
       (kernels_to + 10);
   }
   const tipInfo = await client.getTipInfo({});
-  const tipHeight: number = tipInfo?.metadata?.best_block_height || 0;
+  const tipHeight: bigint = tipInfo?.metadata?.best_block_height || 0n;
 
-  const prevHeight = height - 1;
+  const prevHeight = height - 1n;
   let prevLink: string | null = `/blocks/${prevHeight}`;
-  if (height === 0) prevLink = null;
+  if (height === 0n) prevLink = null;
 
-  const nextHeight = height + 1;
+  const nextHeight = height + 1n;
   let nextLink: string | null = `/blocks/${nextHeight}`;
   if (height === tipHeight) nextLink = null;
 
@@ -222,8 +225,8 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   }
 
   const json = {
-    title: `Block at height: ${block[0].block.header.height}`,
-    header: block[0].block.header,
+    title: `Block at height: ${block[0]?.block?.header?.height?.toString()}`,
+    header: block[0]?.block?.header,
     height,
     prevLink,
     prevHeight,
@@ -239,7 +242,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("blocks", json);
+    res.render("blocks", sanitizeBigInts(json));
   }
 });
 

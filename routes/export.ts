@@ -30,7 +30,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
   const lastDifficulties = await collectAsyncIterable(
     client.getNetworkDifficulty({
-      from_tip: 1000,
+      from_tip: 1000n,
     }),
   );
 

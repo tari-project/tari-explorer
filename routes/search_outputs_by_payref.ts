@@ -42,7 +42,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   );
 
   if (payrefs.length === 0) {
-    res.status(404);
+    if (req.query.json !== undefined) {
+      res.json({});
+    } else {
+      res.render("search_outputs_by_payref");
+    }
     return;
   }
   let result;

@@ -347,5 +347,246 @@ describe('Index Module Utility Functions', () => {
       
       expect(normalizePort('0')).toBe(0);
     });
+
+    it('should handle very large port numbers', () => {
+      const normalizePort = (val: string): number | string | false => {
+        const port = parseInt(val, 10);
+        
+        if (isNaN(port)) {
+          return val;
+        }
+        
+        if (port >= 0) {
+          return port;
+        }
+        
+        return false;
+      };
+      
+      expect(normalizePort('65535')).toBe(65535);
+      expect(normalizePort('100000')).toBe(100000);
+    });
+
+    it('should handle port strings with leading/trailing whitespace', () => {
+      const normalizePort = (val: string): number | string | false => {
+        const port = parseInt(val, 10);
+        
+        if (isNaN(port)) {
+          return val;
+        }
+        
+        if (port >= 0) {
+          return port;
+        }
+        
+        return false;
+      };
+      
+      expect(normalizePort(' 3000 ')).toBe(3000);
+      expect(normalizePort('\t8080\n')).toBe(8080);
+    });
+
+    it('should handle mixed alphanumeric strings', () => {
+      const normalizePort = (val: string): number | string | false => {
+        const port = parseInt(val, 10);
+        
+        if (isNaN(port)) {
+          return val;
+        }
+        
+        if (port >= 0) {
+          return port;
+        }
+        
+        return false;
+      };
+      
+      expect(normalizePort('3000abc')).toBe(3000); // parseInt stops at first non-digit
+      expect(normalizePort('abc3000')).toBe('abc3000'); // NaN case
+    });
+  });
+
+  describe('Additional error handler edge cases', () => {
+    it('should handle EACCES error with string port', () => {
+      const error = { code: 'EACCES', syscall: 'listen' } as NodeJS.ErrnoException;
+      
+      const testOnError = (error: NodeJS.ErrnoException, portVal: string | number): void => {
+        if (error.syscall !== 'listen') {
+          throw error;
+        }
+        
+        const bind = typeof portVal === 'string' ? 'Pipe ' + portVal : 'Port ' + portVal;
+        
+        switch (error.code) {
+          case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+          case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+          default:
+            throw error;
+        }
+      };
+      
+      testOnError(error, '/tmp/socket');
+      
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Pipe /tmp/socket requires elevated privileges');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle EADDRINUSE error with string port', () => {
+      const error = { code: 'EADDRINUSE', syscall: 'listen' } as NodeJS.ErrnoException;
+      
+      const testOnError = (error: NodeJS.ErrnoException, portVal: string | number): void => {
+        if (error.syscall !== 'listen') {
+          throw error;
+        }
+        
+        const bind = typeof portVal === 'string' ? 'Pipe ' + portVal : 'Port ' + portVal;
+        
+        switch (error.code) {
+          case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+          case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+          default:
+            throw error;
+        }
+      };
+      
+      testOnError(error, '/tmp/socket');
+      
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Pipe /tmp/socket is already in use');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle errors with different syscall values', () => {
+      const error1 = { code: 'EACCES', syscall: 'bind' } as NodeJS.ErrnoException;
+      const error2 = { code: 'EACCES', syscall: 'connect' } as NodeJS.ErrnoException;
+      
+      const testOnError = (error: NodeJS.ErrnoException): void => {
+        if (error.syscall !== 'listen') {
+          throw error;
+        }
+      };
+      
+      expect(() => testOnError(error1)).toThrow();
+      expect(() => testOnError(error2)).toThrow();
+    });
+  });
+
+  describe('Server startup and configuration', () => {
+    it('should handle server creation and port setting', async () => {
+      const originalPort = process.env.PORT;
+      process.env.PORT = '9000';
+      
+      // Clear the module cache to force re-import
+      vi.resetModules();
+      await import('../index.js');
+      
+      // Restore original PORT
+      if (originalPort !== undefined) {
+        process.env.PORT = originalPort;
+      } else {
+        delete process.env.PORT;
+      }
+    });
+
+    it('should handle default port when no PORT env var', async () => {
+      const originalPort = process.env.PORT;
+      delete process.env.PORT;
+      
+      vi.resetModules();
+      await import('../index.js');
+      
+      // Restore original PORT
+      if (originalPort !== undefined) {
+        process.env.PORT = originalPort;
+      }
+    });
+
+    it('should handle edge case port values', async () => {
+      const testValues = ['0', '65535', 'socket.sock'];
+      
+      for (const portValue of testValues) {
+        const originalPort = process.env.PORT;
+        process.env.PORT = portValue;
+        
+        vi.resetModules();
+        await import('../index.js');
+        
+        // Restore original PORT
+        if (originalPort !== undefined) {
+          process.env.PORT = originalPort;
+        } else {
+          delete process.env.PORT;
+        }
+      }
+    });
+  });
+
+  describe('Address handling in onListening', () => {
+    it('should handle address object with port', () => {
+      const testOnListening = (address: any): void => {
+        console.log('Address: ', address);
+        const bind = typeof address === 'string' 
+          ? 'pipe ' + address 
+          : 'port ' + (address && 'port' in address ? address.port : 'unknown');
+        console.log('Listening on ' + bind);
+      };
+      
+      testOnListening({ port: 8080, family: 'IPv4', address: '0.0.0.0' });
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith('Listening on port 8080');
+    });
+
+    it('should handle address object without port', () => {
+      const testOnListening = (address: any): void => {
+        console.log('Address: ', address);
+        const bind = typeof address === 'string' 
+          ? 'pipe ' + address 
+          : 'port ' + (address && 'port' in address ? address.port : 'unknown');
+        console.log('Listening on ' + bind);
+      };
+      
+      testOnListening({ family: 'IPv4', address: '0.0.0.0' });
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith('Listening on port unknown');
+    });
+
+    it('should handle undefined address', () => {
+      const testOnListening = (address: any): void => {
+        console.log('Address: ', address);
+        const bind = typeof address === 'string' 
+          ? 'pipe ' + address 
+          : 'port ' + (address && 'port' in address ? address.port : 'unknown');
+        console.log('Listening on ' + bind);
+      };
+      
+      testOnListening(undefined);
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith('Listening on port unknown');
+    });
+
+    it('should handle empty object address', () => {
+      const testOnListening = (address: any): void => {
+        console.log('Address: ', address);
+        const bind = typeof address === 'string' 
+          ? 'pipe ' + address 
+          : 'port ' + (address && 'port' in address ? address.port : 'unknown');
+        console.log('Listening on ' + bind);
+      };
+      
+      testOnListening({});
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith('Listening on port unknown');
+    });
   });
 });

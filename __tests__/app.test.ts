@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
+import express from 'express';
 import hbs from 'hbs';
 
 // Mock baseNodeClient first - this is imported by many routes
@@ -186,6 +187,63 @@ describe('app.ts', () => {
       const result = helpers.chart([1, 2, 3, 4, 5]);
       expect(typeof result).toBe('string');
     });
+
+    describe('chart helper edge cases', () => {
+      it('should handle empty data array', () => {
+        const helpers = hbs.handlebars.helpers;
+        const result = helpers.chart([]);
+        expect(result).toBe('**No data**');
+      });
+
+      it('should handle formatThousands parameter', () => {
+        const helpers = hbs.handlebars.helpers;
+        const result = helpers.chart([1000, 2000, 3000], 10, true);
+        expect(typeof result).toBe('string');
+        expect(result).not.toBe('**No data**');
+      });
+
+      it('should handle unitStr parameter', () => {
+        const helpers = hbs.handlebars.helpers;
+        const result = helpers.chart([1000000, 2000000, 3000000], 10, false, 'mega');
+        expect(typeof result).toBe('string');
+        expect(result).not.toBe('**No data**');
+      });
+
+      it('should handle both formatThousands and unitStr parameters', () => {
+        const helpers = hbs.handlebars.helpers;
+        const result = helpers.chart([1000000, 2000000, 3000000], 10, true, 'mega');
+        expect(typeof result).toBe('string');
+        expect(result).not.toBe('**No data**');
+      });
+
+      it('should handle unitStr as boolean evaluation', () => {
+        const helpers = hbs.handlebars.helpers;
+        // Test when unitStr is not a string
+        const result1 = helpers.chart([1000, 2000, 3000], 10, false, null);
+        expect(typeof result1).toBe('string');
+        
+        // Test when unitStr is empty string
+        const result2 = helpers.chart([1000, 2000, 3000], 10, false, '');
+        expect(typeof result2).toBe('string');
+      });
+
+      it('should handle formatThousands boolean conversion', () => {
+        const helpers = hbs.handlebars.helpers;
+        // Test when formatThousands is truthy
+        const result1 = helpers.chart([1000, 2000, 3000], 10, 'true');
+        expect(typeof result1).toBe('string');
+        
+        // Test when formatThousands is falsy
+        const result2 = helpers.chart([1000, 2000, 3000], 10, false);
+        expect(typeof result2).toBe('string');
+      });
+
+      it('should handle various height values', () => {
+        const helpers = hbs.handlebars.helpers;
+        const result = helpers.chart([1, 2, 3], 5);
+        expect(typeof result).toBe('string');
+      });
+    });
   });
 
   describe('Error handling', () => {
@@ -195,31 +253,133 @@ describe('app.ts', () => {
         .expect(404);
     });
 
-    it('should set error locals in development', () => {
-      // Test the error handler middleware by directly invoking it
-      const mockReq = { app: { get: (env: string) => env === 'env' ? 'development' : '' } };
-      const mockRes = { 
-        locals: {},
-        headersSent: false,
-        status: vi.fn().mockReturnThis(),
-        render: vi.fn(),
-        err: null
-      };
-      const mockNext = vi.fn();
-      const mockError = { message: 'Test error', status: 500 };
+    it('should set error locals in development', async () => {
+      // Simulate an error by mocking a route that throws
+      const errorApp = express();
+      errorApp.set('env', 'development');
+      errorApp.get('/error-test', (req: any, res: any, next: any) => {
+        const err: any = new Error('Test error');
+        err.status = 400;
+        next(err);
+      });
 
-      // This tests the error handling middleware
-      expect(mockRes.status).toBeDefined();
+      // Add error handler like in app.ts
+      errorApp.use((err: any, req: any, res: any, next: any) => {
+        if (res.headersSent) {
+          return next(err);
+        }
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+        res.err = err;
+        res.status(err.status || 500).json({ error: err.message });
+      });
+
+      const response = await request(errorApp)
+        .get('/error-test')
+        .expect(400);
+
+      expect(response.body.error).toBe('Test error');
     });
 
-    it('should handle errors when headers already sent', () => {
-      const mockReq = { app: { get: vi.fn() } };
+    it('should set error locals in production', async () => {
+      // Simulate an error in production environment
+      const errorApp = express();
+      errorApp.set('env', 'production');
+      errorApp.get('/error-test', (req: any, res: any, next: any) => {
+        const err: any = new Error('Test error');
+        err.status = 500;
+        next(err);
+      });
+
+      // Add error handler like in app.ts
+      errorApp.use((err: any, req: any, res: any, next: any) => {
+        if (res.headersSent) {
+          return next(err);
+        }
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+        res.err = err;
+        res.status(err.status || 500).json({ 
+          error: err.message,
+          locals: res.locals 
+        });
+      });
+
+      const response = await request(errorApp)
+        .get('/error-test')
+        .expect(500);
+
+      expect(response.body.locals.error).toEqual({});
+      expect(response.body.locals.message).toBe('Test error');
+    });
+
+    it('should handle errors when headers already sent', async () => {
+      const errorApp = express();
+      let nextCalled = false;
+      
+      errorApp.get('/headers-sent-test', (req: any, res: any, next: any) => {
+        res.write('partial response');
+        // Don't end the response, just write to simulate headers sent
+        const err: any = new Error('Error after headers sent');
+        next(err);
+      });
+
+      // Add error handler like in app.ts
+      errorApp.use((err: any, req: any, res: any, next: any) => {
+        if (res.headersSent) {
+          nextCalled = true;
+          return next(err);
+        }
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+        res.err = err;
+        res.status(err.status || 500).json({ error: err.message });
+      });
+
+      // This test is harder to verify with supertest, so we test the logic directly
+      const mockReq = { app: { get: () => 'development' } };
       const mockRes = { headersSent: true };
       const mockNext = vi.fn();
       const mockError = new Error('Test error');
 
-      // The error handler should call next() when headers are already sent
-      expect(mockNext).toBeDefined();
+      // Simulate the error handler from app.ts
+      const errorHandler = (err: any, req: any, res: any, next: any) => {
+        if (res.headersSent) {
+          return next(err);
+        }
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+        res.err = err;
+        res.status(err.status || 500).render("error");
+      };
+
+      errorHandler(mockError, mockReq, mockRes, mockNext);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+    });
+
+    it('should handle errors without status code', async () => {
+      const errorApp = express();
+      errorApp.get('/no-status-test', (req: any, res: any, next: any) => {
+        const err = new Error('Error without status');
+        next(err);
+      });
+
+      // Add error handler like in app.ts
+      errorApp.use((err: any, req: any, res: any, next: any) => {
+        if (res.headersSent) {
+          return next(err);
+        }
+        res.locals.message = err.message;
+        res.locals.error = req.app.get("env") === "development" ? err : {};
+        res.err = err;
+        res.status(err.status || 500).json({ error: err.message });
+      });
+
+      const response = await request(errorApp)
+        .get('/no-status-test')
+        .expect(500);
+
+      expect(response.body.error).toBe('Error without status');
     });
   });
 

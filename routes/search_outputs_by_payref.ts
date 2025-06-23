@@ -24,6 +24,8 @@ import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import { PaymentReferenceResponse } from "../grpc-gen/base_node.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
@@ -46,12 +48,14 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     res.status(404);
     return;
   }
-  let result;
+  let result: PaymentReferenceResponse[];
   try {
-    result = await client.searchPaymentReferences({
-      payment_reference_hex: payrefs,
-      include_spent: true,
-    });
+    result = await collectAsyncIterable(
+      client.searchPaymentReferences({
+        payment_reference_hex: payrefs,
+        include_spent: true,
+      }),
+    );
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {

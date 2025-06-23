@@ -28,19 +28,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// // Override Express render to sanitize data before rendering
-// const originalRender = express.response.render;
-// express.response.render = function (
-//   view: string,
-//   options?: any,
-//   callback?: any,
-// ) {
-//   if (options) {
-//     options = sanitizeBigInts(options);
-//   }
-//   return originalRender.call(this, view, options, callback);
-// };
-
 // Register HBS helpers
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);

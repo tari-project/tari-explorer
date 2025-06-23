@@ -44,10 +44,6 @@ type BlockHeaderExtended = BlockHeader & {
   powText: bigint;
 };
 
-// type BlockHeaderResponseExtended = BlockHeaderResponse & {
-//   header: BlockHeaderExtended;
-// };
-
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
   res.setHeader("Cache-Control", cacheSettings.index);

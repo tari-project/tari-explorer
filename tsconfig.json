@@ -6,6 +6,7 @@
     "allowJs": true,
     "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
     "module": "NodeNext" /* Specifies which module code is generated */,
+    "isolatedModules": true,
     "target": "ESNext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
     "lib": ["ESNext"],
     "outDir": "build" /* Specifies the folder for the emitted code */,
@@ -17,7 +18,8 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "types": [
-      "node"
+      "node",
+      "vitest/globals"
     ] /* Specify type definitions to be included in the compilation */,
     "typeRoots": [
       "@types",
@@ -39,7 +41,8 @@
     "*.ts",
     "routes/**/*.ts",
     "utils/**/*.ts",
-    "applications/**/*.ts"
+    "applications/**/*.ts",
+    "**/__tests__/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

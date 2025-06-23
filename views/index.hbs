@@ -310,9 +310,9 @@
 >
   <div style="display: flex; align-items: center; gap: 10px;">
     <label for="kernel">Find kernel(s)</label>
-    <label for="nonces">Nonce</label>
+    <label for="nonces">Nonce(s)</label>
     <input id="nonces" name="nonces" type="text" style="width: 450px;" />
-    <label for="signatures">Signature</label>
+    <label for="signatures">Signature(s)</label>
     <input
       id="signatures"
       name="signatures"
@@ -323,18 +323,23 @@
   </div>
 </form>
 
-<!--Search output-->
-<div id="error-message-output" style="display: none; color: red;"></div>
+<!--Search output or block-->
+<div id="error-message-hash" style="display: none; color: red;"></div>
 <form
   method="get"
-  action="search_outputs"
+  action="search_by_hash_or_height"
   onsubmit="return validateInput(
-    document.getElementById('hashes').value,
-    document.getElementById('error-message-output')
+    document.getElementById('hash_or_number').value,
+    document.getElementById('error-message-hash')
   )"
 >
-  <label for="hashes">Find outputs(s) [payref or commitment]</label>
-  <input id="hashes" name="hashes" type="text" style="width: 450px;" />
+  <label for="hash_or_number">Find output [by payref/commitment hash(es)] or block [by hash(es) or height(s)]</label>
+  <input
+    id="hash_or_number"
+    name="hash_or_number"
+    type="text"
+    style="width: 950px;"
+  />
   <button type="submit">search</button>
 </form>
 
@@ -342,11 +347,12 @@
 <script>
   function validateInput(inputElement, errorMessageElement) {
     const hexRegex = /^[0-9a-fA-F]{64}$/;
+    const numberRegex = /^[0-9]+$/;
     const values = inputElement.split(",").map((ref) => ref.trim()).filter((ref) => ref !== "");
-    const invalidValues = values.filter((ref) => !hexRegex.test(ref));
+    const invalidValues = values.filter((ref) => !hexRegex.test(ref) && !numberRegex.test(ref));
     if (invalidValues.length > 0) {
       errorMessageElement.textContent =
-        `Input must be a 64-character hex string.\nInvalid input(s): ${invalidValues.join(", ")}`;
+        `Input must be a 64-character hex string or valid number.\nInvalid hash(es): ${invalidValues.join(", ")}`;
       errorMessageElement.style.display = 'block';
       return false;
     }

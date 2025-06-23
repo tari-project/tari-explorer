@@ -30,11 +30,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
   const nonces = ((req.query.nonces || "") as string)
     .split(",")
-    .map((ref) => ref.trim())
+    .map((ref) => ref.trim().toLowerCase())
     .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
   const signatures = ((req.query.signatures || "") as string)
     .split(",")
-    .map((ref) => ref.trim())
+    .map((ref) => ref.trim().toLowerCase())
     .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
 
   if (

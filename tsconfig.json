@@ -18,8 +18,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "types": [
-      "node",
-      "vitest/globals"
+      "node"
     ] /* Specify type definitions to be included in the compilation */,
     "typeRoots": [
       "@types",
@@ -41,8 +40,7 @@
     "*.ts",
     "routes/**/*.ts",
     "utils/**/*.ts",
-    "applications/**/*.ts",
-    "**/__tests__/**/*.ts"
+    "applications/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/__tests__/**", "**/*.test.ts"]
 }

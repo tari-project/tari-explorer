@@ -4,6 +4,7 @@ import os from "node:os";
 import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
 import AdmZip from "adm-zip";
+import { Command } from "commander";
 
 const PLATFORM = os.platform(); // 'linux', 'darwin', 'win32'
 const HARDWARE_ARCH = os.arch(); // 'x64', 'arm64', etc.
@@ -11,7 +12,23 @@ const REPO = "tari-project/tari";
 const TARI_SUITE_PATTERN = new RegExp(`tari_suite-.*-${getTariArch()}\\.zip`);
 const MINOTARI_NODE_EXEC_NAME = "minotari_node";
 const MINOTARI_NODE_PATH = "./applications/minotari-node";
-const PROTO_BRANCH_REF = "v4.4.1";
+const PROTO_DEFAULT_BRANCH_REF = "mainnet";
+
+const cli = new Command();
+
+cli
+  .name("refreshGrpcFiles")
+  .description(
+    "refreshes the proto files and the minotari node in the applications folder",
+  )
+  .argument(
+    "[ref]",
+    "Ref/branch name (e.g., v4.5.0) or values like 'mainnet'",
+    PROTO_DEFAULT_BRANCH_REF,
+  );
+
+const parsedArgs = cli.parse(process.argv);
+const refName = parsedArgs.args[0] || PROTO_DEFAULT_BRANCH_REF;
 
 interface GithubFileType {
   name: string;
@@ -79,12 +96,11 @@ async function fetchProtoFiles() {
   // Ensure the proto directory exists
   await fs.promises.mkdir(protoDir, { recursive: true });
 
-  console.log("📥 Fetching proto files list...");
+  const contentsUrl = `https://api.github.com/repos/${REPO}/contents/applications/minotari_app_grpc/proto?ref=${refName}`;
 
+  console.log(`📥 Fetching proto files list for Branch/Ref: ${refName}`);
   // Get the contents of the proto directory from GitHub API
-  const contentsUrl = `https://api.github.com/repos/${REPO}/contents/applications/minotari_app_grpc/proto?ref=${PROTO_BRANCH_REF}`;
 
-  console.log(contentsUrl);
   const files: GithubFileType[] = await getJSON(contentsUrl);
 
   console.log(`Found ${files.length} proto files`);

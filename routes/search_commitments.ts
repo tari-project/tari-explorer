@@ -38,7 +38,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   );
 
   if (commitments.length === 0) {
-    res.status(404);
+    if (req.query.json !== undefined) {
+      res.json({});
+    } else {
+      res.render("search_commitments");
+    }
     return;
   }
   const hexCommitments: Buffer[] = [];

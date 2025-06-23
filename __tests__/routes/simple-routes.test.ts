@@ -66,7 +66,9 @@ describe("Simple Routes", () => {
         expect(mockClient.getVersion).toHaveBeenCalledWith({});
         expect(response.body).toEqual({
           template: "healthz",
-          version: "1.2.3"
+          data: {
+            version: "1.2.3"
+          }
         });
       });
 

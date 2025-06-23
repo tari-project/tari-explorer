@@ -2,13 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
-// Mock the baseNodeClient
-const mockClient = {
-  searchUtxos: vi.fn(),
-};
-
+// Mock dependencies using established pattern
 vi.mock("../../baseNodeClient.js", () => ({
-  createClient: () => mockClient,
+  createClient: vi.fn(() => ({
+    searchUtxos: vi.fn(),
+  })),
 }));
 
 vi.mock("../../cacheSettings.js", () => ({
@@ -17,28 +15,30 @@ vi.mock("../../cacheSettings.js", () => ({
   },
 }));
 
-// Import the router after mocking
 import searchCommitmentsRouter from "../search_commitments.js";
+import { createClient } from "../../baseNodeClient.js";
 
 describe("search_commitments route", () => {
   let app: express.Application;
+  let mockClient: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Create Express app
     app = express();
-    app.use(express.json());
-
-    // Minimal mock for views - just return status
+    app.set("view engine", "hbs");
+    
+    // Mock res.render to return JSON instead of attempting Handlebars rendering
     app.use((req, res, next) => {
-      const originalRender = res.render;
-      res.render = vi.fn((template, data) => {
-        res.status(200).json({ template, data });
-      });
+      res.render = vi.fn((template, data) => res.json({ template, ...data }));
       next();
     });
 
     app.use("/search/commitments", searchCommitmentsRouter);
+
+    // Setup mock client
+    mockClient = (createClient as any)();
   });
 
   describe("GET /", () => {

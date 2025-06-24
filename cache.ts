@@ -1,3 +1,7 @@
+import { handleGrpcResult } from "./utils/grpcHelpers.js";
+import JSONbig from "json-bigint";
+JSONbig({ useNativeBigInt: true });
+
 class Cache<T> {
   limit: number;
   cache: Map<string, T>;
@@ -14,7 +18,10 @@ class Cache<T> {
     this.cache.set(key, value);
   }
 
-  async get(func: (args: any) => Promise<T>, args: any): Promise<T> {
+  async get(
+    func: (args: any) => Promise<T> | AsyncIterable<T>,
+    args: any,
+  ): Promise<T | T[]> {
     const cache_key = JSON.stringify(args);
     if (this.cache.has(cache_key)) {
       const temp = this.cache.get(cache_key)!;
@@ -22,9 +29,9 @@ class Cache<T> {
       this.cache.set(cache_key, temp);
       return temp;
     }
-    const result = await func(args);
-    // console.log("Cache: Actual call", args);
-    this.set(cache_key, result);
+
+    const result = await handleGrpcResult(func(args));
+    this.set(cache_key, result as any);
     return result;
   }
 }

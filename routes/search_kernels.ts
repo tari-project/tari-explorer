@@ -23,6 +23,8 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
@@ -54,7 +56,9 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   }
   let result;
   try {
-    result = await client.searchKernels({ signatures: params });
+    result = await collectAsyncIterable(
+      client.searchKernels({ signatures: params }),
+    );
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {
@@ -70,7 +74,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("search", json);
+    res.render("search", sanitizeBigInts(json));
   }
 });
 

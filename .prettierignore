@@ -1,3 +1,5 @@
 partials
 views/blocks.hbs
 build
+grpc-gen
+applications/minotari-node

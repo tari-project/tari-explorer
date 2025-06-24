@@ -6,6 +6,10 @@
 
 - `npm install`
 
+### Get latest protos and minotari node by Branch/Tag
+
+- `npm run grpc:download -- v4.4.1`
+
 ### Build
 
 - `npm run build`
@@ -63,3 +67,9 @@ Requrired allow methods:
 - get_mempool_transactions
 - get_active_validator_nodes
 - get_blocks
+
+### Dev Notes:
+
+- Grpc methods parse numbers as bigints if they do not fit usual numbers
+- Render functions must first convert bigints back to strings see `sanitizeBigInts`
+- JSON serialization converts bigints to simple numbers - not strings.

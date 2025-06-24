@@ -190,17 +190,88 @@ describe("index route", () => {
       expect(response.body.data.limit).toBe(100);
     });
 
-    // Temporarily skip complex tests to focus on basic coverage
-    it.skip("should use cached data when background updater is healthy", async () => {
-      // Complex test - skip for now
+    it("should use cached data when background updater is healthy", async () => {
+      // Test that when background updater is healthy, cached data is used
+      const response = await request(app)
+        .get("/?from=0&limit=20")
+        .expect(200);
+
+      expect(response.body.template).toBe("index");
+      expect(response.body.data.tipInfo.metadata.best_block_height).toBe(100);
+      expect(response.body.data.version).toBe("test-version");
+      expect(response.body.data.from).toBe(0);
+      expect(response.body.data.limit).toBe(20);
     });
 
-    it.skip("should handle null data from getIndexData", async () => {
-      // Complex test - skip for now  
+    it("should handle null data from getIndexData", async () => {
+      // Create a new app with unhealthy background updater
+      const testApp = express();
+      testApp.set("view engine", "hbs");
+      
+      // Mock template rendering to return JSON
+      testApp.use((req, res, next) => {
+        res.render = vi.fn((template, data) => {
+          res.json({ template, data });
+        });
+        next();
+      });
+
+      // Mock background updater to be unhealthy
+      testApp.use((req, res, next) => {
+        res.locals.backgroundUpdater = {
+          isHealthy: vi.fn(() => false),
+          getData: vi.fn(() => ({ indexData: null }))
+        };
+        next();
+      });
+
+      // Mock getBlocks to return empty array to trigger null condition
+      mockClient.getBlocks.mockResolvedValue([]);
+
+      testApp.use("/", indexRouter);
+
+      const response = await request(testApp)
+        .get("/")
+        .expect(404);
+
+      expect(response.text).toContain("Block not found");
     });
 
-    it.skip("should handle errors from client methods", async () => {
-      // Complex test - skip for now
+    it("should handle errors from client methods", async () => {
+      // Create a new app with unhealthy background updater
+      const testApp = express();
+      testApp.set("view engine", "hbs");
+      
+      // Mock template rendering to return JSON
+      testApp.use((req, res, next) => {
+        res.render = vi.fn((template, data) => {
+          res.json({ template, data });
+        });
+        next();
+      });
+
+      // Mock background updater to be unhealthy so getIndexData is called
+      testApp.use((req, res, next) => {
+        res.locals.backgroundUpdater = {
+          isHealthy: vi.fn(() => false),
+          getData: vi.fn(() => ({ indexData: null }))
+        };
+        next();
+      });
+
+      // Mock an error in the gRPC client that happens after the initial null checks
+      // Let's mock a different method that would cause an error later in processing
+      mockClient.getActiveValidatorNodes.mockRejectedValue(new Error("gRPC connection failed"));
+
+      testApp.use("/", indexRouter);
+
+      const response = await request(testApp)
+        .get("/");
+
+      // With gRPC errors, the function typically returns null, resulting in 404
+      // This is the expected behavior - when blockchain data is unavailable, return 404
+      expect(response.status).toBe(404);
+      expect(response.text).toContain("Block not found");
     });
   });
 

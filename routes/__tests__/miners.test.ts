@@ -3,9 +3,31 @@ import express from "express";
 import request from "supertest";
 
 // Mock BEFORE imports - this is critical for ESM
+const mockClient = {
+  getNetworkDifficulty: vi.fn()
+};
+
 vi.mock("../../baseNodeClient.js", () => ({
-  createClient: vi.fn(() => ({
-    getNetworkDifficulty: vi.fn().mockResolvedValue([
+  createClient: vi.fn(() => mockClient),
+}));
+
+vi.mock("../../cacheSettings.js", () => ({
+  default: {
+    index: "public, max-age=120"
+  },
+}));
+
+import minersRouter from "../miners.js";
+import { createClient } from "../../baseNodeClient.js";
+
+describe("miners route", () => {
+  let app: express.Application;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    
+    // Set up default mock data for most tests
+    mockClient.getNetworkDifficulty.mockResolvedValue([
       {
         difficulty: "1000000",
         estimated_hash_rate: "500000",
@@ -42,28 +64,7 @@ vi.mock("../../baseNodeClient.js", () => ({
         coinbase_extras: [],
         first_coinbase_extra: ""
       }
-    ])
-  })),
-}));
-
-vi.mock("../../cacheSettings.js", () => ({
-  default: {
-    index: "public, max-age=120"
-  },
-}));
-
-import minersRouter from "../miners.js";
-import { createClient } from "../../baseNodeClient.js";
-
-describe("miners route", () => {
-  let app: express.Application;
-  let mockClient: any;
-
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    
-    // Get references to mocked modules
-    mockClient = createClient();
+    ]);
 
     // Create isolated Express app
     app = express();
@@ -180,8 +181,8 @@ describe("miners route", () => {
       expect(data.unique_ids.miner2.sha.version).toBe("2.0.0");
     });
 
-    it.skip("should handle malformed coinbase extras", async () => {
-      // Mock data with insufficient coinbase extra fields
+    it("should handle malformed coinbase extras", async () => {
+      // Mock data with insufficient coinbase extra fields (only one entry)
       mockClient.getNetworkDifficulty.mockResolvedValue([
         {
           difficulty: "1000000",
@@ -218,12 +219,16 @@ describe("miners route", () => {
       expect(data.unique_ids.miner2.sha.time_since_last_block).toBeGreaterThan(0);
     });
 
-    it.skip("should handle errors from client", async () => {
+    it("should handle errors from client", async () => {
       mockClient.getNetworkDifficulty.mockRejectedValue(new Error("Network error"));
 
-      await request(app)
+      // The route doesn't have explicit error handling, so Express handles it as 500
+      const response = await request(app)
         .get("/miners/")
         .expect(500);
+
+      expect(response.text).toContain("Network error");
+      expect(mockClient.getNetworkDifficulty).toHaveBeenCalled();
     });
 
     it("should count OS and version statistics", async () => {

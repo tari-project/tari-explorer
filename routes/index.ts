@@ -36,15 +36,16 @@ router.get("/", async function (req: Request, res: Response) {
     limit = 100;
   }
 
-  let json: Record<string, unknown> | undefined;
+  let json: Record<string, unknown> | null | undefined;
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
     json = res.locals.backgroundUpdater.getData().indexData;
   } else {
-    json = (await getIndexData(from, limit)) ?? undefined;
+    json = await getIndexData(from, limit);
   }
   if (json === null) {
     res.status(404).send("Block not found");
+    return;
   }
 
   if (req.query.json !== undefined) {

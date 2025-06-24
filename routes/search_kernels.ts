@@ -42,7 +42,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     signatures.length === 0 ||
     nonces.length !== signatures.length
   ) {
-    res.status(404);
+    if (req.query.json !== undefined) {
+      res.json({});
+    } else {
+      res.render("search_kernels");
+    }
     return;
   }
   const params: { public_nonce: Buffer; signature: Buffer }[] = [];

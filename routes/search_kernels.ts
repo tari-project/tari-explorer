@@ -32,11 +32,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   const client = createClient();
   const nonces = ((req.query.nonces || "") as string)
     .split(",")
-    .map((ref) => ref.trim())
+    .map((ref) => ref.trim().toLowerCase())
     .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
   const signatures = ((req.query.signatures || "") as string)
     .split(",")
-    .map((ref) => ref.trim())
+    .map((ref) => ref.trim().toLowerCase())
     .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
 
   if (
@@ -59,6 +59,31 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     result = await collectAsyncIterable(
       client.searchKernels({ signatures: params }),
     );
+    result = result.flatMap((block: any) =>
+      block.block.body.kernels
+        .filter((kernel: any) =>
+          params.some(
+            (param) =>
+              kernel.excess_sig.public_nonce.toString("hex") ===
+                param.public_nonce.toString("hex") &&
+              kernel.excess_sig.signature.toString("hex") ===
+                param.signature.toString("hex"),
+          ),
+        )
+        .map((kernel: any) => ({
+          block_height: block.block.header.height.toString(),
+          features: kernel.features || 0,
+          fee: kernel.fee.toString(),
+          lock_height: kernel.lock_height.toString(),
+          excess: kernel.excess,
+          excess_sig: {
+            public_nonce: kernel.excess_sig.public_nonce,
+            signature: kernel.excess_sig.signature,
+          },
+          hash: kernel.hash,
+          version: kernel.version || 0,
+        })),
+    );
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {
@@ -74,7 +99,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("search", sanitizeBigInts(json));
+    res.render("search_kernels", sanitizeBigInts(json));
   }
 });
 

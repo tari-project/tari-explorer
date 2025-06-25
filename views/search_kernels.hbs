@@ -1,0 +1,39 @@
+<h2>{{title}}</h2>
+<br />
+<h1>Found in kernels:</h1>
+{{#if items.length}}
+  <table>
+    <thead>
+      <tr>
+        <th>Block Height</th>
+        <th>Features</th>
+        <th>Fee</th>
+        <th>Lock Height</th>
+        <th>Excess Sig - Public Nonce</th>
+        <th>Excess Sig - Signature</th>
+        <th>Excess</th>
+        <th>Hash</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+        <tr>
+          <td><a
+              href="/blocks/{{this.block_height}}"
+            >{{this.block_height}}</a></td>
+          <td>{{this.features}}</td>
+          <td>{{this.fee}}</td>
+          <td>{{this.lock_height}}</td>
+          <td>{{hex this.excess_sig.public_nonce}}</td>
+          <td>{{hex this.excess_sig.signature}}</td>
+          <td>{{hex this.excess}}</td>
+          <td>{{hex this.hash}}</td>
+          <td>{{this.version}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+{{else}}
+  <h2>!!! No results found</h2>
+{{/if}}

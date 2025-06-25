@@ -295,21 +295,69 @@
 </table>
 <br />
 
-<form method="get" action="search_commitments">
-  <label for="c">Find commitment(s)</label>
-  <input id="c" name="c" type="text" style="width: 450px;" />
+<!--Search kernel-->
+<div id="error-message-kernel" style="display: none; color: red;"></div>
+<form
+  method="get"
+  action="search_kernels"
+  onsubmit="return validateInput(
+    document.getElementById('nonces').value,
+    document.getElementById('error-message-kernel')
+  ) && validateInput(
+    document.getElementById('signatures').value,
+    document.getElementById('error-message-kernel')
+  )"
+>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label for="kernel">Find kernel(s)</label>
+    <label for="nonces">Nonce(s)</label>
+    <input id="nonces" name="nonces" type="text" style="width: 450px;" />
+    <label for="signatures">Signature(s)</label>
+    <input
+      id="signatures"
+      name="signatures"
+      type="text"
+      style="width: 450px;"
+    />
+    <button type="submit">search</button>
+  </div>
+</form>
+
+<!--Search output or block-->
+<div id="error-message-hash" style="display: none; color: red;"></div>
+<form
+  method="get"
+  action="search_by_hash_or_height"
+  onsubmit="return validateInput(
+    document.getElementById('hash_or_number').value,
+    document.getElementById('error-message-hash')
+  )"
+>
+  <label for="hash_or_number">Find output [by payref/commitment hash(es)] or
+    block [by hash(es) or height(s)]</label>
+  <input
+    id="hash_or_number"
+    name="hash_or_number"
+    type="text"
+    style="width: 950px;"
+  />
   <button type="submit">search</button>
 </form>
 
-<form method="get" action="search_kernels">
-  <label for="c">Find kernel(s)</label>
-  <input id="nonces" name="nonces" type="text" style="width: 450px;" />
-  <input id="signatures" name="signatures" type="text" style="width: 450px;" />
-  <button type="submit">search</button>
-</form>
-
-<form method="get" action="search_outputs_by_payref">
-  <label for="payment_ref">Find payment reference(s)</label>
-  <input id="payment_ref" name="payref" type="text" style="width: 450px;" />
-  <button type="submit">search_payref</button>
-</form>
+<!--General script to validate hash input fields-->
+<script>
+  function validateInput(inputElement, errorMessageElement) {
+    const hexRegex = /^[0-9a-fA-F]{64}$/;
+    const numberRegex = /^[0-9]+$/;
+    const values = inputElement.split(",").map((ref) => ref.trim()).filter((ref) => ref !== "");
+    const invalidValues = values.filter((ref) => !hexRegex.test(ref) && !numberRegex.test(ref));
+    if (invalidValues.length > 0) {
+      errorMessageElement.textContent =
+        `Input must be a 64-character hex string or valid number.\nInvalid hash(es): ${invalidValues.join(", ")}`;
+      errorMessageElement.style.display = 'block';
+      return false;
+    }
+    errorMessageElement.style.display = 'none';
+    return true;
+  }
+</script>

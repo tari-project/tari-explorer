@@ -1,10 +1,11 @@
 <h2>{{title}}</h2>
 <br />
-<h1>Found in blocks:</h1>
+<h1>Found in output/blocks:</h1>
 {{#if items.length}}
   <table>
     <thead>
       <tr>
+        <th>Search</th>
         <th>Block Height</th>
         <th>Payment Reference</th>
         <th>Mined Timestamp</th>
@@ -18,6 +19,7 @@
     <tbody>
       {{#each items}}
         <tr>
+          <td>{{this.search_type}}</td>
           <td><a
               href="/blocks/{{this.block_height}}"
             >{{this.block_height}}</a></td>

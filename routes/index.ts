@@ -25,7 +25,24 @@ import { miningStats } from "../utils/stats.js";
 import express, { Request, Response } from "express";
 import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import { AggregateBody } from "../grpc-gen/transaction.js";
+import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
+import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+
 const router = express.Router();
+
+type AggregateBodyExtended = AggregateBody & {
+  signature: Buffer<ArrayBufferLike> | undefined;
+  total_fees: bigint;
+};
+
+type BlockHeaderExtended = BlockHeader & {
+  kernels: bigint;
+  outputs: bigint;
+  powText: bigint;
+};
 
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
@@ -50,7 +67,7 @@ router.get("/", async function (req: Request, res: Response) {
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("index", json);
+    res.render("index", sanitizeBigInts(json));
   }
 });
 
@@ -115,7 +132,7 @@ export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});
-  const tipHeight = tipInfo.metadata.best_block_height;
+  const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
   const [
     version_result,
     listHeaders,
@@ -125,34 +142,37 @@ export async function getIndexData(from: number, limit: number) {
     blocks,
   ] = await Promise.all([
     client.getVersion({}),
-    client.listHeaders({
-      tip_height: tipHeight,
-      from_height: 0,
-      num_headers: 101,
-    }),
+    collectAsyncIterable(
+      client.listHeaders({
+        num_headers: 101n,
+      }),
+    ),
     // Get one more header than requested so we can work out the difference in MMR_size
-    client.listHeaders({
-      tip_height: tipHeight,
-      from_height: from,
-      num_headers: limit + 1,
-    }),
-    client.getMempoolTransactions({}),
-    client.getNetworkDifficulty({ from_tip: 180 }),
-    client.getBlocks({
-      heights: Array.from({ length: limit }, (_, i) => tipHeight - i),
-    }),
+    collectAsyncIterable(
+      client.listHeaders({
+        from_height: BigInt(from),
+        num_headers: BigInt(limit + 1),
+      }),
+    ),
+    collectAsyncIterable(client.getMempoolTransactions({})),
+    collectAsyncIterable(client.getNetworkDifficulty({ from_tip: 180n })),
+    collectAsyncIterable(
+      client.getBlocks({
+        heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)),
+      }),
+    ),
   ]);
   const version = version_result.value?.slice(0, 25);
 
   // Algo split
-  const last100Headers = listHeaders.map((r: any) => r.header);
+  const last100Headers = listHeaders.map((r: BlockHeaderResponse) => r.header);
   const moneroRx = [0, 0, 0, 0];
   const sha3X = [0, 0, 0, 0];
   const tariRx = [0, 0, 0, 0];
 
   for (let i = 0; i < last100Headers.length - 1; i++) {
-    const algo = last100Headers[i].pow.pow_algo;
-    const arr = algo === "0" ? sha3X : algo === "1" ? moneroRx : tariRx;
+    const algo = last100Headers[i]?.pow?.pow_algo;
+    const arr = algo === 0n ? sha3X : algo === 1n ? moneroRx : tariRx;
     if (i < 10) {
       arr[0] += 1;
     }
@@ -180,26 +200,29 @@ export async function getIndexData(from: number, limit: number) {
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
-  const headers = headersResp.map((r: any) => r.header);
+  const headers = headersResp
+    .map((r: BlockHeaderResponse) => r.header)
+    .filter((r) => !!r);
   const pows = { 0: "MoneroRx", 1: "SHA-3X", 2: "TariRx" };
   for (var i = headers.length - 2; i >= 0; i--) {
-    headers[i].kernels =
-      headers[i].kernel_mmr_size - headers[i + 1].kernel_mmr_size;
-    headers[i].outputs =
+    (headers[i] as any).kernels =
+      headers[i]?.kernel_mmr_size - headers[i + 1]?.kernel_mmr_size;
+    (headers[i] as any).outputs =
       headers[i].output_mmr_size - headers[i + 1].output_mmr_size;
-    headers[i].powText = pows[headers[i].pow.pow_algo];
+    (headers[i] as any).powText =
+      pows[(headers[i]?.pow?.pow_algo ?? 0n).toString()];
   }
   const lastHeader = headers[headers.length - 1];
-  if (lastHeader.height === "0") {
+  if (lastHeader.height === 0n) {
     // If the block is the genesis block, then the MMR sizes are the values to use
-    lastHeader.kernels = lastHeader.kernel_mmr_size;
-    lastHeader.outputs = lastHeader.output_mmr_size;
+    (lastHeader as BlockHeaderExtended).kernels = lastHeader.kernel_mmr_size;
+    (lastHeader as BlockHeaderExtended).outputs = lastHeader.output_mmr_size;
   } else {
     // Otherwise remove the last one, as we don't want to show it
     headers.splice(headers.length - 1, 1);
   }
 
-  const firstHeight = parseInt(headers[0].height || "0");
+  const firstHeight = headers[0].height || 0n;
 
   // estimated hash rates
   const totalHashRates = getHashRates(lastDifficulties, [
@@ -220,29 +243,29 @@ export async function getIndexData(from: number, limit: number) {
     return null;
   }
   const stats = blocks
-    .map((block: any) => ({
-      height: block.block.header.height,
+    .map((block: HistoricalBlock) => ({
+      height: block?.block?.header?.height || 0n,
       ...miningStats(block),
     }))
-    .sort((a: any, b: any) => b.height - a.height);
+    .sort((a, b) => Number(b.height - a.height));
 
   // Append the stats to the headers array
   for (const header of headers) {
     const stat = stats.find((s: any) => s.height === header.height);
     if (stat) {
-      header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
-      header.numCoinbases = stat.numCoinbases;
-      header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
-      header.numInputs = stat.numInputs;
+      (header as any).totalCoinbaseXtm = stat.totalCoinbaseXtm;
+      (header as any).numCoinbases = stat.numCoinbases;
+      (header as any).numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
+      (header as any).numInputs = stat.numInputs;
     } else {
       const block = await cache.get(client.getBlocks, {
         heights: [header.height],
       });
       const stat = miningStats(block);
-      header.totalCoinbaseXtm = stat.totalCoinbaseXtm;
-      header.numCoinbases = stat.numCoinbases;
-      header.numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
-      header.numInputs = stat.numInputs;
+      (header as any).totalCoinbaseXtm = stat.totalCoinbaseXtm;
+      (header as any).numCoinbases = stat.numCoinbases;
+      (header as any).numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
+      (header as any).numInputs = stat.numInputs;
     }
   }
 
@@ -252,13 +275,18 @@ export async function getIndexData(from: number, limit: number) {
   });
 
   for (let i = 0; i < mempool.length; i++) {
-    let sum = 0;
-    for (let j = 0; j < mempool[i].transaction.body.kernels.length; j++) {
-      sum += parseInt(mempool[i].transaction.body.kernels[j].fee);
-      mempool[i].transaction.body.signature =
-        mempool[i].transaction.body.kernels[j].excess_sig.signature;
+    let sum = 0n;
+    for (
+      let j = 0;
+      j < (mempool[i]?.transaction?.body?.kernels?.length || 0);
+      j++
+    ) {
+      sum += mempool[i]?.transaction?.body?.kernels[j]?.fee || 0n;
+      //introducing signature prop
+      (mempool[i]?.transaction?.body as AggregateBodyExtended).signature =
+        mempool[i]?.transaction?.body?.kernels[j]?.excess_sig?.signature;
     }
-    mempool[i].transaction.body.total_fees = sum;
+    (mempool[i]?.transaction?.body as AggregateBodyExtended).total_fees = sum;
   }
 
   const block = await cache.get(client.getBlocks, { heights: [tipHeight] });
@@ -273,8 +301,8 @@ export async function getIndexData(from: number, limit: number) {
     mempool,
     headers,
     pows,
-    nextPage: firstHeight - limit,
-    prevPage: firstHeight + limit,
+    nextPage: firstHeight - BigInt(limit),
+    prevPage: firstHeight + BigInt(limit),
     limit,
     from,
     algoSplit,

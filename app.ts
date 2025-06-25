@@ -18,7 +18,6 @@ import minersRouter from "./routes/miners.js";
 import searchKernelsRouter from "./routes/search_kernels.js";
 import searchByHashOrHeightRouter from "./routes/search_by_hash_or_height.js";
 import healthz from "./routes/healthz.js";
-import assetsRouter from "./routes/assets.js";
 
 import BackgrounUpdater from "./utils/updater.js";
 import { hex, script } from "./script.js";
@@ -221,7 +220,6 @@ app.use((req, res, next) => {
 app.use("/", indexRouter);
 app.use("/blocks", blocksRouter);
 app.use("/block_data", blockDataRouter);
-app.use("/assets", assetsRouter);
 app.use("/mempool", mempoolRouter);
 app.use("/miners", minersRouter);
 app.use("/search_by_hash_or_height", searchByHashOrHeightRouter);

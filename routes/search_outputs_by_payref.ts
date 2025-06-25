@@ -23,67 +23,34 @@
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
-import { sanitizeBigInts } from "../utils/sanitizeObject.js";
-import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
   res.setHeader("Cache-Control", cacheSettings.newBlocks);
   const client = createClient();
-  const nonces = ((req.query.nonces || "") as string)
-    .split(",")
-    .map((ref) => ref.trim().toLowerCase())
-    .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
-  const signatures = ((req.query.signatures || "") as string)
-    .split(",")
-    .map((ref) => ref.trim().toLowerCase())
-    .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref));
+  const rawPayrefs = (req.query.pay ||
+    req.query.payref ||
+    req.query.p ||
+    "") as string;
+  const payrefs = Array.from(
+    new Set(
+      rawPayrefs
+        .split(",")
+        .map((ref) => ref.trim()) // Remove extra spaces
+        .filter((ref) => /^[a-fA-F0-9]{64}$/.test(ref)), // Validate format
+    ),
+  );
 
-  if (
-    nonces.length === 0 ||
-    signatures.length === 0 ||
-    nonces.length !== signatures.length
-  ) {
+  if (payrefs.length === 0) {
     res.status(404);
     return;
   }
-  const params: { public_nonce: Buffer; signature: Buffer }[] = [];
-  for (let i = 0; i < nonces.length; i++) {
-    params.push({
-      public_nonce: Buffer.from(nonces[i], "hex"),
-      signature: Buffer.from(signatures[i], "hex"),
-    });
-  }
   let result;
   try {
-    result = await collectAsyncIterable(
-      client.searchKernels({ signatures: params }),
-    );
-    result = result.flatMap((block: any) =>
-      block.block.body.kernels
-        .filter((kernel: any) =>
-          params.some(
-            (param) =>
-              kernel.excess_sig.public_nonce.toString("hex") ===
-                param.public_nonce.toString("hex") &&
-              kernel.excess_sig.signature.toString("hex") ===
-                param.signature.toString("hex"),
-          ),
-        )
-        .map((kernel: any) => ({
-          block_height: block.block.header.height.toString(),
-          features: kernel.features || 0,
-          fee: kernel.fee.toString(),
-          lock_height: kernel.lock_height.toString(),
-          excess: kernel.excess,
-          excess_sig: {
-            public_nonce: kernel.excess_sig.public_nonce,
-            signature: kernel.excess_sig.signature,
-          },
-          hash: kernel.hash,
-          version: kernel.version || 0,
-        })),
-    );
+    result = await client.searchPaymentReferences({
+      payment_reference_hex: payrefs,
+      include_spent: true,
+    });
   } catch (error) {
     res.status(404);
     if (req.query.json !== undefined) {
@@ -99,7 +66,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   if (req.query.json !== undefined) {
     res.json(json);
   } else {
-    res.render("search_kernels", sanitizeBigInts(json));
+    res.render("search_payref", json);
   }
 });
 

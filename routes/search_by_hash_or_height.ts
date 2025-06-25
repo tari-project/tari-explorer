@@ -24,13 +24,15 @@ import { createClient } from "../baseNodeClient.js";
 import express from "express";
 import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 export interface SearchResult {
   payment_reference_hex?: string;
-  block_height: string;
-  block_hash: string;
-  mined_timestamp: string;
+  block_height?: string;
+  block_hash?: Buffer;
+  mined_timestamp?: string;
   commitment?: Buffer;
   is_spent?: boolean;
   spent_height?: string;
@@ -73,7 +75,8 @@ router.get("/", async function (req: express.Request, res: express.Response) {
             /^[0-9]+$/.test(ref) && // Validate numeric format
             BigInt(ref) <= BigInt("18446744073709551615"), // Ensure within u64 range
         )
-        .map(Number),
+        .map(Number)
+        .map(BigInt),
     ),
   );
 
@@ -93,9 +96,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       .filter(
         (input) =>
           !(
-            /^[a-fA-F0-9]{64}$/.test(input) || // Valid hash format
-            (/^[0-9]+$/.test(input) &&
-              BigInt(input) <= BigInt("18446744073709551615")) // Valid height format
+            (
+              /^[a-fA-F0-9]{64}$/.test(input) || // Valid hash format
+              (/^[0-9]+$/.test(input) &&
+                BigInt(input) <= BigInt("18446744073709551615"))
+            ) // Valid height format
           ),
       )
       .join(", ");
@@ -149,9 +154,9 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       if (block_header !== undefined) {
         const result = {
           payment_reference_hex: undefined,
-          block_height: block_header.header.height.toString(),
-          block_hash: block_header.header.hash,
-          mined_timestamp: block_header.header.timestamp.toString(),
+          block_height: block_header?.header?.height.toString(),
+          block_hash: block_header?.header?.hash,
+          mined_timestamp: block_header?.header?.timestamp?.toString(),
           commitment: undefined,
           is_spent: undefined,
           spent_height: undefined,
@@ -172,10 +177,12 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   let payrefResult: SearchResult[] = [];
   let payrefError: string | undefined;
   try {
-    const payrefOutputs = await client.searchPaymentReferences({
-      payment_reference_hex: hashes,
-      include_spent: true,
-    });
+    const payrefOutputs = await collectAsyncIterable(
+      client.searchPaymentReferences({
+        payment_reference_hex: hashes,
+        include_spent: true,
+      }),
+    );
     payrefResult = payrefOutputs.map((output: any) => ({
       payment_reference_hex: output.payment_reference_hex,
       block_height: output.block_height.toString(),
@@ -195,8 +202,10 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   let commitmentResult: SearchResult[] = [];
   let commitmentError: string | undefined;
   try {
-    commitmentResult = await client.searchUtxos({ commitments: binaryHashes });
-    commitmentResult = commitmentResult.flatMap((block: any) =>
+    const result = await collectAsyncIterable(
+      client.searchUtxos({ commitments: binaryHashes }),
+    );
+    commitmentResult = result.flatMap((block: any) =>
       block.block.body.outputs
         .filter((output: any) =>
           binaryHashes.some((hash) => hash.equals(output.commitment)),
@@ -266,7 +275,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   if (req.query.json !== undefined) {
     res.json(combined_json);
   } else {
-    res.render("search_by_hash_or_height", combined_json);
+    res.render("search_by_hash_or_height", sanitizeBigInts(combined_json));
   }
 });
 

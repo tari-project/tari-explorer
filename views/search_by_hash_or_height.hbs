@@ -9,9 +9,10 @@
         <th>Block Height</th>
         <th>Payment Reference</th>
         <th>Mined Timestamp</th>
-        <th>Is Spent</th>
+        <th>Spent Timestamp</th>
         <th>Min Value Promise</th>
         <th>Commitment</th>
+        <th>Output Hash</th>
         <th>Block Hash</th>
         <th>Spent Block Hash</th>
       </tr>
@@ -25,15 +26,54 @@
             >{{this.block_height}}</a></td>
           <td>{{this.payment_reference_hex}}</td>
           <td>{{this.mined_timestamp}}</td>
-          <td>{{this.is_spent}}</td>
+          <td>{{this.spent_timestamp}}</td>
           <td>{{this.min_value_promise}}</td>
           <td>{{hex this.commitment}}</td>
+          <td>{{hex this.output_hash}}</td>
           <td>{{hex this.block_hash}}</td>
           <td>{{hex this.spent_block_hash}}</td>
         </tr>
       {{/each}}
     </tbody>
   </table>
+
+  <br />
+
+  {{#if this.heights_not_found.length}}
+    <h2>Not found:</h2>
+  {{else if this.hashes_not_found.length}}
+    <h2>Not found:</h2>
+  {{/if}}
+  {{#if this.heights_not_found.length}}
+    <table>
+      <thead>
+      <tr>
+        <th style="text-align: left;">Block Height</th>
+      </tr>
+      </thead>
+      <tbody>
+      {{#each this.heights_not_found}}
+        <tr>
+          <td>{{this}}</td>
+        </tr>
+      {{/each}}
+      </tbody>
+  {{/if}}
+  {{#if this.hashes_not_found.length}}
+    <table>
+      <thead>
+      <tr>
+        <th style="text-align: left;">Block/Payref/Commitment/Output Hash</th>
+      </tr>
+      </thead>
+      <tbody>
+      {{#each this.hashes_not_found}}
+        <tr>
+          <td>{{this}}</td>
+        </tr>
+      {{/each}}
+      </tbody>
+  {{/if}}
 {{else}}
   <h2>!!! No results found</h2>
 {{/if}}

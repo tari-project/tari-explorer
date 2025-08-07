@@ -172,7 +172,7 @@ export async function getIndexData(from: number, limit: number) {
 
   for (let i = 0; i < last100Headers.length - 1; i++) {
     const algo = last100Headers[i]?.pow?.pow_algo;
-    const arr = algo === 0n ? sha3X : algo === 1n ? moneroRx : tariRx;
+    const arr = algo === 0n ? moneroRx : algo === 1n ? sha3X : tariRx;
     if (i < 10) {
       arr[0] += 1;
     }

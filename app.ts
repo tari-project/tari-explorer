@@ -198,6 +198,13 @@ export const app = express();
 const updater = new BackgrounUpdater();
 updater.start();
 
+app.set('json replacer', function (key, value) {
+  if (value && typeof value === 'object' && 'type' in value && value.type === 'Buffer') {
+    return Buffer.from(value.data).toString("hex");
+  }
+  return value;
+})
+
 // view engine setup
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "hbs");

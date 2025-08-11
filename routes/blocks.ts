@@ -253,7 +253,6 @@ router.get("/tip/height", async function (req: Request, res: Response) {
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
     tipHeight = res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height;
-    console.log(`Tip height from cache: ${tipHeight}`);
   } else {
     const client = createClient();
     const tipInfo = await client.getTipInfo({});

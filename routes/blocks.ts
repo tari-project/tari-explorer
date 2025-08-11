@@ -246,4 +246,41 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   }
 });
 
+router.get("/tip/height", async function (req: Request, res: Response) {
+  let tipHeight: bigint = 0n;
+
+  const from = 0, limit = 20;
+  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
+    // load the default page from cache
+    tipHeight = res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height;
+  } else {
+    const client = createClient();
+    const tipInfo = await client.getTipInfo({});
+    tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+  }
+  res.header("Cache-Control", cacheSettings.index);
+  res.json({ height: tipHeight });
+});
+
+router.get("/:height/header", async function (req: Request, res: Response) {
+  const { height } = req.params;
+  // Validate that height is a string representing a non-negative integer
+  if (typeof height !== "string" || !/^\d+$/.test(height)) {
+    res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
+    return;
+  }
+  const client = createClient();
+  const headers = client.getBlocks({
+    heights: [BigInt(height)],
+  });
+
+  const result = { height: null as bigint | null, hash: "" as string | undefined };
+  for await (const value of headers) {
+    result.height = value.block?.header?.height || null;
+    result.hash = value.block?.header?.hash.toString("hex");
+  }
+  res.header("Cache-Control", cacheSettings.oldBlocks);
+  res.json(result);
+});
+
 export default router;

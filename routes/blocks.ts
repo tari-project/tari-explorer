@@ -253,7 +253,6 @@ router.get("/tip/height", async function (req: Request, res: Response) {
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
     tipHeight = res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height;
-    console.log(`Tip height from cache: ${tipHeight}`);
   } else {
     const client = createClient();
     const tipInfo = await client.getTipInfo({});
@@ -265,6 +264,11 @@ router.get("/tip/height", async function (req: Request, res: Response) {
 
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
+  // Validate that height is a string representing a non-negative integer
+  if (typeof height !== "string" || !/^\d+$/.test(height)) {
+    res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
+    return;
+  }
   const client = createClient();
   const headers = client.getBlocks({
     heights: [BigInt(height)],

@@ -65,7 +65,7 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   if (req.query.json !== undefined) {
-    (json?.tipInfo as any).metadata.best_block_height = (json?.tipInfo as any).metadata?.best_block_height.toString()
+    (json?.stats as []).map((x: any) => x.height = x.height.toString())
     res.json(json);
   } else {
     res.render("index", sanitizeBigInts(json));

@@ -65,6 +65,7 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   if (req.query.json !== undefined) {
+    (json?.stats as []).map((x: any) => x.height = x.height.toString())
     res.json(json);
   } else {
     res.render("index", sanitizeBigInts(json));

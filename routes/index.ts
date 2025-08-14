@@ -65,6 +65,7 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   if (req.query.json !== undefined) {
+    (json?.tipInfo as any).metadata.best_block_height = (json?.tipInfo as any).metadata?.best_block_height.toString()
     res.json(json);
   } else {
     res.render("index", sanitizeBigInts(json));
@@ -132,7 +133,6 @@ export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});
-  (tipInfo.metadata as any).best_block_height = tipInfo.metadata?.best_block_height.toString()
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
   const [
     version_result,

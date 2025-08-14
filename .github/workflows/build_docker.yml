@@ -8,7 +8,7 @@ name: Build minotari text explorer docker image
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]*'
     branches:
-      # - 'build_dockers*'
+      - main
       - 'build-*'
   schedule:
     - cron: '05 00 * * 00' # Build every Sunday

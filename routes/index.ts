@@ -132,6 +132,7 @@ export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});
+  (tipInfo.metadata as any).best_block_height = tipInfo.metadata?.best_block_height.toString()
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
   const [
     version_result,

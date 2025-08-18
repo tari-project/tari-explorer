@@ -22,7 +22,7 @@
 
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 
-export function miningStats(block: HistoricalBlock | HistoricalBlock[]) {
+export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs: boolean = true) {
   // Handle both object and array cases
   const blockData = Array.isArray(block) ? block[0] : block;
 
@@ -41,16 +41,7 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[]) {
   } else {
     powAlgo = "SHA-3";
   }
-  const timestampNumber: number = Number(blockData?.block?.header?.timestamp);
-  const timestamp = new Date(timestampNumber * 1000).toLocaleString("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  const timestamp = Number(blockData?.block?.header?.timestamp);
 
   const outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;
@@ -79,6 +70,14 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[]) {
     numOutputsNoCoinbases,
     numInputs,
     powAlgo,
-    timestamp,
+    timestamp: formatTs ? new Date(timestamp * 1000).toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }) : timestamp,
   };
 }

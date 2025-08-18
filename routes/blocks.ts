@@ -27,6 +27,7 @@ import cacheSettings from "../cacheSettings.js";
 import { miningStats } from "../utils/stats.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -36,6 +37,30 @@ function fromHexString(hexString: string): number[] {
   }
   return res;
 }
+
+router.get("/stats", async function (req: Request, res: Response) {
+  let limit = parseInt((req.query.limit as string | undefined) || "20");
+  if (limit > 100) {
+    limit = 100;
+  }
+
+  const client = createClient();
+  const tipInfo = await client.getTipInfo({});
+  const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+
+  const blocks = await collectAsyncIterable(
+    client.getBlocks({ heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)), })
+  );
+
+  const stats = blocks.map(block => ({
+    height: block?.block?.header?.height || 0n,
+    ...miningStats(block, false),
+  }))
+  .sort((a, b) => Number(b.height - a.height));
+
+  res.header("Cache-Control", cacheSettings.index);
+  res.json(stats);
+})
 
 router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const client = createClient();

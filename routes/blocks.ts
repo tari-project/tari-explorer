@@ -27,6 +27,7 @@ import cacheSettings from "../cacheSettings.js";
 import { miningStats } from "../utils/stats.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -36,6 +37,30 @@ function fromHexString(hexString: string): number[] {
   }
   return res;
 }
+
+router.get("/stats", async function (req: Request, res: Response) {
+  let limit = parseInt((req.query.limit as string | undefined) || "20");
+  if (limit > 100) {
+    limit = 100;
+  }
+
+  const client = createClient();
+  const tipInfo = await client.getTipInfo({});
+  const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+
+  const blocks = await collectAsyncIterable(
+    client.getBlocks({ heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)), })
+  );
+
+  const stats = blocks.map(block => ({
+    height: block?.block?.header?.height || 0n,
+    ...miningStats(block, false),
+  }))
+  .sort((a, b) => Number(b.height - a.height));
+
+  res.header("Cache-Control", cacheSettings.index);
+  res.json(stats);
+})
 
 router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const client = createClient();
@@ -247,19 +272,28 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
 });
 
 router.get("/tip/height", async function (req: Request, res: Response) {
-  let tipHeight: bigint = 0n;
+  let tip: { height: bigint, timestamp: bigint } = {
+    height: 0n,
+    timestamp: 0n
+  };
 
   const from = 0, limit = 20;
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
-    tipHeight = res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height;
+    tip = {
+      height: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height,
+      timestamp: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.timestamp
+    };
   } else {
     const client = createClient();
     const tipInfo = await client.getTipInfo({});
-    tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+    tip = {
+      height: tipInfo?.metadata?.best_block_height || 0n,
+      timestamp: tipInfo?.metadata?.timestamp || 0n,
+    };
   }
   res.header("Cache-Control", cacheSettings.index);
-  res.json({ height: tipHeight });
+  res.json(tip);
 });
 
 router.get("/:height/header", async function (req: Request, res: Response) {
@@ -274,10 +308,11 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     heights: [BigInt(height)],
   });
 
-  const result = { height: null as bigint | null, hash: "" as string | undefined };
+  const result = { height: null as bigint | null, hash: "" as string | undefined, timestamp: 0n };
   for await (const value of headers) {
     result.height = value.block?.header?.height || null;
     result.hash = value.block?.header?.hash.toString("hex");
+    result.timestamp = value.block?.header?.timestamp || 0n;
   }
   res.header("Cache-Control", cacheSettings.oldBlocks);
   res.json(result);

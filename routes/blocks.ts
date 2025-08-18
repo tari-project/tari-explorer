@@ -247,19 +247,28 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
 });
 
 router.get("/tip/height", async function (req: Request, res: Response) {
-  let tipHeight: bigint = 0n;
+  let tip: { height: bigint, timestamp: bigint } = {
+    height: 0n,
+    timestamp: 0n
+  };
 
   const from = 0, limit = 20;
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
     // load the default page from cache
-    tipHeight = res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height;
+    tip = {
+      height: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height,
+      timestamp: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.timestamp
+    };
   } else {
     const client = createClient();
     const tipInfo = await client.getTipInfo({});
-    tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+    tip = {
+      height: tipInfo?.metadata?.best_block_height || 0n,
+      timestamp: tipInfo?.metadata?.timestamp || 0n,
+    };
   }
   res.header("Cache-Control", cacheSettings.index);
-  res.json({ height: tipHeight });
+  res.json(tip);
 });
 
 router.get("/:height/header", async function (req: Request, res: Response) {
@@ -274,10 +283,11 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     heights: [BigInt(height)],
   });
 
-  const result = { height: null as bigint | null, hash: "" as string | undefined };
+  const result = { height: null as bigint | null, hash: "" as string | undefined, timestamp: 0n };
   for await (const value of headers) {
     result.height = value.block?.header?.height || null;
     result.hash = value.block?.header?.hash.toString("hex");
+    result.timestamp = value.block?.header?.timestamp || 0n;
   }
   res.header("Cache-Control", cacheSettings.oldBlocks);
   res.json(result);

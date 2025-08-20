@@ -215,7 +215,7 @@ jobs:
             ${{ secrets.DOCKER_PROVIDER }}/${{ secrets.DOCKER_REPO }}/${{ env.DOCKER_IMAGE }}:${{ env.VERSION }}
             ${{ env.TAG_ALIAS }}
           outputs: |
-            type=registry,annotation-manifest-descriptor.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation-manifest-descriptor.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }},annotation.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }},annotation-index.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation-index.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }}
+            type=registry,annotation-manifest-descriptor.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation-manifest-descriptor.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }},annotation.org.opencontainers.image.title=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.title'] }},annotation.org.opencontainers.image.description=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.description'] }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

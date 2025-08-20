@@ -39,7 +39,8 @@
     "*.ts",
     "routes/**/*.ts",
     "utils/**/*.ts",
-    "applications/**/*.ts"
+    "applications/**/*.ts",
+    "bin/*.ts"
   ],
   "exclude": ["node_modules"]
 }

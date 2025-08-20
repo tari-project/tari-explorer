@@ -4,9 +4,6 @@
 const CACHE_PREFIX = 'tari';
 
 export const CacheKeys = {
-  // Dashboard data - aggregated info for main page
-  DASHBOARD_DATA: `${CACHE_PREFIX}:dashboard:data`,
-  
   // Recent blocks with pagination
   RECENT_BLOCKS: (from: number, limit: number) => 
     `${CACHE_PREFIX}:blocks:recent:${from}:${limit}`,

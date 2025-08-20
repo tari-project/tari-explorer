@@ -54,21 +54,11 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   let json: Record<string, unknown> | undefined;
-  
-  // Try to get dashboard data from Redis first
-  if (from === 0 && limit === 20) {
-    // For the default dashboard view, try Redis cache
-    json = await cacheService.get<Record<string, unknown>>(CacheKeys.DASHBOARD_DATA) || undefined;
-  }
-  
-  // Fallback to original logic if Redis data not available
-  if (!json) {
-    if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
-      // load the default page from in-memory cache
-      json = res.locals.backgroundUpdater.getData().indexData;
-    } else {
-      json = (await getIndexData(from, limit)) ?? undefined;
-    }
+  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
+    // load the default page from in-memory cache
+    json = res.locals.backgroundUpdater.getData().indexData;
+  } else {
+    json = (await getIndexData(from, limit)) ?? undefined;
   }
   
   if (json === null) {
@@ -141,15 +131,7 @@ function getBlockTimes(
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from: number, limit: number, skipRedisCache: boolean = false) {
-  // Check Redis cache for recent blocks list if not skipping cache
-  if (!skipRedisCache && from === 0 && limit <= 20) {
-    const cachedData = await cacheService.get<Record<string, unknown>>(CacheKeys.DASHBOARD_DATA);
-    if (cachedData) {
-      return cachedData;
-    }
-  }
-  
+export async function getIndexData(from: number, limit: number) {
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});

@@ -136,20 +136,6 @@ export default class BackgroundUpdater {
     return timeSinceLastUpdate < 300000;
   }
 
-  async updateDashboardData() {
-    try {
-      const startTs = Date.now();
-      const dashboardData = await getIndexData(this.from, this.limit);
-
-      if (dashboardData) {
-        await cacheService.set(CacheKeys.DASHBOARD_DATA, dashboardData, 90); // 90 second TTL
-        logger.info({ duration: Date.now() - startTs }, 'Dashboard data updated in Redis');
-      }
-    } catch (error: any) {
-      logger.error(error, 'Failed to update dashboard data in Redis');
-    }
-  }
-
   async updateMempoolData() {
     try {
       const startTs = Date.now();

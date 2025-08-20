@@ -28,4 +28,9 @@ export const CacheKeys = {
     `${CACHE_PREFIX}:search:${query}`,
 } as const;
 
+export const LockKeys = {
+  // Distributed locks for background updater
+  BACKGROUND_UPDATER_MAIN: `${CACHE_PREFIX}:locks:background-updater:main`,
+} as const;
+
 export default CacheKeys;

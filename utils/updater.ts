@@ -23,10 +23,11 @@
 import { pino } from "pino";
 import { getIndexData } from "../routes/index.js";
 import cacheService from "./cacheService.js";
-import CacheKeys from "./cacheKeys.js";
+import CacheKeys, { LockKeys } from "./cacheKeys.js";
 import { createClient } from "../baseNodeClient.js";
 import { collectAsyncIterable } from "./grpcHelpers.js";
 import { miningStats } from "./stats.js";
+import distributedLock from "./distributedLock.js";
 
 const logger = pino({ name: "background-updater" });
 
@@ -72,44 +73,80 @@ export default class BackgroundUpdater {
       return;
     }
 
+    // Generate unique lock identifier for this instance
+    const lockId = distributedLock.generateLockId();
+    const lockKey = LockKeys.BACKGROUND_UPDATER_MAIN;
+
+    // Try to acquire distributed lock with 5 minute TTL
+    const lockAcquired = await distributedLock.acquire(lockKey, lockId, 300, true);
+
+    if (!lockAcquired) {
+      // Another instance is handling the update
+      logger.info('Background update skipped - another instance is currently updating');
+
+      // Check lock status for debugging
+      const lockStatus = await distributedLock.status(lockKey);
+      if (lockStatus.held) {
+        logger.debug(`Update lock held by: ${lockStatus.holder}, TTL: ${lockStatus.ttl}s`);
+      }
+
+      return;
+    }
+
     this.isUpdating = true;
     let attempts = 0;
 
-    while (attempts < this.maxRetries) {
-      try {
-        const startTs = Date.now();
+    try {
+      while (attempts < this.maxRetries) {
+        try {
+          const startTs = Date.now();
 
-        await Promise.all([
-          this.updateTipData(),
-          this.updateNetworkStats(),
-          this.updateMiningStats(),
-          this.updateMempoolData(),
-        ])
+          logger.info(`Starting background update with lock: ${lockId}`);
 
-        const newData = await getIndexData(this.from, this.limit);
-        if (newData) {
-          this.data = newData;
-          this.lastSuccessfulUpdate = new Date();
-          logger.info({ duration: Date.now() - startTs }, `Index data updated`);
-          break;
+          await Promise.all([
+            this.updateTipData(),
+            this.updateNetworkStats(),
+            this.updateMiningStats(),
+            this.updateMempoolData(),
+          ])
+
+          const newData = await getIndexData(this.from, this.limit);
+          if (newData) {
+            this.data = newData;
+            this.lastSuccessfulUpdate = new Date();
+            logger.info({
+              duration: Date.now() - startTs,
+              lockId
+            }, `Background update completed successfully`);
+            break;
+          }
+          throw new Error("Received null data from getIndexData");
+        } catch (error: any) {
+          logger.error(
+            error,
+            `Update attempt ${attempts + 1} failed: ${error.message}`,
+          );
+          attempts++;
+
+          if (attempts === this.maxRetries) {
+            logger.error(`All ${this.maxRetries} update attempts failed, releasing lock`);
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
         }
-        throw new Error("Received null data from getIndexData");
-      } catch (error: any) {
-        logger.error(
-          error,
-          `Update attempt ${attempts + 1} failed: ${error.message}`,
-        );
-        attempts++;
-
-        if (attempts === this.maxRetries) {
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
       }
-    }
+    } finally {
+      // Always release the lock when done
+      const released = await distributedLock.release(lockKey, lockId);
+      if (released) {
+        logger.info(`Background update lock released: ${lockId}`);
+      } else {
+        logger.warn(`Failed to release background update lock: ${lockId}`);
+      }
 
-    this.isUpdating = false;
+      this.isUpdating = false;
+    }
   }
 
   scheduleNextUpdate() {

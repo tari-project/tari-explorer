@@ -225,7 +225,6 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   let nextLink: string | null = `/blocks/${nextHeight}`;
   if (height === tipHeight) nextLink = null;
 
-  // Keep cache-control headers for individual blocks (static/identifiable data)
   if (tipHeight - height >= cacheSettings.oldBlockDeltaTip) {
     res.setHeader("Cache-Control", cacheSettings.oldBlocks);
   } else {
@@ -260,7 +259,6 @@ router.get("/tip/height", async function (req: Request, res: Response) {
     timestamp: 0n
   };
 
-  // Try to get tip data from Redis cache first
   const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
   if (cachedTip) {
     tip = {
@@ -280,7 +278,6 @@ router.get("/tip/height", async function (req: Request, res: Response) {
 
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
-
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
     res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
     return;
@@ -296,7 +293,6 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     result.hash = value.block?.header?.hash.toString("hex");
     result.timestamp = value.block?.header?.timestamp || 0n;
   }
-  // Keep cache-control headers for individual block headers (static/identifiable data)
   res.header("Cache-Control", cacheSettings.oldBlocks);
   res.json(result);
 });

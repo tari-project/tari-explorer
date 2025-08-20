@@ -7,11 +7,21 @@
 import { app } from "./app.js";
 import debugLib from "debug";
 import http from "http";
+import { getRedisClient } from "./utils/redisClient.js";
+
 import JSONbig from "json-bigint";
 const JSONbigFunc = JSONbig({ useNativeBigInt: true });
 global.JSON = JSONbigFunc as any;
 
 const debug = debugLib("tari-explorer:server");
+
+// Initialize Redis connection
+try {
+  getRedisClient();
+  console.log('Redis client initialized');
+} catch (error) {
+  console.warn('Redis initialization failed, will fallback to gRPC only:', error);
+}
 
 /**
  * Get port from environment and store in Express.

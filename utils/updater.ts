@@ -61,7 +61,6 @@ export default class BackgroundUpdater {
   }
 
   async start() {
-    // Initial updates for both legacy and Redis
     await this.update();
 
     // Schedule regular updates
@@ -91,7 +90,7 @@ export default class BackgroundUpdater {
         if (newData) {
           this.data = newData;
           this.lastSuccessfulUpdate = new Date();
-          logger.info({ duration: Date.now() - startTs }, `data updated`);
+          logger.info({ duration: Date.now() - startTs }, `Index data updated`);
           break;
         }
         throw new Error("Received null data from getIndexData");
@@ -138,18 +137,12 @@ export default class BackgroundUpdater {
   }
 
   async updateDashboardData() {
-    if (!cacheService.isConnected()) {
-      logger.warn('Redis not connected, skipping dashboard data update');
-      return;
-    }
-
     try {
       const startTs = Date.now();
       const dashboardData = await getIndexData(this.from, this.limit);
 
       if (dashboardData) {
         await cacheService.set(CacheKeys.DASHBOARD_DATA, dashboardData, 90); // 90 second TTL
-        this.lastDashboardUpdate = new Date();
         logger.info({ duration: Date.now() - startTs }, 'Dashboard data updated in Redis');
       }
     } catch (error: any) {
@@ -158,11 +151,6 @@ export default class BackgroundUpdater {
   }
 
   async updateMempoolData() {
-    if (!cacheService.isConnected()) {
-      logger.warn('Redis not connected, skipping mempool data update');
-      return;
-    }
-
     try {
       const startTs = Date.now();
       const client = createClient();
@@ -185,11 +173,6 @@ export default class BackgroundUpdater {
   }
 
   async updateMiningStats() {
-    if (!cacheService.isConnected()) {
-      logger.warn('Redis not connected, skipping mining stats update');
-      return;
-    }
-
     try {
       const startTs = Date.now();
       const client = createClient();
@@ -237,11 +220,6 @@ export default class BackgroundUpdater {
   }
 
   async updateNetworkStats() {
-    if (!cacheService.isConnected()) {
-      logger.warn('Redis not connected, skipping network stats update');
-      return;
-    }
-
     try {
       const startTs = Date.now();
       const client = createClient();

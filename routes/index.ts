@@ -47,7 +47,6 @@ type BlockHeaderExtended = BlockHeader & {
 
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
-  // Remove cache-control headers for dynamic list data
   const from = parseInt((req.query.from as string | undefined) || "0");
   let limit = parseInt((req.query.limit as string | undefined) || "20");
   if (limit > 100) {

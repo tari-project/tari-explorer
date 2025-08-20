@@ -33,7 +33,6 @@ const router = express.Router();
 router.get(
   "/:excessSigs",
   async function (req: express.Request, res: express.Response) {
-    // Remove cache-control header for dynamic mempool data
     const client = createClient();
     const txId = req.params.excessSigs.split("+");
     

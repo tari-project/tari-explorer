@@ -30,9 +30,6 @@ import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
-  // Remove cache-control header for dynamic miners data
-  
-  // Try to get network stats from Redis cache first
   let lastDifficulties: any[] = await cacheService.get(CacheKeys.NETWORK_STATS) || [];
   if (lastDifficulties.length === 0) {
     // Fallback to direct gRPC call

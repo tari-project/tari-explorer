@@ -24,6 +24,8 @@ import { createClient } from "../baseNodeClient.js";
 import express, { Request, Response } from "express";
 import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
+import cacheService from "../utils/cacheService.js";
+import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
@@ -39,26 +41,7 @@ function fromHexString(hexString: string): number[] {
 }
 
 router.get("/stats", async function (req: Request, res: Response) {
-  let limit = parseInt((req.query.limit as string | undefined) || "20");
-  if (limit > 100) {
-    limit = 100;
-  }
-
-  const client = createClient();
-  const tipInfo = await client.getTipInfo({});
-  const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
-
-  const blocks = await collectAsyncIterable(
-    client.getBlocks({ heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)), })
-  );
-
-  const stats = blocks.map(block => ({
-    height: block?.block?.header?.height || 0n,
-    ...miningStats(block, false),
-  }))
-  .sort((a, b) => Number(b.height - a.height));
-
-  res.header("Cache-Control", cacheSettings.index);
+  const stats = await cacheService.get(CacheKeys.MINING_STATS_RECENT);
   res.json(stats);
 })
 
@@ -243,6 +226,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
   let nextLink: string | null = `/blocks/${nextHeight}`;
   if (height === tipHeight) nextLink = null;
 
+  // Keep cache-control headers for individual blocks (static/identifiable data)
   if (tipHeight - height >= cacheSettings.oldBlockDeltaTip) {
     res.setHeader("Cache-Control", cacheSettings.oldBlocks);
   } else {
@@ -277,12 +261,12 @@ router.get("/tip/height", async function (req: Request, res: Response) {
     timestamp: 0n
   };
 
-  const from = 0, limit = 20;
-  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
-    // load the default page from cache
+  // Try to get tip data from Redis cache first
+  const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
+  if (cachedTip) {
     tip = {
-      height: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.best_block_height,
-      timestamp: res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata.timestamp
+      height: cachedTip.height,
+      timestamp: cachedTip.timestamp
     };
   } else {
     const client = createClient();
@@ -292,7 +276,6 @@ router.get("/tip/height", async function (req: Request, res: Response) {
       timestamp: tipInfo?.metadata?.timestamp || 0n,
     };
   }
-  res.header("Cache-Control", cacheSettings.index);
   res.json(tip);
 });
 
@@ -314,6 +297,7 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     result.hash = value.block?.header?.hash.toString("hex");
     result.timestamp = value.block?.header?.timestamp || 0n;
   }
+  // Keep cache-control headers for individual block headers (static/identifiable data)
   res.header("Cache-Control", cacheSettings.oldBlocks);
   res.json(result);
 });

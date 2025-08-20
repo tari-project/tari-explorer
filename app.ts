@@ -21,6 +21,7 @@ import healthz from "./routes/healthz.js";
 
 import BackgrounUpdater from "./utils/updater.js";
 import { hex, script } from "./script.js";
+import { getRedisClient } from "./utils/redisClient.js";
 
 import { fileURLToPath } from "url";
 
@@ -194,6 +195,14 @@ hbs.registerHelper("format_thousands", function (value: number) {
 hbs.registerPartials(path.join(__dirname, "../partials"));
 
 export const app = express();
+
+// Initialize Redis connection
+try {
+  getRedisClient();
+  console.log('Redis client initialized');
+} catch (error) {
+  console.warn('Redis initialization failed, will fallback to gRPC only:', error);
+}
 
 const updater = new BackgrounUpdater();
 updater.start();

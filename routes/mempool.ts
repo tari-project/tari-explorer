@@ -22,8 +22,9 @@
 
 import express from "express";
 import { createClient } from "../baseNodeClient.js";
-import cacheSettings from "../cacheSettings.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import cacheService from "../utils/cacheService.js";
+import CacheKeys from "../utils/cacheKeys.js";
 import { Transaction } from "../grpc-gen/transaction.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
@@ -32,12 +33,18 @@ const router = express.Router();
 router.get(
   "/:excessSigs",
   async function (req: express.Request, res: express.Response) {
-    res.setHeader("Cache-Control", cacheSettings.mempool);
+    // Remove cache-control header for dynamic mempool data
     const client = createClient();
     const txId = req.params.excessSigs.split("+");
-    const mempool = await collectAsyncIterable(
-      client.getMempoolTransactions({}),
-    );
+    
+    // Try to get mempool data from Redis cache first
+    let mempool: any[] = await cacheService.get(CacheKeys.MEMPOOL_CURRENT) || [];
+    if (mempool.length === 0) {
+      // Fallback to direct gRPC call
+      mempool = await collectAsyncIterable(
+        client.getMempoolTransactions({}),
+      );
+    }
     let tx: Transaction | undefined = undefined;
     for (let i = 0; i < mempool.length; i++) {
       for (

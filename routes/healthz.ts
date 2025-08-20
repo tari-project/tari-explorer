@@ -21,18 +21,30 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { createClient } from "../baseNodeClient.js";
+import cacheService from "../utils/cacheService.js";
 import express from "express";
+import { pino } from 'pino';
 const router = express.Router();
 
+const logger = pino({ name: 'healthz' });
+
 router.get("/", async function (req: express.Request, res: express.Response) {
-  const client = createClient();
-  const result = await client.getVersion({});
-  const json = { version: result.value };
-  if (req.query.json !== undefined) {
-    res.json(json);
-  } else {
-    res.render("healthz", json);
+  try {
+    const client = createClient();
+    const result = await client.getVersion({});
+    const json = { version: result.value };
+
+    const ping = await cacheService.ping();
+    if (ping && result.value && typeof result.value === "string") {
+      res.status(200).send(json);
+    } else {
+      res.status(500);
+    }
+  } catch (error) {
+    logger.error(error, "Health check failed");
+    res.status(500).send("Internal Server Error");
   }
+
 });
 
 export default router;

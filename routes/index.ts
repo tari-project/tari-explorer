@@ -23,8 +23,9 @@
 import { createClient } from "../baseNodeClient.js";
 import { miningStats } from "../utils/stats.js";
 import express, { Request, Response } from "express";
-import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
+import cacheService from "../utils/cacheService.js";
+import CacheKeys from "../utils/cacheKeys.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { AggregateBody } from "../grpc-gen/transaction.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
@@ -46,7 +47,7 @@ type BlockHeaderExtended = BlockHeader & {
 
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
-  res.setHeader("Cache-Control", cacheSettings.index);
+  // Remove cache-control headers for dynamic list data
   const from = parseInt((req.query.from as string | undefined) || "0");
   let limit = parseInt((req.query.limit as string | undefined) || "20");
   if (limit > 100) {
@@ -54,12 +55,23 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   let json: Record<string, unknown> | undefined;
-  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
-    // load the default page from cache
-    json = res.locals.backgroundUpdater.getData().indexData;
-  } else {
-    json = (await getIndexData(from, limit)) ?? undefined;
+  
+  // Try to get dashboard data from Redis first
+  if (from === 0 && limit === 20) {
+    // For the default dashboard view, try Redis cache
+    json = await cacheService.get<Record<string, unknown>>(CacheKeys.DASHBOARD_DATA) || undefined;
   }
+  
+  // Fallback to original logic if Redis data not available
+  if (!json) {
+    if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
+      // load the default page from in-memory cache
+      json = res.locals.backgroundUpdater.getData().indexData;
+    } else {
+      json = (await getIndexData(from, limit)) ?? undefined;
+    }
+  }
+  
   if (json === null) {
     res.status(404).send("Block not found");
   }
@@ -129,7 +141,15 @@ function getBlockTimes(
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from: number, limit: number) {
+export async function getIndexData(from: number, limit: number, skipRedisCache: boolean = false) {
+  // Check Redis cache for recent blocks list if not skipping cache
+  if (!skipRedisCache && from === 0 && limit <= 20) {
+    const cachedData = await cacheService.get<Record<string, unknown>>(CacheKeys.DASHBOARD_DATA);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+  
   const client = createClient();
 
   const tipInfo = await client.getTipInfo({});

@@ -22,18 +22,25 @@
 
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
-import cacheSettings from "../cacheSettings.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import cacheService from "../utils/cacheService.js";
+import CacheKeys from "../utils/cacheKeys.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
-  res.setHeader("Cache-Control", cacheSettings.index);
-  const client = createClient();
-  const lastDifficulties = await collectAsyncIterable(
-    client.getNetworkDifficulty({ from_tip: 720n }),
-  );
+  // Remove cache-control header for dynamic miners data
+  
+  // Try to get network stats from Redis cache first
+  let lastDifficulties: any[] = await cacheService.get(CacheKeys.NETWORK_STATS) || [];
+  if (lastDifficulties.length === 0) {
+    // Fallback to direct gRPC call
+    const client = createClient();
+    lastDifficulties = await collectAsyncIterable(
+      client.getNetworkDifficulty({ from_tip: 720n }),
+    );
+  }
 
   const data: any = {
     num_blocks: lastDifficulties.length,

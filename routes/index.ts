@@ -24,8 +24,6 @@ import { createClient } from "../baseNodeClient.js";
 import { miningStats } from "../utils/stats.js";
 import express, { Request, Response } from "express";
 import cache from "../cache.js";
-import cacheService from "../utils/cacheService.js";
-import CacheKeys from "../utils/cacheKeys.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { AggregateBody } from "../grpc-gen/transaction.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";

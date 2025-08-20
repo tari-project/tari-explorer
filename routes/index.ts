@@ -74,6 +74,7 @@ router.get("/", async function (req: Request, res: Response) {
   
   if (json === null) {
     res.status(404).send("Block not found");
+    return;
   }
 
   if (req.query.json !== undefined) {

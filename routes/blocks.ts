@@ -29,7 +29,6 @@ import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
-import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -281,7 +280,7 @@ router.get("/tip/height", async function (req: Request, res: Response) {
 
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
-  // Validate that height is a string representing a non-negative integer
+
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
     res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
     return;

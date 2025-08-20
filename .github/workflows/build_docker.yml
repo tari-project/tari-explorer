@@ -202,7 +202,7 @@ jobs:
         with:
           context: ./tari-explorer/
           file: ./tari-explorer/Dockerfile
-          platforms: linux/arm64, linux/amd64
+          platforms: linux/amd64 #, linux/arm64
           push: true
           provenance: false
           cache-from: type=gha

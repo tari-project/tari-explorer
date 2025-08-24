@@ -27,7 +27,7 @@ import cacheService from "../utils/cacheService.js";
 import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
-import { collectAsyncIterable } from "@/utils/grpcHelpers.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {

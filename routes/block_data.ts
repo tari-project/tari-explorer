@@ -26,7 +26,7 @@ import cacheSettings from "../cacheSettings.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { AggregateBody } from "@/grpc-gen/transaction.js";
-import { collectAsyncIterable } from "@/utils/grpcHelpers.js";
+import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {

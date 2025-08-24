@@ -23,6 +23,7 @@
 import { createClient } from "../baseNodeClient.js";
 import { miningStats } from "../utils/stats.js";
 import express, { Request, Response } from "express";
+import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { AggregateBody } from "../grpc-gen/transaction.js";
@@ -64,6 +65,8 @@ router.get("/", async function (req: Request, res: Response) {
     return;
   }
 
+
+  res.setHeader("Cache-Control", cacheSettings.index);
   if (req.query.json !== undefined) {
     (json?.stats as []).map((x: any) => x.height = x.height.toString())
     res.json(json);

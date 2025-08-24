@@ -22,13 +22,12 @@
 
 import { createClient } from "../baseNodeClient.js";
 import express, { Request, Response } from "express";
-import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
 import cacheService from "../utils/cacheService.js";
 import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
-import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { collectAsyncIterable } from "@/utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -66,7 +65,7 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
 
   const request = { heights: [height] };
 
-  const block: HistoricalBlock[] = await cache.get(client.getBlocks, request);
+  const block = await collectAsyncIterable(client.getBlocks(request));
   if (!block || block.length === 0) {
     res.status(404);
     res.render("404", { message: `Block at height ${height} not found` });

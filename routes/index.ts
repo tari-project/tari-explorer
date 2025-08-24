@@ -262,9 +262,9 @@ export async function getIndexData(from: number, limit: number) {
       (header as any).numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
       (header as any).numInputs = stat.numInputs;
     } else {
-      const block = await cache.get(client.getBlocks, {
+      const block = await collectAsyncIterable(client.getBlocks({
         heights: [header.height],
-      });
+      }));
       const stat = miningStats(block);
       (header as any).totalCoinbaseXtm = stat.totalCoinbaseXtm;
       (header as any).numCoinbases = stat.numCoinbases;
@@ -293,7 +293,7 @@ export async function getIndexData(from: number, limit: number) {
     (mempool[i]?.transaction?.body as AggregateBodyExtended).total_fees = sum;
   }
 
-  const block = await cache.get(client.getBlocks, { heights: [tipHeight] });
+  const block = await collectAsyncIterable(client.getBlocks({ heights: [tipHeight] }));
   if (!block || block.length === 0) {
     return null;
   }

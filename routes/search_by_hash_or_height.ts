@@ -148,18 +148,18 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   }
 
   // Searching for blocks by height
-  let headerByHeightResult: SearchResult[] = [];
+  const headerByHeightResult: SearchResult[] = [];
   let headerByHeightError: string | undefined;
   if (heightsMap.size !== 0) {
     for (const height of heights) {
       try {
-        let blocks = await cache.get(client.getBlocks, { heights: [height] });
+        const blocks = await collectAsyncIterable(client.getBlocks({ heights: [height] }));
         for (const historical_block of blocks) {
           const mapped = {
             payment_reference_hex: undefined,
-            block_height: historical_block.block.header.height.toString(),
-            block_hash: historical_block.block.header.hash,
-            mined_timestamp: historical_block.block.header.timestamp.toString(),
+            block_height: historical_block.block?.header?.height.toString(),
+            block_hash: historical_block.block?.header?.hash,
+            mined_timestamp: historical_block.block?.header?.timestamp.toString(),
             commitment: undefined,
             is_spent: undefined,
             spent_height: undefined,

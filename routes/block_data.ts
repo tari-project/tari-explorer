@@ -22,11 +22,11 @@
 
 import { createClient } from "../baseNodeClient.js";
 import express from "express";
-import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { AggregateBody } from "@/grpc-gen/transaction.js";
+import { collectAsyncIterable } from "@/utils/grpcHelpers.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -69,7 +69,7 @@ router.get(
     }
 
     const request = { heights: [height] };
-    block = (await cache.get(client.getBlocks, request)) as HistoricalBlock[];
+    block = await collectAsyncIterable(client.getBlocks(request));
     if (!block || block.length === 0) {
       res.status(404);
       res.render("404", { message: `Block at height ${height} not found` });

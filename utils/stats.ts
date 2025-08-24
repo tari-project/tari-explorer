@@ -32,6 +32,7 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs
     !blockData.block?.body?.outputs ||
     !Array.isArray(blockData.block.body.outputs)
   ) {
+    console.error("Invalid block data:", blockData);
     throw new Error("Invalid block data");
   }
 

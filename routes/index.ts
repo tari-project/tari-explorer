@@ -166,6 +166,11 @@ export async function getIndexData(from: number, limit: number) {
       }),
     ),
   ]);
+  if (!blocks || blocks.length === 0) {
+    console.error("No blocks returned from getBlocks", blocks, "tipHeight", tipHeight, "limit", limit);
+    return null;
+  }
+
   const version = version_result.value?.slice(0, 25);
 
   // Algo split
@@ -243,9 +248,6 @@ export async function getIndexData(from: number, limit: number) {
   ]);
 
   // Get mining stats
-  if (!blocks || blocks.length === 0) {
-    return null;
-  }
   const stats = blocks
     .map((block: HistoricalBlock) => ({
       height: block?.block?.header?.height || 0n,
@@ -295,6 +297,7 @@ export async function getIndexData(from: number, limit: number) {
 
   const block = await collectAsyncIterable(client.getBlocks({ heights: [tipHeight] }));
   if (!block || block.length === 0) {
+    console.error("No blocks returned from getBlocks for tipHeight", tipHeight);
     return null;
   }
 

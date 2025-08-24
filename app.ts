@@ -194,6 +194,7 @@ hbs.registerHelper("format_thousands", function (value: number) {
 hbs.registerPartials(path.join(__dirname, "../partials"));
 
 export const app = express();
+app.set("x-powered-by", false);
 
 const updater = new BackgrounUpdater();
 updater.start();

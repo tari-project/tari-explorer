@@ -235,6 +235,12 @@ export default class BackgroundUpdater {
         lastUpdate: new Date()
       };
 
+      const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
+      if (cachedTip && cachedTip.height > tipData.height) {
+        logger.warn(`Current tip height ${tipData.height} is less than cached height ${cachedTip.height}, skipping update`);
+        return;
+      }
+
       await cacheService.set(CacheKeys.TIP_CURRENT, tipData, DEFAULT_REDIS_TTL);
       logger.info({ duration: Date.now() - startTs }, 'Tip data updated in Redis');
     } catch (error: any) {

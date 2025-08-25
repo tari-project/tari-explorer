@@ -36,37 +36,41 @@
     </tr>
     <tr>
       <th>10</th>
-      <th>20</th>
-      <th>50</th>
-      <th>100</th>
+      <th>40</th>
+      <th>80</th>
+      <th>120</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>Monero (RandomX)</th>
+      <th>Monero RandomX</th>
       <td style="text-align: center;">{{this.algoSplit.moneroRx10}}
         {{percentbar
           this.algoSplit.moneroRx10
           this.algoSplit.sha3X10
           this.algoSplit.tariRx10
+          this.algoSplit.cuckaroo10
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx20}}
         {{percentbar
           this.algoSplit.moneroRx20
           this.algoSplit.sha3X20
           this.algoSplit.tariRx20
+          this.algoSplit.cuckaroo20
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx50}}
         {{percentbar
           this.algoSplit.moneroRx50
           this.algoSplit.sha3X50
           this.algoSplit.tariRx50
+          this.algoSplit.cuckaroo50
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.moneroRx100}}
         {{percentbar
           this.algoSplit.moneroRx100
           this.algoSplit.sha3X100
           this.algoSplit.tariRx100
+          this.algoSplit.cuckaroo100
         }}</td>
     </tr>
     <tr>
@@ -76,65 +80,106 @@
           this.algoSplit.sha3X10
           this.algoSplit.moneroRx10
           this.algoSplit.tariRx10
+          this.algoSplit.cuckaroo10
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X20}}
         {{percentbar
           this.algoSplit.sha3X20
           this.algoSplit.moneroRx20
           this.algoSplit.tariRx20
+          this.algoSplit.cuckaroo20
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X50}}
         {{percentbar
           this.algoSplit.sha3X50
           this.algoSplit.moneroRx50
           this.algoSplit.tariRx50
+          this.algoSplit.cuckaroo50
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.sha3X100}}
         {{percentbar
           this.algoSplit.sha3X100
           this.algoSplit.moneroRx100
           this.algoSplit.tariRx100
+          this.algoSplit.cuckaroo100
         }}</td>
     </tr>
     <tr>
-      <th>Tari (RandomX)</th>
+      <th>Tari RandomX</th>
       <td style="text-align: center;">{{this.algoSplit.tariRx10}}
         {{percentbar
           this.algoSplit.tariRx10
           this.algoSplit.moneroRx10
           this.algoSplit.sha3X10
+          this.algoSplit.cuckaroo10
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx20}}
         {{percentbar
           this.algoSplit.tariRx20
           this.algoSplit.moneroRx20
           this.algoSplit.sha3X20
+          this.algoSplit.cuckaroo20
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx50}}
         {{percentbar
           this.algoSplit.tariRx50
           this.algoSplit.moneroRx50
           this.algoSplit.sha3X50
+          this.algoSplit.cuckaroo50
         }}</td>
       <td style="text-align: center;">{{this.algoSplit.tariRx100}}
         {{percentbar
           this.algoSplit.tariRx100
           this.algoSplit.moneroRx100
           this.algoSplit.sha3X100
+          this.algoSplit.cuckaroo100
         }}</td>
     </tr>
+    {{#if this.c29Active}}
+      <tr>
+        <th>Cuckaroo C29</th>
+        <td style="text-align: center;">{{this.algoSplit.cuckaroo10}}
+          {{percentbar
+            this.algoSplit.cuckaroo10
+            this.algoSplit.tariRx10
+            this.algoSplit.moneroRx10
+            this.algoSplit.sha3X10
+          }}</td>
+        <td style="text-align: center;">{{this.algoSplit.cuckaroo20}}
+          {{percentbar
+            this.algoSplit.cuckaroo20
+            this.algoSplit.tariRx20
+            this.algoSplit.moneroRx20
+            this.algoSplit.sha3X20
+          }}</td>
+        <td style="text-align: center;">{{this.algoSplit.cuckaroo50}}
+          {{percentbar
+            this.algoSplit.cuckaroo50
+            this.algoSplit.tariRx50
+            this.algoSplit.moneroRx50
+            this.algoSplit.sha3X50
+          }}</td>
+        <td style="text-align: center;">{{this.algoSplit.cuckaroo100}}
+          {{percentbar
+            this.algoSplit.cuckaroo100
+            this.algoSplit.tariRx100
+            this.algoSplit.moneroRx100
+            this.algoSplit.sha3X100
+          }}</td>
+      </tr>
+    {{/if}}
   </tbody>
 </table>
 <br />
 
-<h2>Relative block times (minutes) - last 100 blocks</h2>
+<h2>Relative block times (minutes) - last 120 blocks</h2>
 <table class="noborder">
   <tr>
     <td>
       <h4>All</h4>
-      Target time: 2 minutes (avg
+      Target time: {{this.block_target_time}} minutes (avg
       {{this.blockTimes.average}})
-      <pre>{{chart this.blockTimes.series 15 false}}</pre>
+      <pre>{{chart this.blockTimes.series 15 true "min"}}</pre>
     </td>
   </tr>
 </table>
@@ -143,22 +188,32 @@
   <tr>
     <td>
       <h4>Monero RandomX</h4>
-      Target time: 6 minutes (avg
+      Target time: {{this.algo_target_time}} minutes (avg
       {{this.moneroRandomxTimes.average}})
-      <pre>{{chart this.moneroRandomxTimes.series 15 false}}</pre>
+      <pre>{{chart this.moneroRandomxTimes.series 15 true "min"}}</pre>
     </td>
     <td>
       <h4>SHA3X</h4>
-      Target time: 6 minutes (avg
+      Target time: {{this.algo_target_time}} minutes (avg
       {{this.sha3xTimes.average}})
-      <pre>{{chart this.sha3xTimes.series 15 false}}</pre>
+      <pre>{{chart this.sha3xTimes.series 15 true "min"}}</pre>
     </td>
     <td>
       <h4>Tari RandomX</h4>
-      Target time: 6 minutes (avg
+      Target time: {{this.algo_target_time}} minutes (avg
       {{this.tariRandomxTimes.average}})
-      <pre>{{chart this.tariRandomxTimes.series 15 false}}</pre>
+      <pre>{{chart this.tariRandomxTimes.series 15 true "min"}}</pre>
     </td>
+    {{#if this.c29Active}}
+      {{#if this.c29Active}}
+        <td>
+          <h4>Cuckaroo C29</h4>
+          Target time: {{this.algo_target_time}} minutes (avg
+          {{this.cuckarooTimes.average}})
+          <pre>{{chart this.cuckarooTimes.series 15 true "min"}}</pre>
+        </td>
+      {{/if}}
+    {{/if}}
   </tr>
 </table>
 <br />
@@ -169,10 +224,11 @@
     <td>
       <h4>Monero RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{unitFormat this.currentMoneroRandomxHashRate "giga" 3}}
-      GH/s ({{format_thousands this.averageMoneroRandomxMiners}}
+      {{unitFormat this.currentMoneroRandomxHashRate 3}}
+      {{autoUnitLabel this.currentMoneroRandomxHashRate}}
+      ({{format_thousands this.averageMoneroRandomxMiners}}
       average miners)
-      <pre>{{chart this.moneroRandomxHashRates 15 false "giga"}}
+      <pre>{{chart this.moneroRandomxHashRates 15 true "H/s"}}
       </pre>
     </td>
   </tr>
@@ -180,10 +236,11 @@
     <td>
       <h4>SHA3X</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{unitFormat this.currentSha3xHashRate "tera" 3}}
-      TH/s ({{format_thousands this.averageSha3xMiners}}
+      {{unitFormat this.currentSha3xHashRate 3}}
+      {{autoUnitLabel this.currentSha3xHashRate}}
+      ({{format_thousands this.averageSha3xMiners}}
       average miners)
-      <pre>{{chart this.sha3xHashRates 15 false "tera"}}
+      <pre>{{chart this.sha3xHashRates 15 true "H/s"}}
       </pre>
     </td>
   </tr>
@@ -191,13 +248,28 @@
     <td>
       <h4>Tari RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
-      {{unitFormat this.currentTariRandomxHashRate "giga" 3}}
-      GH/s ({{format_thousands this.averageTariRandomxMiners}}
+      {{unitFormat this.currentTariRandomxHashRate 3}}
+      {{autoUnitLabel this.currentTariRandomxHashRate}}
+      ({{format_thousands this.averageTariRandomxMiners}}
       average miners)
-      <pre>{{chart this.tariRandomxHashRates 15 false "giga"}}
+      <pre>{{chart this.tariRandomxHashRates 15 true "H/s"}}
       </pre>
     </td>
   </tr>
+  {{#if this.c29Active}}
+    <tr>
+      <td>
+        <h4>Cuckaroo C29</h4>
+        Current estimated Hash Rate (180 blocks, 1.5 hours):
+        {{unitFormat this.currentCuckarooHashRate 3}}
+        {{autoUnitLabel this.currentCuckarooHashRate}}
+        ({{format_thousands this.averageCuckarooMiners}}
+        average miners)
+        <pre>{{chart this.cuckarooHashRates 15 true "g/s"}}
+        </pre>
+      </td>
+    </tr>
+  {{/if}}
 </table>
 <br />
 

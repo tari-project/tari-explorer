@@ -50,10 +50,7 @@ export class CacheService {
         logger.warn(`Redis not ready, queueing set operation for key: ${key}`);
         // ioredis will queue this command until connection is ready
       }
-      
-      // Sanitize BigInts before serializing
-      const sanitizedValue = sanitizeBigInts(value);
-      const serializedValue = JSON.stringify(sanitizedValue);
+      const serializedValue = JSON.stringify(value);
 
       if (ttlSeconds) {
         await client.setex(key, ttlSeconds, serializedValue);

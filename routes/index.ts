@@ -27,7 +27,7 @@ import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { AggregateBody } from "../grpc-gen/transaction.js";
-import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
+import { BlockHeaderResponse, TipInfoResponse } from "@/grpc-gen/base_node.js";
 import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 
@@ -132,10 +132,12 @@ function getBlockTimes(
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from: number, limit: number) {
+export async function getIndexData(from: number, limit: number, tipInfo?: TipInfoResponse) {
   const client = createClient();
 
-  const tipInfo = await client.getTipInfo({});
+  if (!tipInfo) {
+    tipInfo = await client.getTipInfo({});
+  }
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
   const [
     version_result,

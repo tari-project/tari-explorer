@@ -96,6 +96,8 @@ export default class BackgroundUpdater {
     this.isUpdating = true;
     let attempts = 0;
 
+    const client = createClient();
+
     try {
       while (attempts < this.maxRetries) {
         try {
@@ -103,14 +105,17 @@ export default class BackgroundUpdater {
 
           logger.info(`Starting background update with lock: ${lockId}`);
 
+
+          const tipInfo = await client.getTipInfo({});
+
           await Promise.all([
-            this.updateTipData(),
+            this.updateTipData(tipInfo),
             this.updateNetworkStats(),
-            this.updateMiningStats(),
+            this.updateMiningStats(tipInfo),
             this.updateMempoolData(),
           ])
 
-          const newData = await getIndexData(this.from, this.limit);
+          const newData = await getIndexData(this.from, this.limit, tipInfo);
           if (newData) {
             this.data = newData;
             this.lastSuccessfulUpdate = new Date();
@@ -195,11 +200,10 @@ export default class BackgroundUpdater {
     }
   }
 
-  async updateMiningStats() {
+  async updateMiningStats(tipInfo) {
     try {
       const startTs = Date.now();
       const client = createClient();
-      const tipInfo = await client.getTipInfo({});
       const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
 
       const limit = 20;
@@ -223,11 +227,9 @@ export default class BackgroundUpdater {
     }
   }
 
-  async updateTipData() {
+  async updateTipData(tipInfo) {
     try {
       const startTs = Date.now();
-      const client = createClient();
-      const tipInfo = await client.getTipInfo({});
 
       const tipData = {
         height: tipInfo?.metadata?.best_block_height || 0n,

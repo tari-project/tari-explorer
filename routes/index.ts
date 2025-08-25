@@ -65,7 +65,7 @@ router.get("/", async function (req: Request, res: Response) {
   }
 
   if (req.query.json !== undefined) {
-    (json?.stats as []).map((x: any) => x.height = x.height.toString())
+    (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
     res.json(json);
   } else {
     res.render("index", sanitizeBigInts(json));
@@ -163,7 +163,7 @@ export async function getIndexData(from: number, limit: number) {
       }),
     ),
   ]);
-  const version = version_result.value?.slice(0, 25);
+  const version = version_result.version?.slice(0, 25);
 
   // Algo split
   const last100Headers = listHeaders.map((r: BlockHeaderResponse) => r.header);
@@ -243,11 +243,24 @@ export async function getIndexData(from: number, limit: number) {
   if (!blocks || blocks.length === 0) {
     return null;
   }
+
+  // Block rewards corresponding to block header heights
+  const headerRewardMap = new Map<bigint, bigint>();
+  for (const h of listHeaders) {
+    if (h.header?.height !== undefined) {
+      headerRewardMap.set(h.header.height, h.reward ?? 0n);
+    }
+  }
+
   const stats = blocks
-    .map((block: HistoricalBlock) => ({
-      height: block?.block?.header?.height || 0n,
-      ...miningStats(block),
-    }))
+    .map((block: HistoricalBlock) => {
+      const height = block?.block?.header?.height || 0n;
+      const reward = headerRewardMap.get(height) ?? 0n;
+      return {
+        height,
+        ...miningStats(block, reward),
+      };
+    })
     .sort((a, b) => Number(b.height - a.height));
 
   // Append the stats to the headers array
@@ -262,7 +275,13 @@ export async function getIndexData(from: number, limit: number) {
       const block = await cache.get(client.getBlocks, {
         heights: [header.height],
       });
-      const stat = miningStats(block);
+      const headers_with_reward = await collectAsyncIterable(
+        client.listHeaders({
+          from_height: header.height,
+          num_headers: BigInt(1),
+        }),
+      );
+      const stat = miningStats(block, headers_with_reward[0].reward);
       (header as any).totalCoinbaseXtm = stat.totalCoinbaseXtm;
       (header as any).numCoinbases = stat.numCoinbases;
       (header as any).numOutputsNoCoinbases = stat.numOutputsNoCoinbases;

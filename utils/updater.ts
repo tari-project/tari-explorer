@@ -82,7 +82,7 @@ export default class BackgroundUpdater {
 
     if (!lockAcquired) {
       // Another instance is handling the update
-      logger.info('Background update skipped - another instance is currently updating');
+      logger.info("Background update skipped - another instance is currently updating");
 
       // Check lock status for debugging
       const lockStatus = await distributedLock.status(lockKey);
@@ -102,35 +102,38 @@ export default class BackgroundUpdater {
       while (attempts < this.maxRetries) {
         try {
           const startTs = Date.now();
-
           logger.info(`Starting background update with lock: ${lockId}`);
 
-
           const tipInfo = await client.getTipInfo({});
+          const cachedTip = await cacheService.get<{ height: bigint; timestamp: bigint }>(CacheKeys.TIP_CURRENT);
+          if (cachedTip && cachedTip.height === tipInfo?.metadata?.best_block_height) {
+            logger.debug(`Tip height ${tipInfo?.metadata?.best_block_height} unchanged, skipping update`);
+            break;
+          }
 
           await Promise.all([
             this.updateTipData(tipInfo),
             this.updateNetworkStats(),
             this.updateMiningStats(tipInfo),
             this.updateMempoolData(),
-          ])
+          ]);
 
           const newData = await getIndexData(this.from, this.limit, tipInfo);
           if (newData) {
             this.data = newData;
             this.lastSuccessfulUpdate = new Date();
-            logger.info({
-              duration: Date.now() - startTs,
-              lockId
-            }, `Background update completed successfully`);
+            logger.info(
+              {
+                duration: Date.now() - startTs,
+                lockId,
+              },
+              `Background update completed successfully`,
+            );
             break;
           }
           throw new Error("Received null data from getIndexData");
         } catch (error: any) {
-          logger.error(
-            error,
-            `Update attempt ${attempts + 1} failed: ${error.message}`,
-          );
+          logger.error(error, `Update attempt ${attempts + 1} failed: ${error.message}`);
           attempts++;
 
           if (attempts === this.maxRetries) {
@@ -194,9 +197,9 @@ export default class BackgroundUpdater {
       }
 
       await cacheService.set(CacheKeys.MEMPOOL_CURRENT, mempool, 40); // 40 second TTL
-      logger.info({ duration: Date.now() - startTs }, 'Mempool data updated in Redis');
+      logger.info({ duration: Date.now() - startTs }, "Mempool data updated in Redis");
     } catch (error: any) {
-      logger.error(error, 'Failed to update mempool data in Redis');
+      logger.error(error, "Failed to update mempool data in Redis");
     }
   }
 
@@ -210,7 +213,7 @@ export default class BackgroundUpdater {
       const blocks = await collectAsyncIterable(
         client.getBlocks({
           heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)),
-        })
+        }),
       );
 
       const stats = blocks
@@ -221,9 +224,9 @@ export default class BackgroundUpdater {
         .sort((a, b) => Number(b.height - a.height));
 
       await cacheService.set(CacheKeys.MINING_STATS_RECENT, stats, DEFAULT_REDIS_TTL);
-      logger.info({ duration: Date.now() - startTs }, 'Mining stats updated in Redis');
+      logger.info({ duration: Date.now() - startTs }, "Mining stats updated in Redis");
     } catch (error: any) {
-      logger.error(error, 'Failed to update mining stats in Redis');
+      logger.error(error, "Failed to update mining stats in Redis");
     }
   }
 
@@ -234,19 +237,22 @@ export default class BackgroundUpdater {
       const tipData = {
         height: tipInfo?.metadata?.best_block_height || 0n,
         timestamp: tipInfo?.metadata?.timestamp || 0n,
-        lastUpdate: new Date()
+        lastUpdate: new Date(),
       };
 
-      const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
+      const cachedTip = await cacheService.get<{
+        height: bigint;
+        timestamp: bigint;
+      }>(CacheKeys.TIP_CURRENT);
       if (cachedTip && cachedTip.height > tipData.height) {
         logger.warn(`Current tip height ${tipData.height} is less than cached height ${cachedTip.height}, skipping update`);
         return;
       }
 
       await cacheService.set(CacheKeys.TIP_CURRENT, tipData, DEFAULT_REDIS_TTL);
-      logger.info({ duration: Date.now() - startTs }, 'Tip data updated in Redis');
+      logger.info({ duration: Date.now() - startTs }, "Tip data updated in Redis");
     } catch (error: any) {
-      logger.error(error, 'Failed to update tip data in Redis');
+      logger.error(error, "Failed to update tip data in Redis");
     }
   }
 
@@ -254,14 +260,12 @@ export default class BackgroundUpdater {
     try {
       const startTs = Date.now();
       const client = createClient();
-      const lastDifficulties = await collectAsyncIterable(
-        client.getNetworkDifficulty({ from_tip: 720n }),
-      );
+      const lastDifficulties = await collectAsyncIterable(client.getNetworkDifficulty({ from_tip: 720n }));
 
       await cacheService.set(CacheKeys.NETWORK_STATS, lastDifficulties, DEFAULT_REDIS_TTL);
-      logger.info({ duration: Date.now() - startTs }, 'Network stats updated in Redis');
+      logger.info({ duration: Date.now() - startTs }, "Network stats updated in Redis");
     } catch (error: any) {
-      logger.error(error, 'Failed to update network stats in Redis');
+      logger.error(error, "Failed to update network stats in Redis");
     }
   }
 

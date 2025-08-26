@@ -210,16 +210,19 @@ export default class BackgroundUpdater {
       const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
 
       const limit = 20;
-      const blocks = await collectAsyncIterable(
-        client.getBlocks({
-          heights: Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i)),
+      const heights = Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i));
+      const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
+      const headers_with_reward = await collectAsyncIterable(
+        client.listHeaders({
+          from_height: heights[0],
+          num_headers: BigInt(heights.length),
         }),
       );
 
       const stats = blocks
-        .map((block) => ({
+        .map((block, i) => ({
           height: block?.block?.header?.height || 0n,
-          ...miningStats(block, false),
+          ...miningStats(block, headers_with_reward[i]?.reward, false),
         }))
         .sort((a, b) => Number(b.height - a.height));
 

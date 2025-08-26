@@ -22,7 +22,11 @@
 
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 
-export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs: boolean = true) {
+export function miningStats(
+  block: HistoricalBlock | HistoricalBlock[],
+  block_reward: bigint,
+  formatTs: boolean = true,
+) {
   // Handle both object and array cases
   const blockData = Array.isArray(block) ? block[0] : block;
 
@@ -47,6 +51,7 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs
   const outputs = blockData.block.body.outputs;
   let totalCoinbase = 0;
   let numCoinbases = 0;
+  let hasBulletproofCoinbase = false;
 
   outputs.forEach((output: any) => {
     if (
@@ -55,8 +60,17 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs
     ) {
       totalCoinbase += parseInt(output.minimum_value_promise || 0, 10);
       numCoinbases++;
+    } else if (
+      output.features?.output_type === 1 &&
+      output.features?.range_proof_type === 0
+    ) {
+      hasBulletproofCoinbase = true;
+      numCoinbases++;
     }
   });
+  if (hasBulletproofCoinbase) {
+    totalCoinbase = Number(block_reward);
+  }
 
   const numOutputsNoCoinbases = outputs.length - numCoinbases;
   const totalCoinbaseXtm = (totalCoinbase / 1e6).toLocaleString(undefined, {
@@ -71,14 +85,16 @@ export function miningStats(block: HistoricalBlock | HistoricalBlock[], formatTs
     numOutputsNoCoinbases,
     numInputs,
     powAlgo,
-    timestamp: formatTs ? new Date(timestamp * 1000).toLocaleString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }) : timestamp,
+    timestamp: formatTs
+      ? new Date(timestamp * 1000).toLocaleString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        })
+      : timestamp,
   };
 }

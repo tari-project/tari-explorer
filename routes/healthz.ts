@@ -32,10 +32,10 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   try {
     const client = createClient();
     const result = await client.getVersion({});
-    const json = { version: result.value };
+    const json = { version: result.version };
 
     const ping = await cacheService.ping();
-    if (ping && result.value && typeof result.value === "string") {
+    if (ping && result.version && typeof result.version === "string") {
       res.status(200).send(json);
     } else {
       res.status(500);

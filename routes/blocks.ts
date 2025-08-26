@@ -28,6 +28,7 @@ import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
+import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -41,7 +42,7 @@ function fromHexString(hexString: string): number[] {
 router.get("/stats", async function (req: Request, res: Response) {
   const stats = await cacheService.get(CacheKeys.MINING_STATS_RECENT);
   res.json(stats);
-})
+});
 
 router.get("/:height_or_hash", async function (req: Request, res: Response) {
   const client = createClient();
@@ -71,10 +72,17 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
     res.render("404", { message: `Block at height ${height} not found` });
     return;
   }
+  const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
+    client.listHeaders(
+    {
+      from_height: height,
+      num_headers: BigInt(1),
+    },
+  ));
 
   // Calculate statistics
   const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
-    miningStats(block);
+    miningStats(block, headers_with_reward[0].reward);
 
   const outputs_from = +(req.query.outputs_from || 0);
   const outputs_to = +(req.query.outputs_to || 10);
@@ -253,9 +261,9 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
 });
 
 router.get("/tip/height", async function (req: Request, res: Response) {
-  let tip: { height: bigint, timestamp: bigint } = {
+  let tip: { height: bigint; timestamp: bigint } = {
     height: 0n,
-    timestamp: 0n
+    timestamp: 0n,
   };
 
   const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
@@ -278,7 +286,12 @@ router.get("/tip/height", async function (req: Request, res: Response) {
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
-    res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
+    res
+      .status(400)
+      .json({
+        error:
+          "Invalid block height parameter. Must be a non-negative integer.",
+      });
     return;
   }
   const client = createClient();
@@ -286,7 +299,11 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     heights: [BigInt(height)],
   });
 
-  const result = { height: null as bigint | null, hash: "" as string | undefined, timestamp: 0n };
+  const result = {
+    height: null as bigint | null,
+    hash: "" as string | undefined,
+    timestamp: 0n,
+  };
   for await (const value of headers) {
     result.height = value.block?.header?.height || null;
     result.hash = value.block?.header?.hash.toString("hex");

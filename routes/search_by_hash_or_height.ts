@@ -242,13 +242,19 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       payment_reference_hex: output.payment_reference_hex,
       block_height: output.block_height.toString(),
       block_hash: output.block_hash,
-      mined_timestamp: output.mined_timestamp > 0 ? output.mined_timestamp.toString() : undefined,
+      mined_timestamp:
+        output.mined_timestamp > 0
+          ? output.mined_timestamp.toString()
+          : undefined,
       commitment: output.commitment,
       is_spent: output.is_spent || false,
       spent_height: output.spent_height ? output.spent_height.toString() : "0",
       spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
       min_value_promise: output.min_value_promise.toString(),
-      spent_timestamp: output.spent_timestamp > 0 ? output.spent_timestamp.toString() : undefined,
+      spent_timestamp:
+        output.spent_timestamp > 0
+          ? output.spent_timestamp.toString()
+          : undefined,
       output_hash: output.output_hash,
       search_type: "Payref",
     }));
@@ -281,13 +287,19 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       payment_reference_hex: output.payment_reference_hex,
       block_height: output.block_height.toString(),
       block_hash: output.block_hash,
-      mined_timestamp: output.mined_timestamp > 0 ? output.mined_timestamp.toString() : undefined,
+      mined_timestamp:
+        output.mined_timestamp > 0
+          ? output.mined_timestamp.toString()
+          : undefined,
       commitment: output.commitment,
       is_spent: output.is_spent || false,
       spent_height: output.spent_height ? output.spent_height.toString() : "0",
       spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
       min_value_promise: output.min_value_promise.toString(),
-      spent_timestamp: output.spent_timestamp > 0 ? output.spent_timestamp.toString() : undefined,
+      spent_timestamp:
+        output.spent_timestamp > 0
+          ? output.spent_timestamp.toString()
+          : undefined,
       output_hash: output.output_hash,
       search_type: "OutputHash",
     }));
@@ -387,10 +399,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
         ),
       ).values(),
       ...new Map(
-        [...(payrefResult || []), ...(outputHashesResult || []), ...(commitmentResult || [])].map((item) => [
-          item.payment_reference_hex,
-          item,
-        ]),
+        [
+          ...(payrefResult || []),
+          ...(outputHashesResult || []),
+          ...(commitmentResult || []),
+        ].map((item) => [item.payment_reference_hex, item]),
       ).values(),
     ].sort((a, b) => Number(b.block_height) - Number(a.block_height)), // Parse block_height as a number
     heights_not_found: Array.from(heightsMap.values())

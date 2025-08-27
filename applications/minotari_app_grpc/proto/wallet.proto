@@ -113,7 +113,7 @@ service Wallet {
   //
   // Example usage (JavaScript):
   // ```javascript
- // // Call the Identify RPC method
+  // // Call the Identify RPC method
   // client.Identify({}, (error, response) => {
   //   if (error) {
   //     console.error('Error:', error);
@@ -223,6 +223,10 @@ service Wallet {
   // }
   // ```
   rpc GetCompleteAddress (Empty) returns (GetCompleteAddressResponse);
+
+  rpc PrepareOneSidedTransactionForSigning (PrepareOneSidedTransactionForSigningRequest)  returns (PrepareOneSidedTransactionForSigningResponse);
+
+  rpc BroadcastSignedOneSidedTransaction  (BroadcastSignedOneSidedTransactionRequest)  returns (BroadcastSignedOneSidedTransactionResponse);
 
   // This call supports standard interactive transactions (Mimblewimble),
   // one-sided transactions, and one-sided-to-stealth-address transactions.
@@ -989,40 +993,51 @@ service Wallet {
   // Creates a transaction with a template registration output
   rpc CreateTemplateRegistration(CreateTemplateRegistrationRequest) returns (CreateTemplateRegistrationResponse);
 
-  // The SetBaseNode call configures the base node peer for the wallet.
+  // Signs a message using the wallet's node identity private key.
   //
-  // This RPC sets the public key and network address of the base node peer that the wallet should communicate with.
+  // The `SignMessage` call creates a Schnorr signature over a message using the wallet's node identity private key.
+  // This signature can be used to prove ownership of the wallet or authenticate messages.
+  // The signature is returned as separate components (signature and public nonce) for verification.
   //
-  // ### Request Fields:
-  // - `public_key_hex` (string): The public key of the base node, provided as a hex string.
-  // - `net_address` (string): The multiaddress of the base node (e.g., `/ip4/127.0.0.1/tcp/18141`).
+  // ### Request Parameters:
+  //
+  // - `message` (required):
+  //   - **Type**: `bytes`
+  //   - **Description**: The message to be signed (arbitrary bytes).
+  //   - **Restrictions**: Can be any byte sequence.
+  //
+  // ### Response Fields:
+  //
+  // - **signature**: The Schnorr signature as hex-encoded bytes.
+  // - **public_nonce**: The public nonce component of the signature as hex-encoded bytes.
   //
   // ### Example JavaScript gRPC client usage:
   //
   // ```javascript
   // const request = {
-  //   public_key_hex: "0281bdfc...",
-  //   net_address: "/ip4/127.0.0.1/tcp/18141"
+  //   message: Buffer.from("Hello Tari!", "utf-8")
   // };
-  // client.setBaseNode(request, (err, response) => {
+  // client.signMessage(request, (err, response) => {
   //   if (err) console.error(err);
-  //   else console.log("Base node set successfully");
+  //   else console.log("Signature:", response.signature, "Nonce:", response.public_nonce);
   // });
   // ```
   //
-  // ### Sample JSON Request:
+  // ### Sample JSON Response:
+  //
   // ```json
   // {
-  //   "public_key_hex": "0281bdfc...",
-  //   "net_address": "/ip4/127.0.0.1/tcp/18141"
+  //   "signature": "a1b2c3d4e5f6...",
+  //   "public_nonce": "f6e5d4c3b2a1..."
   // }
   // ```
   //
-  // ### Sample JSON Response:
-  // ```json
-  // {}
-  // ```
-  rpc SetBaseNode(SetBaseNodeRequest) returns (SetBaseNodeResponse);
+  // ### Security Notes:
+  //
+  // - This signs with the wallet's node identity private key.
+  // - The signature can be verified using the wallet's public key.
+  // - Use this for authentication and ownership proofs only.
+  rpc SignMessage (SignMessageRequest) returns (SignMessageResponse);
 
   // Streams real-time wallet transaction events to the client.
   //
@@ -1082,12 +1097,18 @@ service Wallet {
   // ```
   rpc StreamTransactionEvents(TransactionEventRequest) returns (stream TransactionEventResponse);
 
-  rpc RegisterValidatorNode(RegisterValidatorNodeRequest) returns (RegisterValidatorNodeResponse);
-
   rpc ImportTransactions(ImportTransactionsRequest) returns (ImportTransactionsResponse);
 
   // Get all completed transactions including cancelled ones, sorted by timestamp and paginated
-  rpc GetAllCompletedTransactions(GetAllCompletedTransactionsRequest) returns (GetAllCompletedTransactionsResponse);
+  // DEPRECATED: Use GetAllCompletedTransactionsStream for better performance and memory efficiency
+  rpc GetAllCompletedTransactions(GetAllCompletedTransactionsRequest)
+      returns (GetAllCompletedTransactionsResponse) {
+    option deprecated = true;
+  }
+
+  // Get all completed transactions including cancelled ones, sorted by timestamp and paginated (streaming version)
+  // Recommended: Use this streaming version for better performance and progressive loading
+  rpc GetAllCompletedTransactionsStream(GetAllCompletedTransactionsRequest) returns (stream GetCompletedTransactionsResponse);
 
   // Gets transaction information by payment reference (PayRef)
   //
@@ -1135,9 +1156,221 @@ service Wallet {
   // ```
   rpc GetPaymentByReference(GetPaymentByReferenceRequest) returns (GetPaymentByReferenceResponse);
 
+// Estimates the transaction fee based on amount, fee rate, and number of outputs.
+  //
+  // The `GetFeeEstimate` call allows clients to calculate the expected transaction fee before sending funds.
+  // This is useful for presenting fee information to the user or for ensuring sufficient funds are available.
+  //
+  // ### Request Parameters:
+  // - **amount** (required): The amount to send, in microTari. (1 Tari = 1,000,000 µT).
+  // - **fee_per_gram** (required): The fee per gram (weight unit) to use for the estimate. Higher values may improve priority.
+  // - **output_count** (required): The number of outputs to create in the transaction (e.g., 2 = recipient + change).
+  //
+  // ### Input Validation:
+  // - `amount` must be a non-zero `uint64` representing the amount to transfer.
+  // - `fee_per_gram` must be a non-zero `uint64`; zero or low fees may result in delayed confirmation or failure.
+  // - `output_count` must be convertible to a valid `usize`; large values may increase the fee significantly.
+  //
+  // ### Response Fields:
+  // - **estimated_fee**: A `uint64` value representing the estimated total transaction fee in microTari.
+  //
+  // ### Example JavaScript gRPC client usage:
+  // ```javascript
+  // const request = {
+  //   amount: 1000000,         // Sending 1 Tari
+  //   fee_per_gram: 5,         // Fee rate of 5 µT/g
+  //   output_count: 2          // One recipient + one change output
+  // };
+  // client.getFeeEstimate(request, (err, response) => {
+  //   if (err) console.error(err);
+  //   else console.log("Estimated fee:", response.estimated_fee);
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  // ```json
+  // {
+  //   "estimated_fee": 12345
+  // }
+  // ```
   rpc GetFeeEstimate(GetFeeEstimateRequest) returns (GetFeeEstimateResponse);
 
+  // Retrieves fee-per-gram statistics over recent blocks.
+  //
+  // The `GetFeePerGramStats` call returns aggregated fee rate information to help clients
+  // understand recent network fee trends. This can be used for setting appropriate fees
+  // when constructing transactions.
+  //
+  // ### Request Parameters:
+  // - **block_count** (optional): The number of recent blocks to include in the statistics.
+  //   If not specified or zero, a default number of blocks will be used.
+  //
+  // ### Input Validation:
+  // - `block_count` must be a non-negative `uint64`. Large values may increase query time.
+  //
+  // ### Response Fields:
+  // - **fee_per_gram_stats**: A list of `FeePerGramStat` objects summarizing fee data over the specified blocks.
+  //
+  // Each `FeePerGramStat` contains:
+  // - **average_fee_per_gram**: Average fee per gram observed over the blocks.
+  // - **min_fee_per_gram**: Minimum fee per gram observed.
+  // - **max_fee_per_gram**: Maximum fee per gram observed.
+  //
+  // ### Example JavaScript gRPC client usage:
+  // ```javascript
+  // const request = {
+  //   block_count: 10 // Consider fees over the last 10 blocks
+  // };
+  // client.getFeePerGramStats(request, (err, response) => {
+  //   if (err) console.error(err);
+  //   else response.fee_per_gram_stats.forEach(stat => {
+  //     console.log(`Avg: ${stat.average_fee_per_gram}, Min: ${stat.min_fee_per_gram}, Max: ${stat.max_fee_per_gram}`);
+  //   });
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  // ```json
+  // {
+  //   "fee_per_gram_stats": [
+  //     {
+  //       "average_fee_per_gram": 5,
+  //       "min_fee_per_gram": 3,
+  //       "max_fee_per_gram": 10
+  //     }
+  //   ]
+  // }
+  // ```
   rpc GetFeePerGramStats(GetFeePerGramStatsRequest) returns (GetFeePerGramStatsResponse);
+
+ // Attempts to replace an existing transaction with a new one that has a higher fee.
+  //
+  // The `ReplaceByFee` call enables clients to increase the fee of a pending transaction,
+  // potentially speeding up its confirmation by incentivizing miners to prioritize it.
+  //
+  // ### Request Parameters:
+  // - **transaction_id** (required): The ID of the original transaction to replace.
+  // - **fee_increase** (required): The additional fee amount to add, specified in microTari.
+  //   Must be greater than zero.
+  //
+  // ### Input Validation:
+  // - `transaction_id` must correspond to a currently unconfirmed transaction.
+  // - `fee_increase` must be a non-zero `uint64`. Zero or negative values are invalid.
+  //
+  // ### Response Fields:
+  // - **transaction_id**: The transaction ID of the new replacement transaction.
+  //
+  // ### Example JavaScript gRPC client usage:
+  // ```javascript
+  // const request = {
+  //   transaction_id: 123456,
+  //   fee_increase: 5000  // Increase fee by 5,000 microTari
+  // };
+  // client.replaceByFee(request, (err, response) => {
+  //   if (err) console.error("Failed to replace by fee:", err);
+  //   else console.log("Replacement transaction ID:", response.transaction_id);
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  // ```json
+  // {
+  //   "transaction_id": 7891011
+  // }
+  // ```
+  rpc ReplaceByFee(ReplaceByFeeRequest) returns (ReplaceByFeeResponse);
+
+  // Allows users to pay a specified fee for spending transaction outputs to given recipients.
+  //
+  // The `UserPayForFee` call enables clients to request that the wallet pays the fee
+  // for one or more transactions identified by their IDs, sending funds to the specified recipients.
+  // This is useful for fee bumping or covering transaction fees on behalf of recipients.
+  //
+  // ### Request Parameters:
+  // - **recipients** (required): A list of transfers, each specifying:
+  //    - `tx_id`: The transaction ID whose outputs will be spent.
+  //    - `fee`: The fee amount in microTari to pay for this transfer.
+  //    - `destination`: The Base58-encoded Tari address of the recipient.
+  //
+  // ### Input Validation:
+  // - Each `tx_id` must correspond to a valid transaction whose outputs can be spent.
+  // - Each `fee` must be a non-negative uint64 specifying the fee to pay.
+  // - Each `destination` must be a valid Base58 Tari address.
+  //
+  // ### Response Fields:
+  // - **results**: A list of `TransferResult` objects, one per requested recipient, each containing:
+  //    - `address`: The recipient address as a string.
+  //    - `transaction_id`: The ID of the newly created transaction (or zero if failed).
+  //    - `is_success`: Boolean indicating if the fee payment transaction succeeded.
+  //    - `failure_message`: A string describing the error if the transaction failed.
+  //    - `transaction_info`: Detailed transaction metadata if available.
+  //
+  // ### Example JavaScript gRPC client usage:
+  // ```javascript
+  // const request = {
+  //   recipients: [
+  //     {
+  //       tx_id: 123,
+  //       fee: 1000,
+  //       destination: "tari1qxyz..."
+  //     },
+  //     {
+  //       tx_id: 456,
+  //       fee: 2000,
+  //       destination: "tari1qabcd..."
+  //     }
+  //   ]
+  // };
+  // client.userPayForFee(request, (err, response) => {
+  //   if (err) console.error("Fee payment failed:", err);
+  //   else {
+  //     response.results.forEach(result => {
+  //       if (result.is_success) {
+  //         console.log(`Fee paid successfully to ${result.address} in tx ${result.transaction_id}`);
+  //       } else {
+  //         console.error(`Failed to pay fee for ${result.address}: ${result.failure_message}`);
+  //       }
+  //     });
+  //   }
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  // ```json
+  // {
+  //   "results": [
+  //     {
+  //       "address": "tari1qxyz...",
+  //       "transaction_id": 789,
+  //       "is_success": true,
+  //       "failure_message": "",
+  //       "transaction_info": {
+  //         "tx_id": 789,
+  //         "source_address": "...",
+  //         "dest_address": "...",
+  //         "status": "Completed",
+  //         "direction": "Outbound",
+  //         "amount": 50000,
+  //         "fee": 1000,
+  //         "is_cancelled": false,
+  //         "timestamp": 1620000000
+  //       }
+  //     },
+  //     {
+  //       "address": "tari1qabcd...",
+  //       "transaction_id": 0,
+  //       "is_success": false,
+  //       "failure_message": "Invalid destination address",
+  //       "transaction_info": null
+  //     }
+  //   ]
+  // }
+  // ```
+  rpc UserPayForFee(UserPayForFeeRequest) returns (UserPayForFeeResponse);
+
+  rpc RegisterValidatorNode(RegisterValidatorNodeRequest) returns (RegisterValidatorNodeResponse);
+  rpc SubmitValidatorEvictionProof(SubmitValidatorEvictionProofRequest) returns (SubmitValidatorEvictionProofResponse);
+  rpc SubmitValidatorNodeExit(SubmitValidatorNodeExitRequest) returns (SubmitValidatorNodeExitResponse);
 }
 
 
@@ -1172,6 +1405,28 @@ message GetCompleteAddressResponse {
   string one_sided_address_emoji = 6;
 }
 
+// A request to preapre a one sided transaction for offline signing
+message PrepareOneSidedTransactionForSigningRequest {
+  PaymentRecipient recipient = 1;
+}
+
+message PrepareOneSidedTransactionForSigningResponse {
+  bool is_success = 1;
+  string result = 2;
+  string failure_message = 3;
+}
+
+// A request to broadcast a signed one sided transaction
+message BroadcastSignedOneSidedTransactionRequest {
+  string request = 1;
+}
+
+message BroadcastSignedOneSidedTransactionResponse {
+  bool is_success = 1;
+  uint64 transaction_id = 2;
+  string failure_message = 3;
+}
+
 // A request to send funds to one or more recipients.
 message TransferRequest {
   repeated PaymentRecipient recipients = 1;
@@ -1186,6 +1441,7 @@ message CreateBurnTransactionRequest{
   uint64 fee_per_gram = 2;
   bytes claim_public_key = 4;
   bytes payment_id = 5;
+  bytes sidechain_deployment_key = 6;
 }
 
 // A recipient for a transfer, including address, amount, fee, and optional payment ID.
@@ -1194,7 +1450,7 @@ message PaymentRecipient {
   string address = 1;
   // Amount to send in microTari (1 T = 1_000_000 µT).
   uint64 amount = 2;
-   // Fee rate per gram.
+  // Fee rate per gram.
   uint64 fee_per_gram = 3;
   enum PaymentType {
     // Default Mimblewimble-style transaction.
@@ -1374,6 +1630,8 @@ message GetStateResponse {
   GetBalanceResponse balance = 2;
   // Status of the wallet's connection to the base node, based on the NetworkStatusResponse
   NetworkStatusResponse network = 3;
+  // Has the wallet since starting, completed a validation of all outputs after scanning
+  bool has_done_initial_validation = 4;
 }
 
 // Response message for GetUnspentAmounts RPC.
@@ -1418,8 +1676,14 @@ message ImportUtxosResponse {
 }
 
 message CreateTemplateRegistrationRequest {
-  TemplateRegistration template_registration = 1;
-  uint64 fee_per_gram = 2;
+  uint64 fee_per_gram = 1;
+  string template_name = 2;
+  uint32 template_version = 3;
+  TemplateType template_type = 4;
+  BuildInfo build_info = 5;
+  bytes binary_sha = 6;
+  string binary_url = 7;
+  bytes sidechain_deployment_key = 8;
 }
 
 message CreateTemplateRegistrationResponse {
@@ -1449,11 +1713,6 @@ message RevalidateResponse{}
 message ValidateRequest{}
 
 message ValidateResponse{}
-
-message SetBaseNodeRequest {
-  string public_key_hex = 1;
-  string net_address = 2;
-}
 
 message SetBaseNodeResponse{}
 
@@ -1498,11 +1757,40 @@ message TransactionEventResponse {
 message RegisterValidatorNodeRequest {
   bytes validator_node_public_key = 1;
   Signature validator_node_signature = 2;
-  uint64 fee_per_gram = 3;
-  bytes payment_id = 5;
+  bytes validator_node_claim_public_key = 3;
+  uint64 max_epoch = 4;
+  uint64 fee_per_gram = 5;
+  bytes payment_id = 6;
+  bytes sidechain_deployment_key = 7;
 }
 
 message RegisterValidatorNodeResponse {
+  uint64 transaction_id = 1;
+  bool is_success = 2;
+  string failure_message = 3;
+}
+
+message SubmitValidatorEvictionProofRequest {
+  EvictionProof proof = 1;
+  uint64 fee_per_gram = 2;
+  string message = 3;
+  bytes sidechain_deployment_key = 4;
+}
+
+message SubmitValidatorEvictionProofResponse {
+  uint64 tx_id = 1;
+}
+
+message SubmitValidatorNodeExitRequest {
+  bytes validator_node_public_key = 1;
+  Signature validator_node_signature = 2;
+  uint64 max_epoch = 3;
+  uint64 fee_per_gram = 4;
+  bytes message = 5;
+  bytes sidechain_deployment_key = 6;
+}
+
+message SubmitValidatorNodeExitResponse {
   uint64 transaction_id = 1;
   bool is_success = 2;
   string failure_message = 3;
@@ -1513,15 +1801,17 @@ message ImportTransactionsRequest {
 }
 
 message ImportTransactionsResponse {
-    repeated uint64 tx_ids = 1;
+  repeated uint64 tx_ids = 1;
 }
 
 message GetAllCompletedTransactionsRequest {
   uint64 offset = 1;
+  // limited to 50 if passed higher number than it will be reduced to 50
   uint64 limit = 2;
   uint64 status_bitflag = 3;
 }
 
+// DEPRECATED: Use GetAllCompletedTransactionsStream for better performance and memory efficiency
 message GetAllCompletedTransactionsResponse {
   repeated TransactionInfo transactions = 1;
 }
@@ -1609,6 +1899,35 @@ message GetFeePerGramStatsResponse {
   repeated FeePerGramStat fee_per_gram_stats = 1;
 }
 
+message ReplaceByFeeRequest {
+  // The transaction id of the transaction to replace
+  uint64 transaction_id = 1;
+  // The amount to increase the fee by in microTari. Must be greater than zero.
+  uint64 fee_increase = 2;
+}
+
+message ReplaceByFeeResponse {
+  // Transaction id of the new transaction
+  uint64 transaction_id = 1;
+}
+
+message UserPayForFeeRequest {
+    repeated TxOutputsToSpendTransfer recipients = 1;
+}
+
+message TxOutputsToSpendTransfer {
+    // Id of the transaction to spend outputs from.
+    uint64 tx_id = 1;
+    // Fee to pay for the transaction in microTari.
+    uint64 fee = 2;
+    // Base58 Tari address of the recipient.
+    string destination = 3;
+}
+
+message UserPayForFeeResponse {
+  repeated TransferResult results = 1;
+}
+
 message FeePerGramStat {
   // The average fee per gram over the specified number of blocks.
   uint64 average_fee_per_gram = 1;
@@ -1616,4 +1935,18 @@ message FeePerGramStat {
   uint64 min_fee_per_gram = 2;
   // The maximum fee per gram observed in the recent blocks.
   uint64 max_fee_per_gram = 3;
+}
+
+// Request message for SignMessage RPC
+message SignMessageRequest {
+  // The message to be signed (arbitrary bytes)
+  bytes message = 1;
+}
+
+// Response message for SignMessage RPC
+message SignMessageResponse {
+  // The Schnorr signature as hex-encoded string
+  string signature = 1;
+  // The public nonce component as hex-encoded string
+  string public_nonce = 2;
 }

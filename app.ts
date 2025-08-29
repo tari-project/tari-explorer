@@ -69,6 +69,7 @@ hbs.registerHelper(
 );
 
 const getAutoUnit = (value: number) => {
+  if (value >= 1e15) return "peta";
   if (value >= 1e12) return "tera";
   if (value >= 1e9) return "giga";
   if (value >= 1e6) return "mega";
@@ -76,12 +77,13 @@ const getAutoUnit = (value: number) => {
   return "";
 };
 
-function autoUnitLabel(value: number): string {
-  if (value >= 1e12) return "TH/s";
-  if (value >= 1e9) return "GH/s";
-  if (value >= 1e6) return "MH/s";
-  if (value >= 1e3) return "kH/s";
-  return "H/s";
+function autoUnitLabel(value: number, entity: string): string {
+  if (value >= 1e15) return "P" + entity;
+  if (value >= 1e12) return "T" + entity;
+  if (value >= 1e9) return "G" + entity;
+  if (value >= 1e6) return "M" + entity;
+  if (value >= 1e3) return "k" + entity;
+  return entity;
 }
 
 const transformNumberToFormat = (value: number, toFixedDecimal?: number) => {
@@ -128,6 +130,8 @@ const transformValueToUnit = (
       return transformLength(value / 1000000000);
     case "tera":
       return transformLength(value / 1000000000000);
+    case "peta":
+      return transformLength(value / 1000000000000000);
     default:
       return transformLength(value);
   }
@@ -143,6 +147,8 @@ const getPrefixOfUnit = (unit: string) => {
       return "G";
     case "tera":
       return "T";
+    case "peta":
+      return "P";
     default:
       return "";
   }

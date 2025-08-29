@@ -30,6 +30,7 @@ import { AggregateBody } from "../grpc-gen/transaction.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { DecimalValue } from "@/grpc-gen/types.js";
 
 const router = express.Router();
 
@@ -79,13 +80,13 @@ function getHashRates(difficulties: any[], properties: string[]): number[] {
   const hashRates = difficulties
     .map((d) =>
       properties.reduce(
-        (sum, property) => sum + (parseInt(d[property]) || 0),
+        (sum, property) => sum + (parseValue(d[property]) || 0),
         0,
       ),
     )
     ?.slice(start_idx, end_idx);
 
-  // Assign zero values to the next non-zero value
+  // Replace zero values to the next non-zero value
   for (let i = hashRates.length - 2; i >= 0; i--) {
     if (hashRates[i] === 0) {
       hashRates[i] = hashRates[i + 1];
@@ -94,6 +95,27 @@ function getHashRates(difficulties: any[], properties: string[]): number[] {
 
   return hashRates;
 }
+
+function parseValue(val: any): number {
+  if (!val) return 0;
+
+  if (typeof val === "number") return val;
+
+  if (typeof val === "bigint") return Number(val);
+
+  if (typeof val === "string") return parseFloat(val);
+
+  let decimalValue = val as DecimalValue;
+  if (decimalValue && typeof decimalValue.units === "bigint" && typeof decimalValue.nanos === "number") {
+    const units = Number(decimalValue.units);
+    const nanosStr = decimalValue.nanos.toString();
+    const decimal = decimalValue.nanos === 0 ? 0 : decimalValue.nanos / Math.pow(10, nanosStr.length);
+    return units + decimal;
+  } else {
+    return 0;
+  }
+}
+
 
 function getBlockTimes(
   last100Headers: any[],

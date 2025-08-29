@@ -177,7 +177,9 @@
   <tr>
     <td>
       <h4>All</h4>
-      Target time: {{this.block_target_time}} minutes (avg
+      Target time:
+      {{this.block_target_time}}
+      minutes (avg
       {{this.blockTimes.average}})
       <pre>{{chart this.blockTimes.series 15 true "min"}}</pre>
     </td>
@@ -188,19 +190,25 @@
   <tr>
     <td>
       <h4>Monero RandomX</h4>
-      Target time: {{this.algo_target_time}} minutes (avg
+      Target time:
+      {{this.algo_target_time}}
+      minutes (avg
       {{this.moneroRandomxTimes.average}})
       <pre>{{chart this.moneroRandomxTimes.series 15 true "min"}}</pre>
     </td>
     <td>
       <h4>SHA3X</h4>
-      Target time: {{this.algo_target_time}} minutes (avg
+      Target time:
+      {{this.algo_target_time}}
+      minutes (avg
       {{this.sha3xTimes.average}})
       <pre>{{chart this.sha3xTimes.series 15 true "min"}}</pre>
     </td>
     <td>
       <h4>Tari RandomX</h4>
-      Target time: {{this.algo_target_time}} minutes (avg
+      Target time:
+      {{this.algo_target_time}}
+      minutes (avg
       {{this.tariRandomxTimes.average}})
       <pre>{{chart this.tariRandomxTimes.series 15 true "min"}}</pre>
     </td>
@@ -208,7 +216,9 @@
       {{#if this.c29Active}}
         <td>
           <h4>Cuckaroo C29</h4>
-          Target time: {{this.algo_target_time}} minutes (avg
+          Target time:
+          {{this.algo_target_time}}
+          minutes (avg
           {{this.cuckarooTimes.average}})
           <pre>{{chart this.cuckarooTimes.series 15 true "min"}}</pre>
         </td>
@@ -225,7 +235,7 @@
       <h4>Monero RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
       {{unitFormat this.currentMoneroRandomxHashRate 3}}
-      {{autoUnitLabel this.currentMoneroRandomxHashRate}}
+      {{autoUnitLabel this.currentMoneroRandomxHashRate "H/s"}}
       ({{format_thousands this.averageMoneroRandomxMiners}}
       average miners)
       <pre>{{chart this.moneroRandomxHashRates 15 true "H/s"}}
@@ -237,7 +247,7 @@
       <h4>SHA3X</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
       {{unitFormat this.currentSha3xHashRate 3}}
-      {{autoUnitLabel this.currentSha3xHashRate}}
+      {{autoUnitLabel this.currentSha3xHashRate "H/s"}}
       ({{format_thousands this.averageSha3xMiners}}
       average miners)
       <pre>{{chart this.sha3xHashRates 15 true "H/s"}}
@@ -249,7 +259,7 @@
       <h4>Tari RandomX</h4>
       Current estimated Hash Rate (180 blocks, 1.5 hours):
       {{unitFormat this.currentTariRandomxHashRate 3}}
-      {{autoUnitLabel this.currentTariRandomxHashRate}}
+      {{autoUnitLabel this.currentTariRandomxHashRate "H/s"}}
       ({{format_thousands this.averageTariRandomxMiners}}
       average miners)
       <pre>{{chart this.tariRandomxHashRates 15 true "H/s"}}
@@ -262,7 +272,7 @@
         <h4>Cuckaroo C29</h4>
         Current estimated Hash Rate (180 blocks, 1.5 hours):
         {{unitFormat this.currentCuckarooHashRate 3}}
-        {{autoUnitLabel this.currentCuckarooHashRate}}
+        {{autoUnitLabel this.currentCuckarooHashRate "g/s"}}
         ({{format_thousands this.averageCuckarooMiners}}
         average miners)
         <pre>{{chart this.cuckarooHashRates 15 true "g/s"}}

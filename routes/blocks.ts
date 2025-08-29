@@ -49,7 +49,10 @@ router.get("/stats", async function (req: Request, res: Response) {
   const tipInfo = await client.getTipInfo({});
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
 
-  const heights = Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i));
+  const heights = Array.from(
+    { length: limit },
+    (_, i) => tipHeight - BigInt(i),
+  );
   const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
   const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
     client.listHeaders({

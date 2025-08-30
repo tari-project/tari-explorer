@@ -35,14 +35,13 @@ router.get(
   async function (req: express.Request, res: express.Response) {
     const client = createClient();
     const txId = req.params.excessSigs.split("+");
-    
+
     // Try to get mempool data from Redis cache first
-    let mempool: any[] = await cacheService.get(CacheKeys.MEMPOOL_CURRENT) || [];
+    let mempool: any[] =
+      (await cacheService.get(CacheKeys.MEMPOOL_CURRENT)) || [];
     if (mempool.length === 0) {
       // Fallback to direct gRPC call
-      mempool = await collectAsyncIterable(
-        client.getMempoolTransactions({}),
-      );
+      mempool = await collectAsyncIterable(client.getMempoolTransactions({}));
     }
     let tx: Transaction | undefined = undefined;
     for (let i = 0; i < mempool.length; i++) {

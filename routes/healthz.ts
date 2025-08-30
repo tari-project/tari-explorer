@@ -23,10 +23,10 @@
 import { createClient } from "../baseNodeClient.js";
 import cacheService from "../utils/cacheService.js";
 import express from "express";
-import { pino } from 'pino';
+import { pino } from "pino";
 const router = express.Router();
 
-const logger = pino({ name: 'healthz' });
+const logger = pino({ name: "healthz" });
 
 router.get("/", async function (req: express.Request, res: express.Response) {
   try {
@@ -44,7 +44,6 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     logger.error(error, "Health check failed");
     res.status(500).send("Internal Server Error");
   }
-
 });
 
 export default router;

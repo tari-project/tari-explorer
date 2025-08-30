@@ -1,7 +1,7 @@
 // Copyright 2025 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-const CACHE_PREFIX = process.env.CACHE_PREFIX || 'tari';
+const CACHE_PREFIX = process.env.CACHE_PREFIX || "tari";
 
 export const CacheKeys = {
   // Recent blocks with pagination
@@ -24,8 +24,7 @@ export const CacheKeys = {
   VALIDATOR_NODES: `${CACHE_PREFIX}:validators:active`,
 
   // Search results cache (if needed)
-  SEARCH_RESULT: (query: string) =>
-    `${CACHE_PREFIX}:search:${query}`,
+  SEARCH_RESULT: (query: string) => `${CACHE_PREFIX}:search:${query}`,
 } as const;
 
 export const LockKeys = {

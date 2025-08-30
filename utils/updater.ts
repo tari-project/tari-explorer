@@ -171,12 +171,10 @@ export default class BackgroundUpdater {
   }
 
   isHealthy(settings: { from: number; limit: number }) {
-    if (settings.from !== this.from || settings.limit !== this.limit)
-      return false;
+    if (settings.from !== this.from || settings.limit !== this.limit) return false;
     if (!this.lastSuccessfulUpdate) return false;
 
-    const timeSinceLastUpdate =
-      Date.now() - this.lastSuccessfulUpdate.getTime();
+    const timeSinceLastUpdate = Date.now() - this.lastSuccessfulUpdate.getTime();
     // Consider unhealthy if last successful update was more than 5 minutes ago
     return timeSinceLastUpdate < 300000;
   }

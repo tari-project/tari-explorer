@@ -16,7 +16,7 @@ function connect(address: string) {
   return client;
 }
 
-const client = connect(process.env.BASE_NODE_GRPC_URL || "localhost:18142");
+const client = connect(process.env.BASE_NODE_GRPC_URL || "localhost:18182");
 
 function createClient() {
   return client;

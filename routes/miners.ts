@@ -30,7 +30,8 @@ import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
-  let lastDifficulties: any[] = await cacheService.get(CacheKeys.NETWORK_STATS) || [];
+  let lastDifficulties: any[] =
+    (await cacheService.get(CacheKeys.NETWORK_STATS)) || [];
   if (lastDifficulties.length === 0) {
     // Fallback to direct gRPC call
     const client = createClient();

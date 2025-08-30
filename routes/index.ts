@@ -59,15 +59,15 @@ router.get("/", async function (req: Request, res: Response) {
   } else {
     json = (await getIndexData(from, limit)) ?? undefined;
   }
-  
+
   if (json === null) {
     res.status(404).send("Block not found");
     return;
   }
 
-
   res.setHeader("Cache-Control", cacheSettings.index);
   if (req.query.json !== undefined) {
+    (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
     (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
     res.json(json);
   } else {
@@ -132,7 +132,11 @@ function getBlockTimes(
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from: number, limit: number, tipInfo?: TipInfoResponse) {
+export async function getIndexData(
+  from: number,
+  limit: number,
+  tipInfo?: TipInfoResponse,
+) {
   const client = createClient();
 
   if (!tipInfo) {
@@ -169,7 +173,14 @@ export async function getIndexData(from: number, limit: number, tipInfo?: TipInf
     ),
   ]);
   if (!blocks || blocks.length === 0) {
-    console.error("No blocks returned from getBlocks", blocks, "tipHeight", tipHeight, "limit", limit);
+    console.error(
+      "No blocks returned from getBlocks",
+      blocks,
+      "tipHeight",
+      tipHeight,
+      "limit",
+      limit,
+    );
     return null;
   }
 
@@ -315,7 +326,9 @@ export async function getIndexData(from: number, limit: number, tipInfo?: TipInf
     (mempool[i]?.transaction?.body as AggregateBodyExtended).total_fees = sum;
   }
 
-  const block = await collectAsyncIterable(client.getBlocks({ heights: [tipHeight] }));
+  const block = await collectAsyncIterable(
+    client.getBlocks({ heights: [tipHeight] }),
+  );
   if (!block || block.length === 0) {
     console.error("No blocks returned from getBlocks for tipHeight", tipHeight);
     return null;

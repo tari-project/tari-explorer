@@ -266,11 +266,14 @@ router.get("/tip/height", async function (req: Request, res: Response) {
     timestamp: 0n,
   };
 
-  const cachedTip = await cacheService.get<{height: bigint, timestamp: bigint}>(CacheKeys.TIP_CURRENT);
+  const cachedTip = await cacheService.get<{
+    height: bigint;
+    timestamp: bigint;
+  }>(CacheKeys.TIP_CURRENT);
   if (cachedTip) {
     tip = {
       height: cachedTip.height,
-      timestamp: cachedTip.timestamp
+      timestamp: cachedTip.timestamp,
     };
   } else {
     const client = createClient();

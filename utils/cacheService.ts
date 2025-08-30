@@ -1,11 +1,15 @@
 // Copyright 2025 The Tari Project
 // SPDX-License-Identifier: BSD-3-Clause
 
-import { getRedisClient, isRedisConnected, getConnectionStatus } from './redisClient.js';
-import { sanitizeBigInts } from './sanitizeObject.js';
-import { pino } from 'pino';
+import {
+  getRedisClient,
+  isRedisConnected,
+  getConnectionStatus,
+} from "./redisClient.js";
+import { sanitizeBigInts } from "./sanitizeObject.js";
+import { pino } from "pino";
 
-const logger = pino({ name: 'cache-service' });
+const logger = pino({ name: "cache-service" });
 
 export class CacheService {
   private static instance: CacheService;
@@ -28,7 +32,7 @@ export class CacheService {
     try {
       const client = getRedisClient();
       const data = await client.get(key);
-      
+
       if (data === null) {
         logger.debug(`Cache miss for key: ${key}`);
         return null;
@@ -45,7 +49,7 @@ export class CacheService {
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
     try {
       const client = getRedisClient();
-      
+
       if (!isRedisConnected()) {
         logger.warn(`Redis not ready, queueing set operation for key: ${key}`);
         // ioredis will queue this command until connection is ready
@@ -58,7 +62,9 @@ export class CacheService {
         await client.set(key, serializedValue);
       }
 
-      logger.debug(`Cache set for key: ${key}${ttlSeconds ? ` (TTL: ${ttlSeconds}s)` : ''}`);
+      logger.debug(
+        `Cache set for key: ${key}${ttlSeconds ? ` (TTL: ${ttlSeconds}s)` : ""}`,
+      );
       return true;
     } catch (error) {
       logger.error(error, `Error setting cache key: ${key}`);
@@ -106,14 +112,14 @@ export class CacheService {
 
     try {
       const client = getRedisClient();
-      
+
       // Use ioredis scanStream for better performance
       const keys: string[] = [];
       const stream = client.scanStream({
         match: pattern,
-        count: 100
+        count: 100,
       });
-      
+
       for await (const resultKeys of stream) {
         keys.push(...resultKeys);
       }
@@ -124,7 +130,9 @@ export class CacheService {
 
       // Delete all matching keys
       const deletedCount = await client.del(...keys);
-      logger.debug(`Cache delete pattern: ${pattern}, deleted: ${deletedCount} keys`);
+      logger.debug(
+        `Cache delete pattern: ${pattern}, deleted: ${deletedCount} keys`,
+      );
       return deletedCount;
     } catch (error) {
       logger.error(error, `Error deleting cache pattern: ${pattern}`);
@@ -132,14 +140,16 @@ export class CacheService {
     }
   }
 
-  async setMultiple<T>(data: Array<{ key: string; value: T; ttlSeconds?: number }>): Promise<number> {
+  async setMultiple<T>(
+    data: Array<{ key: string; value: T; ttlSeconds?: number }>,
+  ): Promise<number> {
     if (!isRedisConnected()) {
-      logger.warn('Redis not connected, cannot set multiple keys');
+      logger.warn("Redis not connected, cannot set multiple keys");
       return 0;
     }
 
     let successCount = 0;
-    
+
     for (const item of data) {
       const success = await this.set(item.key, item.value, item.ttlSeconds);
       if (success) {
@@ -147,25 +157,27 @@ export class CacheService {
       }
     }
 
-    logger.debug(`Cache set multiple: ${successCount}/${data.length} keys set successfully`);
+    logger.debug(
+      `Cache set multiple: ${successCount}/${data.length} keys set successfully`,
+    );
     return successCount;
   }
 
   isConnected(): boolean {
     return isRedisConnected();
   }
-  
+
   getConnectionStatus(): string {
     return getConnectionStatus();
   }
-  
+
   async ping(): Promise<boolean> {
     try {
       const client = getRedisClient();
       const result = await client.ping();
-      return result === 'PONG';
+      return result === "PONG";
     } catch (error) {
-      logger.error(error, 'Redis ping failed');
+      logger.error(error, "Redis ping failed");
       return false;
     }
   }

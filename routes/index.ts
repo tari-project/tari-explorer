@@ -68,7 +68,6 @@ router.get("/", async function (req: Request, res: Response) {
   res.setHeader("Cache-Control", cacheSettings.index);
   if (req.query.json !== undefined) {
     (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
-    (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
     res.json(json);
   } else {
     res.render("index", sanitizeBigInts(json));

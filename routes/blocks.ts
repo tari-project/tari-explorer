@@ -73,16 +73,14 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
     return;
   }
   const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
-    client.listHeaders(
-    {
+    client.listHeaders({
       from_height: height,
       num_headers: BigInt(1),
-    },
-  ));
+    }),
+  );
 
   // Calculate statistics
-  const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
-    miningStats(block, headers_with_reward[0].reward);
+  const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } = miningStats(block, headers_with_reward[0].reward);
 
   const outputs_from = +(req.query.outputs_from || 0);
   const outputs_to = +(req.query.outputs_to || 10);
@@ -289,12 +287,7 @@ router.get("/tip/height", async function (req: Request, res: Response) {
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
-    res
-      .status(400)
-      .json({
-        error:
-          "Invalid block height parameter. Must be a non-negative integer.",
-      });
+    res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
     return;
   }
   const client = createClient();
@@ -302,11 +295,7 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     heights: [BigInt(height)],
   });
 
-  const result = {
-    height: null as bigint | null,
-    hash: "" as string | undefined,
-    timestamp: 0n,
-  };
+  const result = { height: null as bigint | null, hash: "" as string | undefined, timestamp: 0n };
   for await (const value of headers) {
     result.height = value.block?.header?.height || null;
     result.hash = value.block?.header?.hash.toString("hex");

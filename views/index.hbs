@@ -346,13 +346,18 @@
 
 <!--General script to validate hash input fields-->
 <script>
-  function validateInput(inputElement, errorMessageElement) { const hexRegex =
-  /^[0-9a-fA-F]{64}$/; const numberRegex = /^[0-9]+$/; const values =
-  inputElement.split(",").map((ref) => ref.trim()).filter((ref) => ref !== "");
-  const invalidValues = values.filter((ref) => !hexRegex.test(ref) &&
-  !numberRegex.test(ref)); if (invalidValues.length > 0) {
-  errorMessageElement.textContent = `Input must be a 64-character hex string or
-  valid number.\nInvalid hash(es): ${invalidValues.join(", ")}`;
-  errorMessageElement.style.display = 'block'; return false; }
-  errorMessageElement.style.display = 'none'; return true; }
+  function validateInput(inputElement, errorMessageElement) {
+    const hexRegex = /^[0-9a-fA-F]{64}$/;
+    const numberRegex = /^[0-9]+$/;
+    const values = inputElement.split(",").map((ref) => ref.trim()).filter((ref) => ref !== "");
+    const invalidValues = values.filter((ref) => !hexRegex.test(ref) && !numberRegex.test(ref));
+    if (invalidValues.length > 0) {
+      errorMessageElement.textContent =
+        `Input must be a 64-character hex string or valid number.\nInvalid hash(es): ${invalidValues.join(", ")}`;
+      errorMessageElement.style.display = 'block';
+      return false;
+    }
+    errorMessageElement.style.display = 'none';
+    return true;
+  }
 </script>

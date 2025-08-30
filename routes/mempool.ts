@@ -30,74 +30,58 @@ import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 /* GET mempool page. */
-router.get(
-  "/:excessSigs",
-  async function (req: express.Request, res: express.Response) {
-    const client = createClient();
-    const txId = req.params.excessSigs.split("+");
+router.get("/:excessSigs", async function (req: express.Request, res: express.Response) {
+  const client = createClient();
+  const txId = req.params.excessSigs.split("+");
 
-    // Try to get mempool data from Redis cache first
-    let mempool: any[] =
-      (await cacheService.get(CacheKeys.MEMPOOL_CURRENT)) || [];
-    if (mempool.length === 0) {
-      // Fallback to direct gRPC call
-      mempool = await collectAsyncIterable(client.getMempoolTransactions({}));
-    }
-    let tx: Transaction | undefined = undefined;
-    for (let i = 0; i < mempool.length; i++) {
-      for (
-        let j = 0;
-        j < (mempool[i]?.transaction?.body?.kernels?.length || 0);
-        j++
-      ) {
-        for (let k = 0; k < txId.length; k++) {
-          if (
-            txId[k] ===
-            Buffer.from(
-              mempool[i]?.transaction?.body?.kernels[j]?.excess_sig
-                ?.signature || Buffer.from([]),
-            ).toString("hex")
-          ) {
-            tx = mempool[i].transaction;
-            break;
-          }
-        }
-        if (tx) {
+  // Try to get mempool data from Redis cache first
+  let mempool: any[] = (await cacheService.get(CacheKeys.MEMPOOL_CURRENT)) || [];
+  if (mempool.length === 0) {
+    // Fallback to direct gRPC call
+    mempool = await collectAsyncIterable(client.getMempoolTransactions({}));
+  }
+  let tx: Transaction | undefined = undefined;
+  for (let i = 0; i < mempool.length; i++) {
+    for (let j = 0; j < (mempool[i]?.transaction?.body?.kernels?.length || 0); j++) {
+      for (let k = 0; k < txId.length; k++) {
+        if (txId[k] === Buffer.from(mempool[i]?.transaction?.body?.kernels[j]?.excess_sig?.signature || Buffer.from([])).toString("hex")) {
+          tx = mempool[i].transaction;
           break;
         }
       }
-    }
-
-    if (!tx) {
-      res.status(404);
-      if (req.query.json !== undefined) {
-        res.json({ error: "Tx not found" });
-      } else {
-        res.render("error", { error: "Tx not found" });
+      if (tx) {
+        break;
       }
-      return;
     }
+  }
 
-    tx.body?.outputs.forEach((output: any) => {
-      if (output.features.range_proof_type === 0) {
-        // BulletProofPlus
-        const proofHex = Buffer.from(output.range_proof.proof_bytes).toString(
-          "hex",
-        );
-        output.range_proof = proofHex;
-      } else {
-        // RevealedValue
-        output.range_proof = "RevealedValue";
-      }
-    });
-
-    const json = { tx };
+  if (!tx) {
+    res.status(404);
     if (req.query.json !== undefined) {
-      res.json(json);
+      res.json({ error: "Tx not found" });
     } else {
-      res.render("mempool", sanitizeBigInts(json));
+      res.render("error", { error: "Tx not found" });
     }
-  },
-);
+    return;
+  }
+
+  tx.body?.outputs.forEach((output: any) => {
+    if (output.features.range_proof_type === 0) {
+      // BulletProofPlus
+      const proofHex = Buffer.from(output.range_proof.proof_bytes).toString("hex");
+      output.range_proof = proofHex;
+    } else {
+      // RevealedValue
+      output.range_proof = "RevealedValue";
+    }
+  });
+
+  const json = { tx };
+  if (req.query.json !== undefined) {
+    res.json(json);
+  } else {
+    res.render("mempool", sanitizeBigInts(json));
+  }
+});
 
 export default router;

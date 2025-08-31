@@ -28,12 +28,7 @@ export class DistributedLock {
    * @param autoRenew Whether to automatically renew the lock before expiration
    * @returns Promise<boolean> true if lock acquired, false otherwise
    */
-  async acquire(
-    lockKey: string,
-    lockId: string,
-    ttlSeconds: number = 300,
-    autoRenew: boolean = true,
-  ): Promise<boolean> {
+  async acquire(lockKey: string, lockId: string, ttlSeconds: number = 300, autoRenew: boolean = true): Promise<boolean> {
     try {
       const client = getRedisClient();
 
@@ -41,9 +36,7 @@ export class DistributedLock {
       const result = await client.set(lockKey, lockId, "EX", ttlSeconds, "NX");
 
       if (result === "OK") {
-        logger.info(
-          `Lock acquired: ${lockKey} by ${lockId} for ${ttlSeconds}s`,
-        );
+        logger.info(`Lock acquired: ${lockKey} by ${lockId} for ${ttlSeconds}s`);
 
         // Set up auto-renewal if requested
         if (autoRenew) {
@@ -86,20 +79,13 @@ export class DistributedLock {
         end
       `;
 
-      const result = (await client.eval(
-        luaScript,
-        1,
-        lockKey,
-        lockId,
-      )) as number;
+      const result = (await client.eval(luaScript, 1, lockKey, lockId)) as number;
 
       if (result === 1) {
         logger.info(`Lock released: ${lockKey} by ${lockId}`);
         return true;
       } else {
-        logger.warn(
-          `Failed to release lock ${lockKey} - not held by ${lockId}`,
-        );
+        logger.warn(`Failed to release lock ${lockKey} - not held by ${lockId}`);
         return false;
       }
     } catch (error) {
@@ -115,11 +101,7 @@ export class DistributedLock {
    * @param ttlSeconds New TTL in seconds
    * @returns Promise<boolean> true if lock renewed, false otherwise
    */
-  async renew(
-    lockKey: string,
-    lockId: string,
-    ttlSeconds: number = 300,
-  ): Promise<boolean> {
+  async renew(lockKey: string, lockId: string, ttlSeconds: number = 300): Promise<boolean> {
     try {
       const client = getRedisClient();
 
@@ -132,18 +114,10 @@ export class DistributedLock {
         end
       `;
 
-      const result = (await client.eval(
-        luaScript,
-        1,
-        lockKey,
-        lockId,
-        ttlSeconds.toString(),
-      )) as number;
+      const result = (await client.eval(luaScript, 1, lockKey, lockId, ttlSeconds.toString())) as number;
 
       if (result === 1) {
-        logger.debug(
-          `Lock renewed: ${lockKey} by ${lockId} for ${ttlSeconds}s`,
-        );
+        logger.debug(`Lock renewed: ${lockKey} by ${lockId} for ${ttlSeconds}s`);
         return true;
       } else {
         logger.warn(`Failed to renew lock ${lockKey} - not held by ${lockId}`);
@@ -160,16 +134,11 @@ export class DistributedLock {
    * @param lockKey Redis key for the lock
    * @returns Promise<{held: boolean, holder?: string, ttl?: number}>
    */
-  async status(
-    lockKey: string,
-  ): Promise<{ held: boolean; holder?: string; ttl?: number }> {
+  async status(lockKey: string): Promise<{ held: boolean; holder?: string; ttl?: number }> {
     try {
       const client = getRedisClient();
 
-      const [holder, ttl] = await Promise.all([
-        client.get(lockKey),
-        client.ttl(lockKey),
-      ]);
+      const [holder, ttl] = await Promise.all([client.get(lockKey), client.ttl(lockKey)]);
 
       if (holder && ttl > 0) {
         return { held: true, holder, ttl };
@@ -194,11 +163,7 @@ export class DistributedLock {
    * Set up automatic lock renewal
    * @private
    */
-  private setupAutoRenewal(
-    lockKey: string,
-    lockId: string,
-    ttlSeconds: number,
-  ): void {
+  private setupAutoRenewal(lockKey: string, lockId: string, ttlSeconds: number): void {
     // Renew at 70% of TTL to ensure we don't lose the lock
     const renewInterval = Math.floor(ttlSeconds * 0.7 * 1000);
 
@@ -211,9 +176,7 @@ export class DistributedLock {
     }, renewInterval);
 
     this.lockRenewals.set(lockKey, renewalTimer);
-    logger.debug(
-      `Auto-renewal set up for lock ${lockKey}, interval: ${renewInterval}ms`,
-    );
+    logger.debug(`Auto-renewal set up for lock ${lockKey}, interval: ${renewInterval}ms`);
   }
 
   /**
@@ -233,11 +196,52 @@ export class DistributedLock {
    * Clean up all auto-renewals (called on shutdown)
    */
   cleanup(): void {
+    logger.info(`Cleaning up ${this.lockRenewals.size} auto-renewal timers...`);
+
     for (const [lockKey, timer] of this.lockRenewals) {
       clearInterval(timer);
       logger.debug(`Cleaned up auto-renewal for lock ${lockKey}`);
     }
     this.lockRenewals.clear();
+
+    logger.info("Distributed lock cleanup completed");
+  }
+
+  /**
+   * Force release all locks held by this instance (emergency cleanup)
+   */
+  async forceReleaseAllLocks(): Promise<void> {
+    try {
+      const client = getRedisClient();
+
+      // Get all keys matching our lock pattern
+      const lockPattern = `${process.env.CACHE_PREFIX || "tari"}:locks:*`;
+      const keys: string[] = [];
+      const stream = client.scanStream({
+        match: lockPattern,
+        count: 100,
+      });
+
+      for await (const resultKeys of stream) {
+        keys.push(...resultKeys);
+      }
+
+      // Try to release each lock
+      for (const key of keys) {
+        try {
+          // Extract lock ID from the key (this is a simplified approach)
+          // In production, you'd want to store lock ownership mapping
+          const lockId = `${hostname()}-${process.pid}`;
+          await this.release(key, lockId);
+        } catch (error) {
+          logger.warn(error, `Failed to release lock ${key} during force cleanup`);
+        }
+      }
+
+      logger.info(`Force released ${keys.length} potential locks`);
+    } catch (error) {
+      logger.error(error, "Error during force lock release");
+    }
   }
 }
 

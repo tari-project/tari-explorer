@@ -65,29 +65,20 @@ hbs.registerHelper("percentbar", function (a: number, b: number, c: number) {
   return bar + space + " " + parseInt(percent.toString()) + "% ";
 });
 
-const transformNumberToFormat = (
-  value: number,
-  unit: string,
-  toFixedDecimal?: number,
-) => {
+const transformNumberToFormat = (value: number, unit: string, toFixedDecimal?: number) => {
   if (value == null) {
     return value;
   }
   let formatting = (val: number) => val.toLocaleString("en-US");
 
   if (toFixedDecimal && typeof toFixedDecimal === "number") {
-    formatting = (val: number) =>
-      val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
+    formatting = (val: number) => val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
   }
 
   return formatting(transformValueToUnit(value, unit, toFixedDecimal));
 };
 
-const transformValueToUnit = (
-  value: number,
-  unit: string,
-  toFixedDecimal?: number,
-) => {
+const transformValueToUnit = (value: number, unit: string, toFixedDecimal?: number) => {
   if (value === null || value === undefined) {
     return 0;
   }
@@ -131,53 +122,40 @@ const getPrefixOfUnit = (unit: string) => {
   }
 };
 
-hbs.registerHelper(
-  "chart",
-  function (
-    data: number[],
-    height: number,
-    formatThousands: boolean,
-    unitStr: string,
-  ) {
-    if (data.length > 0) {
-      let dataTransformed = data;
-      const formatThousandsBool = formatThousands
-        ? Boolean(formatThousands) === true
-        : false;
+hbs.registerHelper("chart", function (data: number[], height: number, formatThousands: boolean, unitStr: string) {
+  if (data.length > 0) {
+    let dataTransformed = data;
+    const formatThousandsBool = formatThousands ? Boolean(formatThousands) === true : false;
 
-      const unitStrBool =
-        typeof unitStr === "string" ? Boolean(unitStr) === true : false;
+    const unitStrBool = typeof unitStr === "string" ? Boolean(unitStr) === true : false;
 
-      if (unitStr) {
-        dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
-      }
-
-      return asciichart.plot(
-        dataTransformed,
-        formatThousandsBool
-          ? {
-              height: height,
-              format: (x: number) => {
-                return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
-              },
-            }
-          : {
-              height: height,
-              format: unitStrBool
-                ? (x: number) => {
-                    const valueStr =
-                      x.toFixed(2).toLocaleLowerCase("en-US") +
-                      ` ${getPrefixOfUnit(unitStr)}H/s`;
-                    return valueStr.padStart(12, "  ");
-                  }
-                : undefined,
-            },
-      );
-    } else {
-      return "**No data**";
+    if (unitStr) {
+      dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
     }
-  },
-);
+
+    return asciichart.plot(
+      dataTransformed,
+      formatThousandsBool
+        ? {
+            height: height,
+            format: (x: number) => {
+              return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
+            },
+          }
+        : {
+            height: height,
+            format: unitStrBool
+              ? (x: number) => {
+                  const valueStr = x.toFixed(2).toLocaleLowerCase("en-US") + ` ${getPrefixOfUnit(unitStr)}H/s`;
+                  return valueStr.padStart(12, "  ");
+                }
+              : undefined,
+          },
+    );
+  } else {
+    return "**No data**";
+  }
+});
 
 hbs.registerHelper("unitFormat", transformNumberToFormat);
 
@@ -196,7 +174,7 @@ hbs.registerPartials(path.join(__dirname, "../partials"));
 export const app = express();
 app.set("x-powered-by", false);
 
-const updater = new BackgrounUpdater();
+export const updater = new BackgrounUpdater();
 updater.start();
 
 // view engine setup
@@ -233,12 +211,7 @@ app.use((req, res) => {
 });
 
 // error handler
-app.use(function (
-  err: Record<string, unknown>,
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) {
+app.use(function (err: Record<string, unknown>, req: express.Request, res: express.Response, next: express.NextFunction) {
   if (res.headersSent) {
     return next(err);
   }

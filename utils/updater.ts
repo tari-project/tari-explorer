@@ -42,6 +42,8 @@ export default class BackgroundUpdater {
   lastSuccessfulUpdate: Date | null;
   from: number;
   limit: number;
+  isStartupComplete: boolean;
+  startupPromise: Promise<void> | null;
 
   constructor(
     options: {
@@ -56,13 +58,29 @@ export default class BackgroundUpdater {
     this.data = null;
     this.isUpdating = false;
     this.lastSuccessfulUpdate = null;
+    this.isStartupComplete = false;
+    this.startupPromise = null;
 
     this.from = 0;
     this.limit = 20;
   }
 
   async start() {
-    await this.update();
+    // Create startup promise that resolves when first update completes
+    this.startupPromise = new Promise((resolve) => {
+      this.update()
+        .then(() => {
+          this.isStartupComplete = true;
+          logger.info("Background updater startup complete");
+          resolve();
+        })
+        .catch((error) => {
+          logger.error(error, "Background updater startup failed");
+          // Still resolve to allow app to start, but mark as not complete
+          this.isStartupComplete = false;
+          resolve();
+        });
+    });
 
     // Schedule regular updates
     this.scheduleNextUpdate();
@@ -163,6 +181,42 @@ export default class BackgroundUpdater {
     }, this.updateInterval);
   }
 
+  async cleanup(): Promise<void> {
+    logger.info("Starting background updater cleanup...");
+
+    // Stop the update scheduling loop
+    this.isUpdating = false;
+
+    // Cancel any pending timeouts (this is a simplified approach)
+    // In a production system, you'd want to track and clear the timeout
+
+    // Release any held distributed locks
+    try {
+      const lockKey = LockKeys.BACKGROUND_UPDATER_MAIN;
+      const lockId = distributedLock.generateLockId();
+      await distributedLock.release(lockKey, lockId);
+      logger.info("Released background updater lock during cleanup");
+    } catch (error) {
+      logger.warn(error, "Failed to release background updater lock during cleanup");
+    }
+
+    // Clean up distributed lock auto-renewals and force release any remaining locks
+    distributedLock.cleanup();
+    await distributedLock.forceReleaseAllLocks();
+
+    logger.info("Background updater cleanup completed");
+  }
+
+  async waitForStartup(): Promise<void> {
+    if (this.startupPromise) {
+      await this.startupPromise;
+    }
+  }
+
+  isStartupCompleted(): boolean {
+    return this.isStartupComplete;
+  }
+
   getData() {
     return {
       indexData: this.data,
@@ -171,6 +225,14 @@ export default class BackgroundUpdater {
   }
 
   isHealthy(settings: { from: number; limit: number }) {
+    // During startup, be more lenient - allow up to 10 minutes for first update
+    if (!this.isStartupComplete) {
+      if (!this.lastSuccessfulUpdate) return false;
+      const timeSinceLastUpdate = Date.now() - this.lastSuccessfulUpdate.getTime();
+      return timeSinceLastUpdate < 600000; // 10 minutes during startup
+    }
+
+    // After startup, use stricter health check
     if (settings.from !== this.from || settings.limit !== this.limit) return false;
     if (!this.lastSuccessfulUpdate) return false;
 

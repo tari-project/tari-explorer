@@ -6,7 +6,6 @@ import {
   isRedisConnected,
   getConnectionStatus,
 } from "./redisClient.js";
-import { sanitizeBigInts } from "./sanitizeObject.js";
 import { pino } from "pino";
 
 const logger = pino({ name: "cache-service" });

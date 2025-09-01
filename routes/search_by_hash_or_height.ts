@@ -188,7 +188,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   let binaryHashes: Buffer[] = Array.from(hashesMap.values())
     .filter((hashData) => !hashData.assigned)
     .map((hashData) => hashData.binaryHash);
-  let headerByHashResult: SearchResult[] = [];
+  const headerByHashResult: SearchResult[] = [];
   let headerByHashError: string | undefined;
   for (const hash of binaryHashes) {
     try {

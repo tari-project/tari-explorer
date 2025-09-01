@@ -55,20 +55,43 @@ hbs.registerHelper("timestamp", function (timestamp: number) {
   );
 });
 
-hbs.registerHelper("percentbar", function (a: number, b: number, c: number) {
-  const total = a + b + c;
-  if (total === 0) return ".......... 0% ";
-  const percent = (a / total) * 100;
-  const barWidth = Math.round(percent / 10);
-  const bar = "**********".slice(0, barWidth);
-  const space = "..........".slice(0, 10 - barWidth);
-  return bar + space + " " + parseInt(percent.toString()) + "% ";
-});
+hbs.registerHelper(
+  "percentbar",
+  function (a: number, b: number, c: number, d: number) {
+    const total = a + b + c + d;
+    if (total === 0) return ".......... 0% ";
+    const percent = (a / total) * 100;
+    const barWidth = Math.round(percent / 10);
+    const bar = "**********".slice(0, barWidth);
+    const space = "..........".slice(0, 10 - barWidth);
+    return bar + space + " " + parseInt(percent.toString()) + "% ";
+  },
+);
 
-const transformNumberToFormat = (value: number, unit: string, toFixedDecimal?: number) => {
+const getAutoUnit = (value: number) => {
+  if (value >= 1e15) return "peta";
+  if (value >= 1e12) return "tera";
+  if (value >= 1e9) return "giga";
+  if (value >= 1e6) return "mega";
+  if (value >= 1e3) return "kilo";
+  return "";
+};
+
+function autoUnitLabel(value: number, entity: string): string {
+  if (value >= 1e15) return "P" + entity;
+  if (value >= 1e12) return "T" + entity;
+  if (value >= 1e9) return "G" + entity;
+  if (value >= 1e6) return "M" + entity;
+  if (value >= 1e3) return "k" + entity;
+  return entity;
+}
+
+const transformNumberToFormat = (value: number, toFixedDecimal?: number) => {
   if (value == null) {
     return value;
   }
+  const unit = getAutoUnit(value);
+
   let formatting = (val: number) => val.toLocaleString("en-US");
 
   if (toFixedDecimal && typeof toFixedDecimal === "number") {
@@ -102,6 +125,8 @@ const transformValueToUnit = (value: number, unit: string, toFixedDecimal?: numb
       return transformLength(value / 1000000000);
     case "tera":
       return transformLength(value / 1000000000000);
+    case "peta":
+      return transformLength(value / 1000000000000000);
     default:
       return transformLength(value);
   }
@@ -117,47 +142,49 @@ const getPrefixOfUnit = (unit: string) => {
       return "G";
     case "tera":
       return "T";
+    case "peta":
+      return "P";
     default:
       return "";
   }
 };
 
-hbs.registerHelper("chart", function (data: number[], height: number, formatThousands: boolean, unitStr: string) {
-  if (data.length > 0) {
-    let dataTransformed = data;
-    const formatThousandsBool = formatThousands ? Boolean(formatThousands) === true : false;
+hbs.registerHelper(
+  "chart",
+  function (
+    data: number[],
+    height: number,
+    formatRange: boolean,
+    entity: string,
+  ) {
+    if (data.length > 0) {
+      // Determine unit from max value
+      const maxValue = Math.max(...data);
+      const unitStr = getAutoUnit(maxValue);
+      let dataTransformed = data;
 
-    const unitStrBool = typeof unitStr === "string" ? Boolean(unitStr) === true : false;
-
-    if (unitStr) {
       dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
-    }
 
-    return asciichart.plot(
-      dataTransformed,
-      formatThousandsBool
-        ? {
-            height: height,
-            format: (x: number) => {
-              return Math.floor(x).toLocaleString("en-US").padStart(15, "  ");
-            },
-          }
-        : {
-            height: height,
-            format: unitStrBool
-              ? (x: number) => {
-                  const valueStr = x.toFixed(2).toLocaleLowerCase("en-US") + ` ${getPrefixOfUnit(unitStr)}H/s`;
-                  return valueStr.padStart(12, "  ");
-                }
-              : undefined,
-          },
-    );
-  } else {
-    return "**No data**";
-  }
-});
+      const decimalPlaces = maxValue >= 1 ? 2 : 4;
+      return asciichart.plot(dataTransformed, {
+        height: height,
+        format: formatRange
+          ? (x: number) => {
+              const valueStr =
+                x.toFixed(decimalPlaces).toLocaleLowerCase("en-US") +
+                ` ${getPrefixOfUnit(unitStr)}${entity}`;
+              return valueStr.padStart(12, "  ");
+            }
+          : undefined,
+      });
+    } else {
+      return "**No data**";
+    }
+  },
+);
 
 hbs.registerHelper("unitFormat", transformNumberToFormat);
+hbs.registerHelper("autoUnitLabel", autoUnitLabel);
 
 hbs.registerHelper("add", function (a: number, b: number) {
   return a + b;

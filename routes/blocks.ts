@@ -245,7 +245,12 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
     nextLink,
     nextHeight,
     body: body,
-    pows: { 0: "Monero RandomX", 1: "SHA-3X", 2: "Tari RandomX" },
+    pows: {
+      0: "Monero RandomX",
+      1: "SHA-3X",
+      2: "Tari RandomX",
+      3: "Cuckaroo C29",
+    },
     numInputs,
     totalCoinbaseXtm,
     numCoinbases,

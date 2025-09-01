@@ -40,7 +40,8 @@
     "routes/**/*.ts",
     "utils/**/*.ts",
     "applications/**/*.ts",
-    "bin/*.ts"
+    "bin/**/*.ts",
+    "grpc-gen/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

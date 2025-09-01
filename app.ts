@@ -170,12 +170,13 @@ hbs.registerHelper(
 
       dataTransformed = data.map((v) => transformValueToUnit(v, unitStr, 4));
 
+      const decimalPlaces = maxValue >= 1 ? 2 : 4;
       return asciichart.plot(dataTransformed, {
         height: height,
         format: formatRange
           ? (x: number) => {
               const valueStr =
-                x.toFixed(2).toLocaleLowerCase("en-US") +
+                x.toFixed(decimalPlaces).toLocaleLowerCase("en-US") +
                 ` ${getPrefixOfUnit(unitStr)}${entity}`;
               return valueStr.padStart(12, "  ");
             }

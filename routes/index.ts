@@ -106,16 +106,19 @@ function parseValue(val: any): number {
   if (typeof val === "string") return parseFloat(val);
 
   let decimalValue = val as DecimalValue;
-  if (decimalValue && typeof decimalValue.units === "bigint" && typeof decimalValue.nanos === "number") {
+  if (
+    decimalValue &&
+    typeof decimalValue.units === "bigint" &&
+    typeof decimalValue.nanos === "number"
+  ) {
     const units = Number(decimalValue.units);
-    const nanosStr = decimalValue.nanos.toString();
-    const decimal = decimalValue.nanos === 0 ? 0 : decimalValue.nanos / Math.pow(10, nanosStr.length);
+    const decimal =
+      decimalValue.nanos === 0 ? 0 : decimalValue.nanos / Math.pow(10, 9);
     return units + decimal;
   } else {
     return 0;
   }
 }
-
 
 function getBlockTimes(
   last100Headers: any[],
@@ -345,8 +348,16 @@ export async function getIndexData(from: number, limit: number) {
 
   const consensus = await client.getConstants({ block_height: tipHeight });
   const c29Active = Number(consensus.pow_algo_count) >= 4n;
-  const algo_target_time = Number(consensus.proof_of_work[0].target_time) / 60;
-  const block_target_time = algo_target_time / Number(consensus.pow_algo_count);
+  const algoTargetTime = Number(consensus.proof_of_work[0].target_time) / 60;
+  const blockTargetTime = algoTargetTime / Number(consensus.pow_algo_count);
+  const timeFrame =
+    Number(
+      lastDifficulties[lastDifficulties.length - 1].timestamp -
+        lastDifficulties[0].timestamp,
+    ) / 3600;
+  const hours = Math.floor(timeFrame);
+  const minutes = Math.floor((timeFrame - hours) * 60);
+  const timeFrameString = `${hours}:${String(minutes).padStart(2, "0")}`;
 
   return {
     title: "Blocks",
@@ -393,8 +404,10 @@ export async function getIndexData(from: number, limit: number) {
       cuckarooHashRates[cuckarooHashRates.length - 1] / 3,
     ), // Hashrate (graphs per second - GPS) of a NVidia 1070 GPU
     c29Active,
-    algo_target_time,
-    block_target_time,
+    algoTargetTime,
+    blockTargetTime,
+    difficultiesLength: lastDifficulties.length - 1,
+    timeFrameString,
   };
 }
 

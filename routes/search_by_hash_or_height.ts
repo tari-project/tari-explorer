@@ -148,12 +148,12 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   }
 
   // Searching for blocks by height
-  let headerByHeightResult: SearchResult[] = [];
+  const headerByHeightResult: SearchResult[] = [];
   let headerByHeightError: string | undefined;
   if (heightsMap.size !== 0) {
     for (const height of heights) {
       try {
-        let blocks = await cache.get(client.getBlocks, { heights: [height] });
+        const blocks = await cache.get(client.getBlocks, { heights: [height] });
         for (const historical_block of blocks) {
           const mapped = {
             payment_reference_hex: undefined,
@@ -190,7 +190,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   let binaryHashes: Buffer[] = Array.from(hashesMap.values())
     .filter((hashData) => !hashData.assigned)
     .map((hashData) => hashData.binaryHash);
-  let headerByHashResult: SearchResult[] = [];
+  const headerByHashResult: SearchResult[] = [];
   let headerByHashError: string | undefined;
   for (const hash of binaryHashes) {
     try {

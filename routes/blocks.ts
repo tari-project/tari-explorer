@@ -49,7 +49,10 @@ router.get("/stats", async function (req: Request, res: Response) {
   const tipInfo = await client.getTipInfo({});
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
 
-  let heights = Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i));
+  const heights = Array.from(
+    { length: limit },
+    (_, i) => tipHeight - BigInt(i),
+  );
   const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
   const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
     client.listHeaders({
@@ -272,7 +275,12 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
     nextLink,
     nextHeight,
     body: body,
-    pows: { 0: "Monero RandomX", 1: "SHA-3X", 2: "Tari RandomX" },
+    pows: {
+      0: "Monero RandomX",
+      1: "SHA-3X",
+      2: "Tari RandomX",
+      3: "Cuckaroo C29",
+    },
     numInputs,
     totalCoinbaseXtm,
     numCoinbases,
@@ -319,12 +327,9 @@ router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
   // Validate that height is a string representing a non-negative integer
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
-    res
-      .status(400)
-      .json({
-        error:
-          "Invalid block height parameter. Must be a non-negative integer.",
-      });
+    res.status(400).json({
+      error: "Invalid block height parameter. Must be a non-negative integer.",
+    });
     return;
   }
   const client = createClient();

@@ -30,6 +30,7 @@ import { AggregateBody } from "../grpc-gen/transaction.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
+import { DecimalValue } from "@/grpc-gen/types.js";
 
 const router = express.Router();
 
@@ -79,13 +80,13 @@ function getHashRates(difficulties: any[], properties: string[]): number[] {
   const hashRates = difficulties
     .map((d) =>
       properties.reduce(
-        (sum, property) => sum + (parseInt(d[property]) || 0),
+        (sum, property) => sum + (parseValue(d[property]) || 0),
         0,
       ),
     )
     ?.slice(start_idx, end_idx);
 
-  // Assign zero values to the next non-zero value
+  // Replace zero values to the next non-zero value
   for (let i = hashRates.length - 2; i >= 0; i--) {
     if (hashRates[i] === 0) {
       hashRates[i] = hashRates[i + 1];
@@ -95,16 +96,40 @@ function getHashRates(difficulties: any[], properties: string[]): number[] {
   return hashRates;
 }
 
+function parseValue(val: any): number {
+  if (!val) return 0;
+
+  if (typeof val === "number") return val;
+
+  if (typeof val === "bigint") return Number(val);
+
+  if (typeof val === "string") return parseFloat(val);
+
+  let decimalValue = val as DecimalValue;
+  if (
+    decimalValue &&
+    typeof decimalValue.units === "bigint" &&
+    typeof decimalValue.nanos === "number"
+  ) {
+    const units = Number(decimalValue.units);
+    const decimal =
+      decimalValue.nanos === 0 ? 0 : decimalValue.nanos / Math.pow(10, 9);
+    return units + decimal;
+  } else {
+    return 0;
+  }
+}
+
 function getBlockTimes(
   last100Headers: any[],
-  algo: string | null,
+  this_algo: string | null,
   targetTime: number,
 ) {
   // Filter headers for the specific algorithm if provided
   let filteredHeaders = last100Headers;
-  if (algo) {
+  if (this_algo) {
     filteredHeaders = last100Headers.filter(
-      (header) => header.pow.pow_algo === algo,
+      (header) => Number(header.pow.pow_algo) === Number(this_algo),
     );
   }
 
@@ -145,7 +170,7 @@ export async function getIndexData(from: number, limit: number) {
     client.getVersion({}),
     collectAsyncIterable(
       client.listHeaders({
-        num_headers: 101n,
+        num_headers: 121n,
       }),
     ),
     // Get one more header than requested so we can work out the difference in MMR_size
@@ -170,19 +195,19 @@ export async function getIndexData(from: number, limit: number) {
   const moneroRx = [0, 0, 0, 0];
   const sha3X = [0, 0, 0, 0];
   const tariRx = [0, 0, 0, 0];
+  const cuckaroo = [0, 0, 0, 0];
 
+  // Correct ternary nesting for algo split
   for (let i = 0; i < last100Headers.length - 1; i++) {
     const algo = last100Headers[i]?.pow?.pow_algo;
-    const arr = algo === 0n ? moneroRx : algo === 1n ? sha3X : tariRx;
-    if (i < 10) {
-      arr[0] += 1;
-    }
-    if (i < 20) {
-      arr[1] += 1;
-    }
-    if (i < 50) {
-      arr[2] += 1;
-    }
+    let arr;
+    if (algo === 0n) arr = moneroRx;
+    else if (algo === 1n) arr = sha3X;
+    else if (algo === 2n) arr = tariRx;
+    else arr = cuckaroo;
+    if (i < 10) arr[0] += 1;
+    if (i < 40) arr[1] += 1;
+    if (i < 80) arr[2] += 1;
     arr[3] += 1;
   }
   const algoSplit = {
@@ -198,13 +223,17 @@ export async function getIndexData(from: number, limit: number) {
     tariRx20: tariRx[1],
     tariRx50: tariRx[2],
     tariRx100: tariRx[3],
+    cuckaroo10: cuckaroo[0],
+    cuckaroo20: cuckaroo[1],
+    cuckaroo50: cuckaroo[2],
+    cuckaroo100: cuckaroo[3],
   };
 
   // Get one more header than requested so we can work out the difference in MMR_size
   const headers = headersResp
     .map((r: BlockHeaderResponse) => r.header)
     .filter((r) => !!r);
-  const pows = { 0: "MoneroRx", 1: "SHA-3X", 2: "TariRx" };
+  const pows = { 0: "MoneroRx", 1: "SHA-3X", 2: "TariRx", 3: "Cuckaroo" };
   for (var i = headers.length - 2; i >= 0; i--) {
     (headers[i] as any).kernels =
       headers[i]?.kernel_mmr_size - headers[i + 1]?.kernel_mmr_size;
@@ -237,6 +266,9 @@ export async function getIndexData(from: number, limit: number) {
   ]);
   const tariRandomxHashRates = getHashRates(lastDifficulties, [
     "tari_randomx_estimated_hash_rate",
+  ]);
+  const cuckarooHashRates = getHashRates(lastDifficulties, [
+    "cuckaroo_estimated_hash_rate",
   ]);
 
   // Get mining stats
@@ -314,6 +346,19 @@ export async function getIndexData(from: number, limit: number) {
     return null;
   }
 
+  const consensus = await client.getConstants({ block_height: tipHeight });
+  const c29Active = Number(consensus.pow_algo_count) >= 4n;
+  const algoTargetTime = Number(consensus.proof_of_work[0].target_time) / 60;
+  const blockTargetTime = algoTargetTime / Number(consensus.pow_algo_count);
+  const timeFrame =
+    Number(
+      lastDifficulties[lastDifficulties.length - 1].timestamp -
+        lastDifficulties[0].timestamp,
+    ) / 3600;
+  const hours = Math.floor(timeFrame);
+  const minutes = Math.floor((timeFrame - hours) * 60);
+  const timeFrameString = `${hours}:${String(minutes).padStart(2, "0")}`;
+
   return {
     title: "Blocks",
     version,
@@ -327,9 +372,10 @@ export async function getIndexData(from: number, limit: number) {
     from,
     algoSplit,
     blockTimes: getBlockTimes(last100Headers, null, 2),
-    moneroRandomxTimes: getBlockTimes(last100Headers, "0", 6),
-    sha3xTimes: getBlockTimes(last100Headers, "1", 6),
-    tariRandomxTimes: getBlockTimes(last100Headers, "2", 6),
+    moneroRandomxTimes: getBlockTimes(last100Headers, "0", 8),
+    sha3xTimes: getBlockTimes(last100Headers, "1", 8),
+    tariRandomxTimes: getBlockTimes(last100Headers, "2", 8),
+    cuckarooTimes: getBlockTimes(last100Headers, "3", 8),
     currentHashRate: totalHashRates[totalHashRates.length - 1],
     totalHashRates,
     currentSha3xHashRate: sha3xHashRates[sha3xHashRates.length - 1],
@@ -352,6 +398,16 @@ export async function getIndexData(from: number, limit: number) {
     activeVns,
     lastUpdate: new Date(),
     stats,
+    currentCuckarooHashRate: cuckarooHashRates[cuckarooHashRates.length - 1],
+    cuckarooHashRates: cuckarooHashRates,
+    averageCuckarooMiners: Math.floor(
+      cuckarooHashRates[cuckarooHashRates.length - 1] / 3,
+    ), // Hashrate (graphs per second - GPS) of a NVidia 1070 GPU
+    c29Active,
+    algoTargetTime,
+    blockTargetTime,
+    difficultiesLength: lastDifficulties.length - 1,
+    timeFrameString,
   };
 }
 

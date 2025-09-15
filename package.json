@@ -21,7 +21,7 @@
     "@grpc/grpc-js": "^1.13.4",
     "adm-zip": "^0.5.16",
     "asciichart": "^1.5.25",
-    "commander": "^14.0.0",
+    "commander": "^14.0.1",
     "cors": "^2.8.5",
     "express": "~5.1.0",
     "fast-csv": "^5.0.5",

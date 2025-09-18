@@ -209,7 +209,13 @@ app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "hbs");
 
 app.use(favicon(path.join(__dirname, "../public", "favicon.ico")));
-app.use(pinoHttp());
+app.use(pinoHttp({
+  autoLogging: {
+    ignore: (req) => {
+      return (req.method === "OPTIONS") || (req.url && req.url.startsWith("/healthz"));
+    }
+  }
+}));
 app.use(express.json());
 app.use(
   express.urlencoded({

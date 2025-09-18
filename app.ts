@@ -212,7 +212,13 @@ app.use(favicon(path.join(__dirname, "../public", "favicon.ico")));
 app.use(pinoHttp({
   autoLogging: {
     ignore: (req) => {
-      return (req.method === "OPTIONS") || (req.url && req.url.startsWith("/healthz"));
+      if (req.method === "OPTIONS") {
+        return true;
+      }
+      if (req.url && req.url.startsWith("/healthz")) {
+        return true;
+      }
+      return false;
     }
   }
 }));

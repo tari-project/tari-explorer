@@ -22,8 +22,16 @@
 
 import { pino } from "pino";
 import { getIndexData } from "../routes/index.js";
+import cacheService from "./cacheService.js";
+import CacheKeys, { LockKeys } from "./cacheKeys.js";
+import { createClient } from "../baseNodeClient.js";
+import { collectAsyncIterable } from "./grpcHelpers.js";
+import { miningStats } from "./stats.js";
+import distributedLock from "./distributedLock.js";
 
 const logger = pino({ name: "background-updater" });
+
+const DEFAULT_REDIS_TTL = 300; // 5 min
 
 export default class BackgroundUpdater {
   updateInterval: number;
@@ -34,6 +42,8 @@ export default class BackgroundUpdater {
   lastSuccessfulUpdate: Date | null;
   from: number;
   limit: number;
+  isStartupComplete: boolean;
+  startupPromise: Promise<void> | null;
 
   constructor(
     options: {
@@ -48,14 +58,30 @@ export default class BackgroundUpdater {
     this.data = null;
     this.isUpdating = false;
     this.lastSuccessfulUpdate = null;
+    this.isStartupComplete = false;
+    this.startupPromise = null;
 
     this.from = 0;
     this.limit = 20;
   }
 
   async start() {
-    // Initial update
-    await this.update();
+    // Create startup promise that resolves when first update completes
+    this.startupPromise = new Promise((resolve) => {
+      this.update()
+        .then(() => {
+          this.isStartupComplete = true;
+          logger.info("Background updater startup complete");
+          resolve();
+        })
+        .catch((error) => {
+          logger.error(error, "Background updater startup failed");
+          // Still resolve to allow app to start, but mark as not complete
+          this.isStartupComplete = false;
+          resolve();
+        });
+    });
+
     // Schedule regular updates
     this.scheduleNextUpdate();
   }
@@ -65,42 +91,130 @@ export default class BackgroundUpdater {
       return;
     }
 
+    // Generate unique lock identifier for this instance
+    const lockId = distributedLock.generateLockId();
+    const lockKey = LockKeys.BACKGROUND_UPDATER_MAIN;
+
+    // Try to acquire distributed lock with 5 minute TTL
+    const lockAcquired = await distributedLock.acquire(lockKey, lockId, 300, true);
+
+    if (!lockAcquired) {
+      // Another instance is handling the update
+      logger.info("Background update skipped - another instance is currently updating");
+
+      // Check lock status for debugging
+      const lockStatus = await distributedLock.status(lockKey);
+      if (lockStatus.held) {
+        logger.debug(`Update lock held by: ${lockStatus.holder}, TTL: ${lockStatus.ttl}s`);
+      }
+
+      return;
+    }
+
     this.isUpdating = true;
     let attempts = 0;
 
-    while (attempts < this.maxRetries) {
-      try {
-        const startTs = Date.now();
-        const newData = await getIndexData(this.from, this.limit);
-        if (newData) {
-          this.data = newData;
-          this.lastSuccessfulUpdate = new Date();
-          logger.info({ duration: Date.now() - startTs }, `data updated`);
-          break;
-        }
-        throw new Error("Received null data from getIndexData");
-      } catch (error: any) {
-        logger.error(
-          error,
-          `Update attempt ${attempts + 1} failed: ${error.message}`,
-        );
-        attempts++;
+    const client = createClient();
 
-        if (attempts === this.maxRetries) {
-          break;
-        }
+    try {
+      while (attempts < this.maxRetries) {
+        try {
+          const startTs = Date.now();
+          logger.info(`Starting background update with lock: ${lockId}`);
 
-        await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+          const tipInfo = await client.getTipInfo({});
+          const cachedTip = await cacheService.get<{ height: bigint; timestamp: bigint }>(CacheKeys.TIP_CURRENT);
+          if (cachedTip && cachedTip.height === tipInfo?.metadata?.best_block_height) {
+            logger.debug(`Tip height ${tipInfo?.metadata?.best_block_height} unchanged, skipping update`);
+            break;
+          }
+
+          await Promise.all([
+            this.updateTipData(tipInfo),
+            this.updateNetworkStats(),
+            this.updateMiningStats(tipInfo),
+            this.updateMempoolData(),
+          ]);
+
+          const newData = await getIndexData(this.from, this.limit, tipInfo);
+          if (newData) {
+            this.data = newData;
+            this.lastSuccessfulUpdate = new Date();
+            logger.info(
+              {
+                duration: Date.now() - startTs,
+                lockId,
+              },
+              `Background update completed successfully`,
+            );
+            break;
+          }
+          throw new Error("Received null data from getIndexData");
+        } catch (error: any) {
+          logger.error(error, `Update attempt ${attempts + 1} failed: ${error.message}`);
+          attempts++;
+
+          if (attempts === this.maxRetries) {
+            logger.error(`All ${this.maxRetries} update attempts failed, releasing lock`);
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+        }
       }
-    }
+    } finally {
+      // Always release the lock when done
+      const released = await distributedLock.release(lockKey, lockId);
+      if (released) {
+        logger.info(`Background update lock released: ${lockId}`);
+      } else {
+        logger.warn(`Failed to release background update lock: ${lockId}`);
+      }
 
-    this.isUpdating = false;
+      this.isUpdating = false;
+    }
   }
 
   scheduleNextUpdate() {
     setTimeout(() => {
       this.update().finally(() => this.scheduleNextUpdate());
     }, this.updateInterval);
+  }
+
+  async cleanup(): Promise<void> {
+    logger.info("Starting background updater cleanup...");
+
+    // Stop the update scheduling loop
+    this.isUpdating = false;
+
+    // Cancel any pending timeouts (this is a simplified approach)
+    // In a production system, you'd want to track and clear the timeout
+
+    // Release any held distributed locks
+    try {
+      const lockKey = LockKeys.BACKGROUND_UPDATER_MAIN;
+      const lockId = distributedLock.generateLockId();
+      await distributedLock.release(lockKey, lockId);
+      logger.info("Released background updater lock during cleanup");
+    } catch (error) {
+      logger.warn(error, "Failed to release background updater lock during cleanup");
+    }
+
+    // Clean up distributed lock auto-renewals and force release any remaining locks
+    distributedLock.cleanup();
+    await distributedLock.forceReleaseAllLocks();
+
+    logger.info("Background updater cleanup completed");
+  }
+
+  async waitForStartup(): Promise<void> {
+    if (this.startupPromise) {
+      await this.startupPromise;
+    }
+  }
+
+  isStartupCompleted(): boolean {
+    return this.isStartupComplete;
   }
 
   getData() {
@@ -111,14 +225,111 @@ export default class BackgroundUpdater {
   }
 
   isHealthy(settings: { from: number; limit: number }) {
-    if (settings.from !== this.from || settings.limit !== this.limit)
-      return false;
+    // During startup, be more lenient - allow up to 10 minutes for first update
+    if (!this.isStartupComplete) {
+      if (!this.lastSuccessfulUpdate) return false;
+      const timeSinceLastUpdate = Date.now() - this.lastSuccessfulUpdate.getTime();
+      return timeSinceLastUpdate < 600000; // 10 minutes during startup
+    }
+
+    // After startup, use stricter health check
+    if (settings.from !== this.from || settings.limit !== this.limit) return false;
     if (!this.lastSuccessfulUpdate) return false;
 
-    const timeSinceLastUpdate =
-      Date.now() - this.lastSuccessfulUpdate.getTime();
+    const timeSinceLastUpdate = Date.now() - this.lastSuccessfulUpdate.getTime();
     // Consider unhealthy if last successful update was more than 5 minutes ago
     return timeSinceLastUpdate < 300000;
+  }
+
+  async updateMempoolData() {
+    try {
+      const startTs = Date.now();
+      const client = createClient();
+      const mempool = await collectAsyncIterable(client.getMempoolTransactions({}));
+
+      // Add fee calculations
+      for (let i = 0; i < mempool.length; i++) {
+        let sum = 0n;
+        for (let j = 0; j < (mempool[i]?.transaction?.body?.kernels?.length || 0); j++) {
+          sum += mempool[i]?.transaction?.body?.kernels[j]?.fee || 0n;
+        }
+        (mempool[i]?.transaction?.body as any).total_fees = sum;
+      }
+
+      await cacheService.set(CacheKeys.MEMPOOL_CURRENT, mempool, 40); // 40 second TTL
+      logger.info({ duration: Date.now() - startTs }, "Mempool data updated in Redis");
+    } catch (error: any) {
+      logger.error(error, "Failed to update mempool data in Redis");
+    }
+  }
+
+  async updateMiningStats(tipInfo) {
+    try {
+      const startTs = Date.now();
+      const client = createClient();
+      const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
+
+      const limit = 20;
+      const heights = Array.from({ length: limit }, (_, i) => tipHeight - BigInt(i));
+      const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
+      const headers_with_reward = await collectAsyncIterable(
+        client.listHeaders({
+          from_height: heights[0],
+          num_headers: BigInt(heights.length),
+        }),
+      );
+
+      const stats = blocks
+        .map((block, i) => ({
+          height: block?.block?.header?.height || 0n,
+          ...miningStats(block, headers_with_reward[i]?.reward, false),
+        }))
+        .sort((a, b) => Number(b.height - a.height));
+
+      await cacheService.set(CacheKeys.MINING_STATS_RECENT, stats, DEFAULT_REDIS_TTL);
+      logger.info({ duration: Date.now() - startTs }, "Mining stats updated in Redis");
+    } catch (error: any) {
+      logger.error(error, "Failed to update mining stats in Redis");
+    }
+  }
+
+  async updateTipData(tipInfo) {
+    try {
+      const startTs = Date.now();
+
+      const tipData = {
+        height: tipInfo?.metadata?.best_block_height || 0n,
+        timestamp: tipInfo?.metadata?.timestamp || 0n,
+        lastUpdate: new Date(),
+      };
+
+      const cachedTip = await cacheService.get<{
+        height: bigint;
+        timestamp: bigint;
+      }>(CacheKeys.TIP_CURRENT);
+      if (cachedTip && cachedTip.height > tipData.height) {
+        logger.warn(`Current tip height ${tipData.height} is less than cached height ${cachedTip.height}, skipping update`);
+        return;
+      }
+
+      await cacheService.set(CacheKeys.TIP_CURRENT, tipData, DEFAULT_REDIS_TTL);
+      logger.info({ duration: Date.now() - startTs }, "Tip data updated in Redis");
+    } catch (error: any) {
+      logger.error(error, "Failed to update tip data in Redis");
+    }
+  }
+
+  async updateNetworkStats() {
+    try {
+      const startTs = Date.now();
+      const client = createClient();
+      const lastDifficulties = await collectAsyncIterable(client.getNetworkDifficulty({ from_tip: 720n }));
+
+      await cacheService.set(CacheKeys.NETWORK_STATS, lastDifficulties, DEFAULT_REDIS_TTL);
+      logger.info({ duration: Date.now() - startTs }, "Network stats updated in Redis");
+    } catch (error: any) {
+      logger.error(error, "Failed to update network stats in Redis");
+    }
   }
 
   toJSON() {

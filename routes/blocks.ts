@@ -22,10 +22,10 @@
 
 import { createClient } from "../baseNodeClient.js";
 import express, { Request, Response } from "express";
-import cache from "../cache.js";
 import cacheSettings from "../cacheSettings.js";
+import cacheService from "../utils/cacheService.js";
+import CacheKeys from "../utils/cacheKeys.js";
 import { miningStats } from "../utils/stats.js";
-import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
@@ -40,35 +40,7 @@ function fromHexString(hexString: string): number[] {
 }
 
 router.get("/stats", async function (req: Request, res: Response) {
-  let limit = parseInt((req.query.limit as string | undefined) || "20");
-  if (limit > 100) {
-    limit = 100;
-  }
-
-  const client = createClient();
-  const tipInfo = await client.getTipInfo({});
-  const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
-
-  const heights = Array.from(
-    { length: limit },
-    (_, i) => tipHeight - BigInt(i),
-  );
-  const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
-  const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
-    client.listHeaders({
-      from_height: heights[0],
-      num_headers: BigInt(heights.length),
-    }),
-  );
-
-  const stats = blocks
-    .map((block, i) => ({
-      height: block?.block?.header?.height || 0n,
-      ...miningStats(block, headers_with_reward[i]?.reward, false),
-    }))
-    .sort((a, b) => Number(b.height - a.height));
-
-  res.header("Cache-Control", cacheSettings.index);
+  const stats = await cacheService.get(CacheKeys.MINING_STATS_RECENT);
   res.json(stats);
 });
 
@@ -94,23 +66,21 @@ router.get("/:height_or_hash", async function (req: Request, res: Response) {
 
   const request = { heights: [height] };
 
-  const block: HistoricalBlock[] = await cache.get(client.getBlocks, request);
+  const block = await collectAsyncIterable(client.getBlocks(request));
   if (!block || block.length === 0) {
     res.status(404);
     res.render("404", { message: `Block at height ${height} not found` });
     return;
   }
-  const headers_with_reward: BlockHeaderResponse[] = await cache.get(
-    client.listHeaders,
-    {
+  const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
+    client.listHeaders({
       from_height: height,
       num_headers: BigInt(1),
-    },
+    }),
   );
 
   // Calculate statistics
-  const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } =
-    miningStats(block, headers_with_reward[0].reward);
+  const { totalCoinbaseXtm, numCoinbases, numOutputsNoCoinbases, numInputs } = miningStats(block, headers_with_reward[0].reward);
 
   const outputs_from = +(req.query.outputs_from || 0);
   const outputs_to = +(req.query.outputs_to || 10);
@@ -299,17 +269,14 @@ router.get("/tip/height", async function (req: Request, res: Response) {
     timestamp: 0n,
   };
 
-  const from = 0,
-    limit = 20;
-  if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
-    // load the default page from cache
+  const cachedTip = await cacheService.get<{
+    height: bigint;
+    timestamp: bigint;
+  }>(CacheKeys.TIP_CURRENT);
+  if (cachedTip) {
     tip = {
-      height:
-        res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata
-          .best_block_height,
-      timestamp:
-        res.locals.backgroundUpdater.getData().indexData.tipInfo.metadata
-          .timestamp,
+      height: cachedTip.height,
+      timestamp: cachedTip.timestamp,
     };
   } else {
     const client = createClient();
@@ -319,17 +286,13 @@ router.get("/tip/height", async function (req: Request, res: Response) {
       timestamp: tipInfo?.metadata?.timestamp || 0n,
     };
   }
-  res.header("Cache-Control", cacheSettings.index);
   res.json(tip);
 });
 
 router.get("/:height/header", async function (req: Request, res: Response) {
   const { height } = req.params;
-  // Validate that height is a string representing a non-negative integer
   if (typeof height !== "string" || !/^\d+$/.test(height)) {
-    res.status(400).json({
-      error: "Invalid block height parameter. Must be a non-negative integer.",
-    });
+    res.status(400).json({ error: "Invalid block height parameter. Must be a non-negative integer." });
     return;
   }
   const client = createClient();
@@ -337,11 +300,7 @@ router.get("/:height/header", async function (req: Request, res: Response) {
     heights: [BigInt(height)],
   });
 
-  const result = {
-    height: null as bigint | null,
-    hash: "" as string | undefined,
-    timestamp: 0n,
-  };
+  const result = { height: null as bigint | null, hash: "" as string | undefined, timestamp: 0n };
   for await (const value of headers) {
     result.height = value.block?.header?.height || null;
     result.hash = value.block?.header?.hash.toString("hex");

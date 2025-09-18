@@ -95,18 +95,13 @@ const transformNumberToFormat = (value: number, toFixedDecimal?: number) => {
   let formatting = (val: number) => val.toLocaleString("en-US");
 
   if (toFixedDecimal && typeof toFixedDecimal === "number") {
-    formatting = (val: number) =>
-      val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
+    formatting = (val: number) => val.toFixed(toFixedDecimal).toLocaleLowerCase("en-US");
   }
 
   return formatting(transformValueToUnit(value, unit, toFixedDecimal));
 };
 
-const transformValueToUnit = (
-  value: number,
-  unit: string,
-  toFixedDecimal?: number,
-) => {
+const transformValueToUnit = (value: number, unit: string, toFixedDecimal?: number) => {
   if (value === null || value === undefined) {
     return 0;
   }
@@ -204,8 +199,9 @@ hbs.registerHelper("format_thousands", function (value: number) {
 hbs.registerPartials(path.join(__dirname, "../partials"));
 
 export const app = express();
+app.set("x-powered-by", false);
 
-const updater = new BackgrounUpdater();
+export const updater = new BackgrounUpdater();
 updater.start();
 
 // view engine setup
@@ -213,7 +209,19 @@ app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "hbs");
 
 app.use(favicon(path.join(__dirname, "../public", "favicon.ico")));
-app.use(pinoHttp());
+app.use(pinoHttp({
+  autoLogging: {
+    ignore: (req) => {
+      if (req.method === "OPTIONS") {
+        return true;
+      }
+      if (req.url && req.url.startsWith("/healthz")) {
+        return true;
+      }
+      return false;
+    }
+  }
+}));
 app.use(express.json());
 app.use(
   express.urlencoded({
@@ -242,12 +250,7 @@ app.use((req, res) => {
 });
 
 // error handler
-app.use(function (
-  err: Record<string, unknown>,
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) {
+app.use(function (err: Record<string, unknown>, req: express.Request, res: express.Response, next: express.NextFunction) {
   if (res.headersSent) {
     return next(err);
   }

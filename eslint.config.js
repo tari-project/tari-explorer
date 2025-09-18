@@ -1,8 +1,12 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "eslint/config";
 import eslintPluginRecommended from "eslint-plugin-prettier/recommended";
+import { includeIgnoreFile } from "@eslint/compat";
 import globals from "globals";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+
+const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
 
 export default defineConfig([
   {
@@ -33,5 +37,6 @@ export default defineConfig([
     },
     ignores: ["build", "**/*.js"],
   },
+  includeIgnoreFile(gitignorePath, "Imported .gitignore patterns"),
   // eslintPluginRecommended,
 ]);

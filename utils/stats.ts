@@ -22,11 +22,7 @@
 
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 
-export function miningStats(
-  block: HistoricalBlock | HistoricalBlock[],
-  block_reward: bigint,
-  formatTs: boolean = true,
-) {
+export function miningStats(block: HistoricalBlock | HistoricalBlock[], block_reward: bigint, formatTs: boolean = true) {
   // Handle both object and array cases
   const blockData = Array.isArray(block) ? block[0] : block;
 
@@ -36,6 +32,7 @@ export function miningStats(
     !blockData.block?.body?.outputs ||
     !Array.isArray(blockData.block.body.outputs)
   ) {
+    console.error("Invalid block data:", blockData);
     throw new Error("Invalid block data");
   }
 
@@ -84,16 +81,15 @@ export function miningStats(
     numOutputsNoCoinbases,
     numInputs,
     powAlgo,
-    timestamp: formatTs
-      ? new Date(timestamp * 1000).toLocaleString("en-US", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        })
+    timestamp: formatTs ? new Date(timestamp * 1000).toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
       : timestamp,
   };
 }

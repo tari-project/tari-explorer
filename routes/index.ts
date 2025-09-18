@@ -27,10 +27,10 @@ import cacheSettings from "../cacheSettings.js";
 import cache from "../cache.js";
 import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 import { AggregateBody } from "../grpc-gen/transaction.js";
-import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
+import { BlockHeaderResponse, TipInfoResponse } from "@/grpc-gen/base_node.js";
 import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
-import { DecimalValue } from "@/grpc-gen/types.js";
+import { UDecimalValue } from "@/grpc-gen/types.js";
 
 const router = express.Router();
 
@@ -47,7 +47,6 @@ type BlockHeaderExtended = BlockHeader & {
 
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
-  res.setHeader("Cache-Control", cacheSettings.index);
   const from = parseInt((req.query.from as string | undefined) || "0");
   let limit = parseInt((req.query.limit as string | undefined) || "20");
   if (limit > 100) {
@@ -56,15 +55,18 @@ router.get("/", async function (req: Request, res: Response) {
 
   let json: Record<string, unknown> | undefined;
   if (res.locals.backgroundUpdater.isHealthy({ from, limit })) {
-    // load the default page from cache
+    // load the default page from in-memory cache
     json = res.locals.backgroundUpdater.getData().indexData;
   } else {
     json = (await getIndexData(from, limit)) ?? undefined;
   }
+
   if (json === null) {
     res.status(404).send("Block not found");
+    return;
   }
 
+  res.setHeader("Cache-Control", cacheSettings.index);
   if (req.query.json !== undefined) {
     (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
     res.json(json);
@@ -105,7 +107,7 @@ function parseValue(val: any): number {
 
   if (typeof val === "string") return parseFloat(val);
 
-  let decimalValue = val as DecimalValue;
+  let decimalValue = val as UDecimalValue;
   if (
     decimalValue &&
     typeof decimalValue.units === "bigint" &&
@@ -154,10 +156,16 @@ function getBlockTimes(
   return { series: relativeBlockTimes, average };
 }
 
-export async function getIndexData(from: number, limit: number) {
+export async function getIndexData(
+  from: number,
+  limit: number,
+  tipInfo?: TipInfoResponse,
+) {
   const client = createClient();
 
-  const tipInfo = await client.getTipInfo({});
+  if (!tipInfo) {
+    tipInfo = await client.getTipInfo({});
+  }
   const tipHeight = tipInfo?.metadata?.best_block_height || 0n;
   const [
     version_result,
@@ -188,6 +196,18 @@ export async function getIndexData(from: number, limit: number) {
       }),
     ),
   ]);
+  if (!blocks || blocks.length === 0) {
+    console.error(
+      "No blocks returned from getBlocks",
+      blocks,
+      "tipHeight",
+      tipHeight,
+      "limit",
+      limit,
+    );
+    return null;
+  }
+
   const version = version_result.version?.slice(0, 25);
 
   // Algo split
@@ -272,10 +292,6 @@ export async function getIndexData(from: number, limit: number) {
   ]);
 
   // Get mining stats
-  if (!blocks || blocks.length === 0) {
-    return null;
-  }
-
   // Block rewards corresponding to block header heights
   const headerRewardMap = new Map<bigint, bigint>();
   for (const h of listHeaders) {
@@ -304,9 +320,9 @@ export async function getIndexData(from: number, limit: number) {
       (header as any).numOutputsNoCoinbases = stat.numOutputsNoCoinbases;
       (header as any).numInputs = stat.numInputs;
     } else {
-      const block = await cache.get(client.getBlocks, {
+      const block = await collectAsyncIterable(client.getBlocks({
         heights: [header.height],
-      });
+      }));
       const headers_with_reward = await collectAsyncIterable(
         client.listHeaders({
           from_height: header.height,
@@ -341,8 +357,11 @@ export async function getIndexData(from: number, limit: number) {
     (mempool[i]?.transaction?.body as AggregateBodyExtended).total_fees = sum;
   }
 
-  const block = await cache.get(client.getBlocks, { heights: [tipHeight] });
+  const block = await collectAsyncIterable(
+    client.getBlocks({ heights: [tipHeight] }),
+  );
   if (!block || block.length === 0) {
+    console.error("No blocks returned from getBlocks for tipHeight", tipHeight);
     return null;
   }
 

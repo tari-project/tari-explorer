@@ -132,8 +132,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
           !(
             (
               /^[a-fA-F0-9]{64}$/.test(input) || // Valid hash format
-              (/^[0-9]+$/.test(input) &&
-                BigInt(input) <= BigInt("18446744073709551615"))
+              (/^[0-9]+$/.test(input) && BigInt(input) <= BigInt("18446744073709551615"))
             ) // Valid height format
           ),
       )
@@ -153,13 +152,13 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   if (heightsMap.size !== 0) {
     for (const height of heights) {
       try {
-        const blocks = await cache.get(client.getBlocks, { heights: [height] });
+        const blocks = await collectAsyncIterable(client.getBlocks({ heights: [height] }));
         for (const historical_block of blocks) {
           const mapped = {
             payment_reference_hex: undefined,
-            block_height: historical_block.block.header.height.toString(),
-            block_hash: historical_block.block.header.hash,
-            mined_timestamp: historical_block.block.header.timestamp.toString(),
+            block_height: historical_block.block?.header?.height.toString(),
+            block_hash: historical_block.block?.header?.hash,
+            mined_timestamp: historical_block.block?.header?.timestamp.toString(),
             commitment: undefined,
             is_spent: undefined,
             spent_height: undefined,
@@ -181,8 +180,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       }
     }
     if (headerByHeightResult.length === 0) {
-      headerByHeightError =
-        "no blocks found at height(s): " + heights.join(", ");
+      headerByHeightError = "no blocks found at height(s): " + heights.join(", ");
     }
   }
 
@@ -242,19 +240,13 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       payment_reference_hex: output.payment_reference_hex,
       block_height: output.block_height.toString(),
       block_hash: output.block_hash,
-      mined_timestamp:
-        output.mined_timestamp > 0
-          ? output.mined_timestamp.toString()
-          : undefined,
+      mined_timestamp: output.mined_timestamp > 0 ? output.mined_timestamp.toString() : undefined,
       commitment: output.commitment,
       is_spent: output.is_spent || false,
       spent_height: output.spent_height ? output.spent_height.toString() : "0",
       spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
       min_value_promise: output.min_value_promise.toString(),
-      spent_timestamp:
-        output.spent_timestamp > 0
-          ? output.spent_timestamp.toString()
-          : undefined,
+      spent_timestamp: output.spent_timestamp > 0 ? output.spent_timestamp.toString() : undefined,
       output_hash: output.output_hash,
       search_type: "Payref",
     }));
@@ -287,19 +279,13 @@ router.get("/", async function (req: express.Request, res: express.Response) {
       payment_reference_hex: output.payment_reference_hex,
       block_height: output.block_height.toString(),
       block_hash: output.block_hash,
-      mined_timestamp:
-        output.mined_timestamp > 0
-          ? output.mined_timestamp.toString()
-          : undefined,
+      mined_timestamp: output.mined_timestamp > 0 ? output.mined_timestamp.toString() : undefined,
       commitment: output.commitment,
       is_spent: output.is_spent || false,
       spent_height: output.spent_height ? output.spent_height.toString() : "0",
       spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
       min_value_promise: output.min_value_promise.toString(),
-      spent_timestamp:
-        output.spent_timestamp > 0
-          ? output.spent_timestamp.toString()
-          : undefined,
+      spent_timestamp: output.spent_timestamp > 0 ? output.spent_timestamp.toString() : undefined,
       output_hash: output.output_hash,
       search_type: "OutputHash",
     }));
@@ -323,14 +309,10 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   let commitmentResult: SearchResult[] = [];
   let commitmentError: string | undefined;
   try {
-    const result = await collectAsyncIterable(
-      client.searchUtxos({ commitments: binaryHashes }),
-    );
+    const result = await collectAsyncIterable(client.searchUtxos({ commitments: binaryHashes }));
     commitmentResult = result.flatMap((block: any) =>
       block.block.body.outputs
-        .filter((output: any) =>
-          binaryHashes.some((hash) => hash.equals(output.commitment)),
-        )
+        .filter((output: any) => binaryHashes.some((hash) => hash.equals(output.commitment)))
         .map((output: any) => ({
           payment_reference_hex: output.payment_reference.toString("hex"),
           block_height: block.block.header.height.toString(),
@@ -338,9 +320,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
           mined_timestamp: block.block.header.timestamp.toString(),
           commitment: output.commitment,
           is_spent: output.is_spent || false,
-          spent_height: output.spent_height
-            ? output.spent_height.toString()
-            : "0",
+          spent_height: output.spent_height ? output.spent_height.toString() : "0",
           spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
           min_value_promise: output.minimum_value_promise.toString(),
           spent_timestamp: undefined,
@@ -371,21 +351,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     res.status(404);
     if (req.query.json !== undefined) {
       res.json({
-        error:
-          headerByHeightError ||
-          headerByHashError ||
-          payrefError ||
-          outputHashesError ||
-          commitmentError,
+        error: headerByHeightError || headerByHashError || payrefError || outputHashesError || commitmentError,
       });
     } else {
       res.render("error", {
-        error:
-          headerByHeightError ||
-          headerByHashError ||
-          payrefError ||
-          outputHashesError ||
-          commitmentError,
+        error: headerByHeightError || headerByHashError || payrefError || outputHashesError || commitmentError,
       });
     }
     return;
@@ -393,17 +363,12 @@ router.get("/", async function (req: express.Request, res: express.Response) {
 
   const combined_json = {
     items: [
+      ...new Map([...(headerByHeightResult || []), ...(headerByHashResult || [])].map((item) => [item.block_hash, item])).values(),
       ...new Map(
-        [...(headerByHeightResult || []), ...(headerByHashResult || [])].map(
-          (item) => [item.block_hash, item],
-        ),
-      ).values(),
-      ...new Map(
-        [
-          ...(payrefResult || []),
-          ...(outputHashesResult || []),
-          ...(commitmentResult || []),
-        ].map((item) => [item.payment_reference_hex, item]),
+        [...(payrefResult || []), ...(outputHashesResult || []), ...(commitmentResult || [])].map((item) => [
+          item.payment_reference_hex,
+          item,
+        ]),
       ).values(),
     ].sort((a, b) => Number(b.block_height) - Number(a.block_height)), // Parse block_height as a number
     heights_not_found: Array.from(heightsMap.values())

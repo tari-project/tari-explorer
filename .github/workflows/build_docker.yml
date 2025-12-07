@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - name: Checkout tari-explorer
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: tari-explorer
 
@@ -92,7 +92,7 @@ jobs:
           fi
 
       - name: Checkout tari
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.TARI_REPO }}
           ref: ${{ env.TARI_REF }}
@@ -136,7 +136,7 @@ jobs:
 
       - name: Hack - Checkout base_node_grpc_client/src/index.js
         if: ${{ env.TARI_REF != 'development' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.TARI_REPO }}
           ref: development

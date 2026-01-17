@@ -7,9 +7,16 @@
 import { app } from "./app.js";
 import debugLib from "debug";
 import http from "http";
-import JSONbig from "json-bigint";
-const JSONbigFunc = JSONbig({ useNativeBigInt: true });
-global.JSON = JSONbigFunc as any;
+
+declare global {
+  interface BigInt {
+    toJSON(): string;
+  }
+}
+
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
 
 const debug = debugLib("tari-explorer:server");
 

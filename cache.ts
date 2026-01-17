@@ -1,6 +1,4 @@
 import { handleGrpcResult } from "./utils/grpcHelpers.js";
-import JSONbig from "json-bigint";
-JSONbig({ useNativeBigInt: true });
 
 class Cache<T> {
   limit: number;

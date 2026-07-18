@@ -30,7 +30,7 @@ import { AggregateBody } from "../grpc-gen/transaction.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { BlockHeader, HistoricalBlock } from "@/grpc-gen/block.js";
 import { sanitizeBigInts } from "../utils/sanitizeObject.js";
-import { DecimalValue } from "@/grpc-gen/types.js";
+import { UDecimalValue } from "@/grpc-gen/types.js";
 
 const router = express.Router();
 
@@ -105,7 +105,7 @@ function parseValue(val: any): number {
 
   if (typeof val === "string") return parseFloat(val);
 
-  let decimalValue = val as DecimalValue;
+  let decimalValue = val as UDecimalValue;
   if (
     decimalValue &&
     typeof decimalValue.units === "bigint" &&

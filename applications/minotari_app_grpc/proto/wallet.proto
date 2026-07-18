@@ -108,7 +108,7 @@ service Wallet {
   // The `Identify` RPC call returns the identity information of the wallet node.
   // This includes:
   // - **Public Key**: The wallet's cryptographic public key.
-  // - **Public Address**: The wallet's public address used to receive funds.
+  // - **Public Address**: This will always be empty as the wallet has no contactable public comms address.
   // - **Node ID**: The unique identifier of the wallet node in the network.
   //
   // Example usage (JavaScript):
@@ -128,7 +128,7 @@ service Wallet {
   // ```json
   // {
   //   "public_key": "0x04b2c5f3fe65bb1c3cde019e34f3eab1234598c820dca43bbf4d5686a980ddc69e0d4b180d85990d0a5e4aee46e0a6ad9283f0a41783992a70c548e53e47321fa",
-  //   "public_address": "14HVCEeZC2RGE4SDn3yGwqzXepJ2LDqXva7kb4fherYMQR9dF7341T3TjMZobB1a6xouGvS5SXwEvXKwK3zLz2rgReh",
+  //   "public_address": "",
   //   "node_id": "0x1234abcd5678efgh9012ijkl3456mnop"
   // }
   // ```
@@ -224,13 +224,358 @@ service Wallet {
   // ```
   rpc GetCompleteAddress (Empty) returns (GetCompleteAddressResponse);
 
+  // Prepares a one-sided transaction for offline signing.
+  //
+  // The PrepareOneSidedTransactionForSigning RPC prepares the structure of a one-sided transaction that can be signed
+  // offline. It returns the transaction data in JSON format, which can be signed externally and later submitted.
+  // This is useful for air-gapped workflows, hardware wallet integrations, and secure transaction creation.
+  //
+  // ### Request Parameters:
+  //
+  // - `recipient` (required):
+  //   - **Type**: `PaymentRecipient`
+  //   - **Description**: Contains details of the intended recipient, including address, amount, fee, and optional
+  //     payment identifiers.
+  //   - **Required Fields**:
+  //     - `address`:  
+  //       - **Type**: `string`  
+  //       - **Description**: A valid Tari address of the recipient.  
+  //       - **Validation**: Must be a well-formed TariAddress; malformed addresses will result in an error.
+  //     - `amount`:  
+  //       - **Type**: `uint64`  
+  //       - **Description**: Amount to send in MicroTari (µT).  
+  //       - **Validation**: Must be greater than zero.
+  //     - `fee_per_gram`:  
+  //       - **Type**: `uint64`  
+  //       - **Description**: Fee rate in µT per gram of transaction weight.  
+  //       - **Validation**: Must be set to a reasonable network value.
+  //     - `payment_type`:
+  //       - **Type**: `enum PaymentType`
+  //       - **Description**: Defines the transaction style.
+  //       - **Options**:
+  //         - `STANDARD_MIMBLEWIMBLE = 0` *(deprecated)*
+  //         - `ONE_SIDED = 1` *(deprecated)*
+  //         - `ONE_SIDED_TO_STEALTH_ADDRESS = 2` *(recommended)*
+  //   - **Optional Fields**:
+  //     - `raw_payment_id`:  
+  //       - **Type**: `bytes`  
+  //       - **Description**: Custom payment identifier in raw byte format.
+  //     - `user_payment_id`:  
+  //       - **Type**: `UserPaymentId`  
+  //       - **Description**: Flexible payment ID that can be one of the following:
+  //         - `u256`: Hex string representing a 256-bit ID
+  //         - `utf8_string`: A human-readable string
+  //         - `user_bytes`: Custom byte sequence
+  //       - **Restrictions**: Exactly one field must be populated. If multiple or none are provided, the request will fail.
+  //
+  // ### Response Fields:
+  //
+  // - `is_success`:
+  //   - **Type**: `bool`
+  //   - **Description**: Indicates whether the transaction preparation succeeded.
+  //
+  // - `result`:
+  //   - **Type**: `string`
+  //   - **Description**: A JSON-encoded string of the unsigned transaction data. Only populated if `is_success` is `true`.
+  //
+  // - `failure_message`:
+  //   - **Type**: `string`
+  //   - **Description**: A message describing why the preparation failed. Only populated if `is_success` is `false`.
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // const request = {
+  //   recipient: {
+  //     address: "tari:4dQ3b...",
+  //     amount: 1000000,
+  //     fee_per_gram: 25,
+  //     user_payment_id: { utf8_string: "Invoice #1234" }
+  //   }
+  // };
+  // client.prepareOneSidedTransactionForSigning(request, (err, response) => {
+  //   if (err) console.error("RPC Error:", err);
+  //   else if (!response.is_success) console.error("Preparation failed:", response.failure_message);
+  //   else console.log("Prepared transaction:", response.result);
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  //
+  // ```json
+  // {
+  //   "is_success": true,
+  //   "result": "{ \"amount\": 1000000, \"fee\": 25, \"recipient\": \"tari:4dQ3b...\", \"inputs\": [...], \"outputs\": [...] }",
+  //   "failure_message": ""
+  // }
+  // ```
+  //
+  // If preparation fails:
+  //
+  // ```json
+  // {
+  //   "is_success": false,
+  //   "result": "",
+  //   "failure_message": "Destination address is malformed."
+  // }
+  // ```
   rpc PrepareOneSidedTransactionForSigning (PrepareOneSidedTransactionForSigningRequest)  returns (PrepareOneSidedTransactionForSigningResponse);
 
+  // Prepares a multisignature deposit transaction for offline signing.
+  //
+  // The PrepareDepositMultisigTransaction RPC constructs a deposit transaction requiring multiple signers,
+  // which can be signed and completed offline. This is commonly used to fund shared wallets or validator nodes
+  // that rely on multisignature output scripts.
+  //
+  // The transaction is returned in JSON format and can be signed by each participant independently.
+  //
+  // ### Request Parameters:
+  //
+  // - `amount` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The amount to deposit in MicroTari (µT).
+  //   - **Validation**: Must be greater than 0.
+  //
+  // - `party_number` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The index of the current signer (this party) in the multisignature group.
+  //   - **Validation**:
+  //     - Must be greater than 0.
+  //     - Must be less than or equal to the number of provided public keys.
+  //     - Will be cast to an unsigned 8-bit integer (`u8`).
+  //
+  // - `public_keys` (required):
+  //   - **Type**: `repeated bytes`
+  //   - **Description**: A list of canonical public keys (compressed) representing all participants in the multisig group.
+  //   - **Validation**:
+  //     - Must include at least one key.
+  //     - All public keys must be valid and unique.
+  //     - Public key at `party_number - 1` is assumed to be the current caller.
+  //
+  // - `recipient_address` (required):
+  //   - **Type**: `bytes`
+  //   - **Description**: A byte-encoded Tari address to which the deposit output will be attributed.
+  //   - **Validation**: Must be a valid `TariAddress`; invalid values will trigger an error.
+  //
+  // ### Response Fields:
+  //
+  // - `is_success`:
+  //   - **Type**: `bool`
+  //   - **Description**: Indicates whether the deposit transaction was prepared successfully.
+  //
+  // - `result`:
+  //   - **Type**: `string`
+  //   - **Description**: A JSON-encoded representation of the unsigned multisig transaction. Present only if `is_success` is `true`.
+  //
+  // - `failure_message`:
+  //   - **Type**: `string`
+  //   - **Description**: Explains why the transaction preparation failed. Present only if `is_success` is `false`.
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // const request = {
+  //   amount: 5000000,
+  //   party_number: 1,
+  //   public_keys: [
+  //     Buffer.from("03a1...abc", "hex"),
+  //     Buffer.from("02bc...def", "hex")
+  //   ],
+  //   recipient_address: Buffer.from("a1b2...c3d4", "hex")
+  // };
+  //
+  // client.prepareDepositMultisigTransaction(request, (err, response) => {
+  //   if (err) {
+  //     console.error("RPC error:", err);
+  //   } else if (!response.is_success) {
+  //     console.error("Preparation failed:", response.failure_message);
+  //   } else {
+  //     console.log("Multisig transaction:", response.result);
+  //   }
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  //
+  // ```json
+  // {
+  //   "is_success": true,
+  //   "result": "{ \"amount\": 5000000, \"public_keys\": [\"...\"], \"recipient\": \"tari:...\", \"outputs\": [...] }",
+  //   "failure_message": ""
+  // }
+  // ```
+  //
+  // If preparation fails:
+  //
+  // ```json
+  // {
+  //   "is_success": false,
+  //   "result": "",
+  //   "failure_message": "public_keys must be unique"
+  // }
+  // ```
+  rpc PrepareDepositMultisigTransaction (PrepareDepositMultisigTransactionRequest) returns (PrepareDepositMultisigTransactionResponse);
+  
+  // Prepares a multisignature withdrawal transaction for offline signing.
+  //
+  // The PrepareWithdrawMultisigTransaction RPC constructs a transaction that spends a previously created multisig UTXO.
+  // The caller must supply a valid UTXO commitment and a complete set of Schnorr signatures from all multisig participants.
+  // The unsigned transaction is returned as JSON and can be submitted once fully signed.
+  //
+  // ### Request Parameters:
+  //
+  // - `utxo_commitment` (required):
+  //   - **Type**: `string`
+  //   - **Description**: A hex-encoded commitment of the multisig UTXO to be spent.
+  //   - **Validation**: Must be a valid commitment string (compressed format).
+  //
+  // - `signatures` (required):
+  //   - **Type**: `repeated bytes`
+  //   - **Description**: A list of raw signature byte arrays used in the multisig withdrawal.
+  //     Each item may represent a full or partial signature, or a concatenated sequence of signature fragments.
+  //     The interpretation depends on the signing scheme used by the multisig script.
+  //
+  // - `recipient_address` (required):
+  //   - **Type**: `bytes`
+  //   - **Description**: A byte-encoded Tari address to receive the withdrawn funds.
+  //   - **Validation**: Must be a valid `TariAddress`; invalid values will cause the request to fail.
+  //
+  // ### Response Fields:
+  //
+  // - `is_success`:
+  //   - **Type**: `bool`
+  //   - **Description**: Indicates whether the transaction was successfully prepared.
+  //
+  // - `result`:
+  //   - **Type**: `string`
+  //   - **Description**: A JSON-encoded string of the unsigned withdrawal transaction. Only present if `is_success` is `true`.
+  //
+  // - `failure_message`:
+  //   - **Type**: `string`
+  //   - **Description**: Describes the reason for failure. Only present if `is_success` is `false`.
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // const request = {
+  //   utxo_commitment: "b2f3e1...9ac4",
+  //   signatures: [
+  //     Buffer.from("3045...f1a2", "hex"),
+  //     Buffer.from("3081...9b23", "hex")
+  //   ],
+  //   recipient_address: Buffer.from("a1b2...c3d4", "hex")
+  // };
+  //
+  // client.prepareWithdrawMultisigTransaction(request, (err, response) => {
+  //   if (err) {
+  //     console.error("RPC error:", err);
+  //   } else if (!response.is_success) {
+  //     console.error("Preparation failed:", response.failure_message);
+  //   } else {
+  //     console.log("Withdrawal transaction:", response.result);
+  //   }
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  //
+  // ```json
+  // {
+  //   "is_success": true,
+  //   "result": "{ \"inputs\": [\"b2f3e1...\"], \"outputs\": [...], \"recipient\": \"tari:...\" }",
+  //   "failure_message": ""
+  // }
+  // ```
+  //
+  // If preparation fails:
+  //
+  // ```json
+  // {
+  //   "is_success": false,
+  //   "result": "",
+  //   "failure_message": "Invalid UTXO commitment hash: invalid hex format"
+  // }
+  // ```
+  rpc PrepareWithdrawMultisigTransaction (PrepareWithdrawMultisigTransactionRequest) returns (PrepareWithdrawMultisigTransactionResponse);
+
+  // Broadcasts a signed one-sided transaction to the Tari network.
+  //
+  // The BroadcastSignedOneSidedTransaction RPC takes a fully signed one-sided transaction prepared offline
+  // and broadcasts it to the network for inclusion in the blockchain.
+  // The transaction must be a valid JSON string representation of a SignedOneSidedTransactionResult.
+  //
+  // ### Request Parameters:
+  //
+  // - `request` (required):
+  //   - **Type**: `string`
+  //   - **Description**: A JSON-encoded string representing a fully signed one-sided transaction.
+  //   - **Validation**:
+  //     - Must be a valid JSON string conforming to the expected format.
+  //     - The transaction must be complete and correctly signed.
+  //
+  // ### Response Fields:
+  //
+  // - `is_success`:
+  //   - **Type**: `bool`
+  //   - **Description**: Indicates whether the transaction was successfully broadcast to the network.
+  //
+  // - `transaction_id`:
+  //   - **Type**: `uint64`
+  //   - **Description**: The internal transaction ID assigned by the wallet.
+  //     - Only present if `is_success` is `true`.
+  //
+  // - `failure_message`:
+  //   - **Type**: `string`
+  //   - **Description**: Provides context for any broadcast failure. Present only if `is_success` is `false`.
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // const request = {
+  //   request: JSON.stringify({
+  //     amount: "1000000",
+  //     fee: "25",
+  //     recipient: "tari:...",
+  //     ... // full signed transaction structure
+  //   })
+  // };
+  //
+  // client.broadcastSignedOneSidedTransaction(request, (err, response) => {
+  //   if (err) {
+  //     console.error("Broadcast error:", err);
+  //   } else if (!response.is_success) {
+  //     console.error("Broadcast failed:", response.failure_message);
+  //   } else {
+  //     console.log("Transaction ID:", response.transaction_id);
+  //   }
+  // });
+  // ```
+  //
+  // ### Sample JSON Response (Success):
+  //
+  // ```json
+  // {
+  //   "is_success": true,
+  //   "transaction_id": 1054321,
+  //   "failure_message": ""
+  // }
+  // ```
+  //
+  // ### Sample JSON Response (Failure):
+  //
+  // ```json
+  // {
+  //   "is_success": false,
+  //   "transaction_id": 0,
+  //   "failure_message": "Transaction signature is invalid"
+  // }
+  // ```
   rpc BroadcastSignedOneSidedTransaction  (BroadcastSignedOneSidedTransactionRequest)  returns (BroadcastSignedOneSidedTransactionResponse);
 
   // This call supports standard interactive transactions (Mimblewimble),
   // one-sided transactions, and one-sided-to-stealth-address transactions.
   // Each recipient must include a valid Tari address, amount, fee, and payment type.
+  // SingleTx is used to indicate should this be sent as a single MW tx or multiple, one tx per recipient.
   //
   // ### Example JavaScript gRPC client usage:
   //
@@ -244,6 +589,7 @@ service Wallet {
   //
   // const request = new TransferRequest();
   // request.setRecipientsList([recipient]);
+  // request.setSingleTx(false);
   //
   // client.transfer(request, (err, response) => {
   //   if (err) console.error(err);
@@ -265,7 +611,91 @@ service Wallet {
   //   ]
   // }
   rpc Transfer (TransferRequest)  returns (TransferResponse);
-
+  
+  // This call creates a CoinJoin transaction spending the output(s) to the owner wallet, ensuring that the inputs
+  // (currently unspent outputs) falls within a specified range and that the minimum coin-joined target amount is met.
+  // If the specified range does not allow for sufficient inputs to meet the target amount, the transaction will not be
+  // created. The process will continue until all unspent outputs in the specified range has been evaluated and used in
+  // coin-join transactions. As an example, if the wallet has 10_000 inputs in a specified range, and the maximum inputs
+  // per coin-join transaction is set to 1_000, then a minimum of 10 coin-join transactions will be created to cover all
+  // inputs in the range, where the maximum will be determined by the individual input values and the target coin-joined
+  // value. Either total fee or fee per gram can be specified, with preference given to the latter if both are
+  // specified.
+  //
+  // ### Request Parameters:
+  // - `maximum_inputs_per_transaction` (required):
+  //   - **Type**: `uint32`
+  //   - **Description**: The maximum number of inputs to include in each coin-join transaction.
+  //   - **Restrictions**:
+  //     - Must be greater than 0.
+  // - `target_minimum_amount` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The minimum total amount to be coin-joined in each transaction (in MicroTari).
+  //   - **Restrictions**:
+  //    - Must be greater than 0.
+  //    - Must be greater than `upper_bound`
+  // - `lower_bound` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The inclusive lower bound of the input value range (in MicroTari).
+  //   - **Restrictions**:
+  //    - Must be less than `upper_bound`.
+  // - `upper_bound` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The exclusive upper bound of the input value range (in MicroTari).
+  //   - **Restrictions**:
+  //    - Must be greater than `lower_bound`.
+  // - `total_fee` (optional):
+  //   - **Type**: `uint64`
+  //   - **Description**: The total fee to be paid for each coin-join transaction (in MicroTari).
+  //   - **Restrictions**:
+  //    - If specified, must be greater than 0.
+  // - `fee_per_gram` (optional):
+  //   - **Type**: `uint64`
+  //   - **Description**: The fee per gram to be paid for each coin-join transaction (in MicroTari).
+  //   - **Restrictions**:
+  //    - If specified, must be greater than 0.
+  //     - `user_payment_id`:
+  //       - **Type**: `UserPaymentId`
+  //       - **Description**: Flexible payment ID that can be one of the following:
+  //         - `u256`: Hex string representing a 256-bit ID
+  //         - `utf8_string`: A human-readable string
+  //         - `user_bytes`: Custom byte sequence
+  //       - **Restrictions**: Exactly one field must be populated. If multiple or none are provided, the request will fail.
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // const request = new RangeLimitedCoinJoinRequest();
+  // request.setMaximumInputsPerTransaction(1000);
+  // request.setTargetAmount(100000000);  // 100 T
+  // request.setLowerBound(0);            // 0 T (inclusive)
+  // request.setUpperBound(100000);       // 0.1 T (exclusive)
+  // request.setTotalFee(100);            // 0.0001 T
+  // request.setFeePerGram(1);            // 0.000001 T
+  // request.setUserPaymentId("For you");
+  //
+  // client.rangeLimitCoinJoin(request, (err, response) => {
+  //   if (err) console.error(err);
+  //   else console.log(response.toObject());
+  // });
+  // ```
+  //
+  // ### Sample JSON Response:
+  //
+  // ```json
+  // {
+  //   "results": [
+  //     {
+  //       "address": "14HVCEeZ...",
+  //       "transaction_id": 12345,
+  //       "is_success": true,
+  //       "failure_message": ""
+  //     }
+  //   ]
+  // }
+  // ```
+  rpc RangeLimitedCoinJoin (RangeLimitedCoinJoinRequest)  returns (TransferResponse);
+  
   // Returns the transaction details for the given transaction IDs.
   //
   // The GetTransactionInfo RPC retrieves detailed information about specific transactions based on their IDs.
@@ -453,6 +883,16 @@ service Wallet {
   //     - Must be a valid transaction ID that exists in the wallet.
   //     - If the transaction ID is invalid or not found, an error will be returned.
   //
+  // ### Response:
+  // - **payment_references** (repeated bytes): Metadata references associated with change outputs. *(deprecated)*
+  // - **output_commitments_info** (repeated CommitmentInfo):
+  //     Contains details for each output commitment in the transaction.
+  //     Each CommitmentInfo includes:
+  //       - `hash` (bytes): The hash representing the output.
+  //       - `commitment` (bytes): The cryptographic commitment representing the output.
+  //       - `payment_reference` (bytes): The associated payment reference for the output.
+  //       - `category` (enum): The category of the output (`Sent`, `Received`, `Change`).
+  //
   // ### Example JavaScript gRPC client usage:
   //
   // ```javascript
@@ -610,6 +1050,51 @@ service Wallet {
   // ```
   rpc CoinSplit (CoinSplitRequest) returns (CoinSplitResponse);
 
+  // Creates a histogram of coin (UTXO) sizes in the wallet.
+  //
+  // The `CoinHistogram` call generates a histogram representing the distribution of unspent transaction outputs (UTXOs)
+  // in the wallet. The histogram groups UTXOs into bins/buckets based on their amounts, allowing users to analyze the
+  // composition of their wallet's funds. Lower bounds are inclusive, while upper bound are exclusive.
+  //
+  // ### Request Parameters:
+  // - `lower_bound` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The inclusive lower bound of the input value range (in MicroTari).
+  //   - **Restrictions**:
+  //    - Must be less than `upper_bound`.
+  // - `upper_bound` (required):
+  //   - **Type**: `uint64`
+  //   - **Description**: The exclusive upper bound of the input value range (in MicroTari).
+  //   - **Restrictions**:
+  //    - Must be greater than `lower_bound`.
+  //
+  // - None
+  //   - This method uses an empty request body (CoinHistogramRequest).
+  //
+  // ### Example JavaScript gRPC client usage:
+  //
+  // ```javascript
+  // client.coinHistogram({}, (err, response) => {
+  //   if (err) console.error(err);
+  //   else console.log("Coin Histogram:", response.buckets);
+  // });
+  // ```
+  // ### Sample JSON Response:
+  //
+  // ```json
+  // {
+  //   "buckets": [
+  //     { "count": 212, "total_amount": 1234,         "lower_bound": 0,          "upper_bound": 10000 },
+  //     { "count": 5,   "total_amount": 56789,        "lower_bound": 10000,      "upper_bound": 100000 },
+  //     { "count": 0,   "total_amount": 0,            "lower_bound": 100000,     "upper_bound": 1000000 },
+  //     { "count": 0,   "total_amount": 0,            "lower_bound": 1000000,    "upper_bound": 1000000000 },
+  //     { "count": 1,   "total_amount": 111222333000, "lower_bound": 1000000000, "upper_bound": 1000000000000 }
+  //   ]
+  // }
+  // ```
+
+  rpc CoinHistogram (CoinHistogramRequest) returns (CoinHistogramResponse);
+
   // Imports UTXOs into the wallet as spendable outputs.
   //
   // The `ImportUtxos` call allows you to manually insert one or more previously received UTXOs
@@ -681,7 +1166,7 @@ service Wallet {
   // {
   //   "status": "ONLINE",
   //   "avg_latency_ms": 142,
-  //   "num_node_connections": 8
+  //   "num_node_connections": 1
   // }
   // ```
   //
@@ -689,13 +1174,16 @@ service Wallet {
   //
   // The `status` field indicates the current network connectivity of the wallet. Possible values are:
   //
+  // - `INITIALIZING`:
+  //   - The wallet connectivity is busy initializing.
+  //
   // - `ONLINE`:
   //   - The wallet is fully connected to the network and functioning normally.
-  //   - The node has enough active peer connections to operate efficiently.
   //
   // - `DEGRADED`:
-  //   - The wallet is connected to some peers but not enough to maintain full functionality.
-  //   - This could indicate issues with network connectivity, such as intermittent disconnections or insufficient peers, leading to reduced performance or reliability.
+  //   - The wallet is connected but has high latency.
+  //   - This could indicate issues with network connectivity, such as as a congested network, leading to reduced
+  //     performance or reliability.
   //
   // - `OFFLINE`:
   //   - The wallet is not connected to any peers.
@@ -703,11 +1191,10 @@ service Wallet {
   //
   rpc GetNetworkStatus(Empty) returns (NetworkStatusResponse);
 
-  // Returns a list of peers currently connected to the wallet.
+  // Returns a list of HTTP peers currently connected to the wallet.
   //
-  // The `ListConnectedPeers` call retrieves information about peers that the wallet is currently
-  // connected to. This includes details such as peer addresses, connection status, supported protocols,
-  // and other metadata relevant to the connection.
+  // The `GetConnectedHttpPeer` call retrieves information about the HTTP peer that the wallet is currently
+  // connected to. The response is a `GetConnectedHttpPeerResponse` containing a list of `HttpPeer` objects.
   //
   // ### Request Parameters:
   //
@@ -717,23 +1204,15 @@ service Wallet {
   //
   // ### Response Fields:
   //
-  // - **connected_peers**: List of peers currently connected to the wallet.
-  //   - **public_key**: The peer's public key (bytes).
-  //   - **node_id**: The unique node ID of the peer (bytes).
-  //   - **addresses**: List of the peer's addresses (repeated Address).
-  //   - **last_connection**: The timestamp of the last connection attempt (uint64).
-  //   - **flags**: Flags associated with the peer (uint32).
-  //   - **banned_until**: The timestamp until which the peer is banned (uint64, 0 if not banned).
-  //   - **banned_reason**: The reason for banning the peer (string, empty if not banned).
-  //   - **offline_at**: The timestamp indicating when the peer went offline (uint64, 0 if online).
-  //   - **features**: The features supported by the peer (uint32).
-  //   - **supported_protocols**: List of supported protocols by the peer (repeated bytes).
-  //   - **user_agent**: The user agent advertised by the peer (string).
+  // - **connected_peers**: List of `HttpPeer` objects currently connected to the wallet.
+  //   - **url**: The connection URL (string).
+  //   - **last_latency**: The latency of the last request to this peer (`AverageLatency`).
+  //   - **is_online**: Online status of the peer (bool).
   //
   // ### Example JavaScript gRPC client usage:
   //
   // ```javascript
-  // client.listConnectedPeers({}, (err, response) => {
+  // client.GetConnectedHttpPeer({}, (err, response) => {
   //   if (err) console.error(err);
   //   else console.log("Connected Peers:", response);
   // });
@@ -743,30 +1222,14 @@ service Wallet {
   //
   // ```json
   // {
-  //   "connected_peers": [
-  //     {
-  //       "public_key": "0x1234abcd...",
-  //       "node_id": "0x5678efgh...",
-  //       "addresses": [
-  //         "127.0.0.1:18080",
-  //         "192.168.1.2:18080"
-  //       ],
-  //       "last_connection": 1625493123,
-  //       "flags": 1,
-  //       "banned_until": 0,
-  //       "banned_reason": "",
-  //       "offline_at": 0,
-  //       "features": 10,
-  //       "supported_protocols": [
-  //         "protocol_v1",
-  //         "protocol_v2"
-  //       ],
-  //       "user_agent": "TariBaseNode/1.0.0"
-  //     }
-  //   ]
+  //   "connected_peers": {
+  //       "url": "http://127.0.0.1:18080",
+  //       "last_latency": { "value": 42 },
+  //       "is_online": true
+  //    }
   // }
   // ```
-  rpc ListConnectedPeers(Empty) returns (ListConnectedPeersResponse);
+  rpc GetConnectedHttpPeer(Empty) returns (GetConnectedHttpPeerResponse);
 
   // Cancels a specific transaction by its ID.
   //
@@ -777,6 +1240,8 @@ service Wallet {
   // ### Request Parameters:
   //
   // - **tx_id**: The unique identifier for the transaction to be cancelled (uint64).
+  // - **force_if_completed**: Force cancelling a completed transaction, otherwise it is only applicable to pending
+  //                           transactions (bool).
   //
   // ### Response Fields:
   //
@@ -875,7 +1340,7 @@ service Wallet {
   // - **commitment**: The commitment associated with the burn transaction.
   // - **ownership_proof**: A proof of ownership for the burned coins.
   // - **range_proof**: The range proof associated with the burned coins.
-  // - **reciprocal_claim_public_key**: The public key of the reciprocal claim for the burn.
+  // - **claim_public_key**: The public key used for the burn claim.
   //
   // ### Example JavaScript gRPC client usage:
   // ```javascript
@@ -899,8 +1364,7 @@ service Wallet {
   //   "failure_message": "",
   //   "commitment": "0xcommitmenthash",
   //   "ownership_proof": "0xownershipproof",
-  //   "range_proof": "0xrangeproof",
-  //   "reciprocal_claim_public_key": "0xreciprocalpublickey"
+  //   "claim_public_key": "0xclaimpublickey"
   // }
   rpc CreateBurnTransaction(CreateBurnTransactionRequest) returns (CreateBurnTransactionResponse);
 
@@ -1106,8 +1570,89 @@ service Wallet {
     option deprecated = true;
   }
 
-  // Get all completed transactions including cancelled ones, sorted by timestamp and paginated (streaming version)
-  // Recommended: Use this streaming version for better performance and progressive loading
+  // Streams previously completed wallet transactions to the client.
+  //
+  // The `GetAllCompletedTransactionsStream` RPC provides a paginated, filtered stream of previously completed transactions
+  // from the wallet database. Unlike real-time event streaming, this RPC allows clients to retrieve historical transaction
+  // data using offset, limit, and optional status-based filtering.
+  //
+  // This is ideal for applications that need to display a transaction history, perform analytics, or resume from a known offset.
+  //
+  // ### Request Parameters:
+  // - **offset** (uint64): The starting index in the list of completed transactions.
+  // - **limit** (uint64): Maximum number of transactions to return. Capped at 50 per request.
+  // - **status_bitflag** (uint64): Optional bitflag to filter transactions by status (e.g., mined, cancelled).
+  //
+  // ### Response Stream:
+  // - Each message in the response stream is a `GetCompletedTransactionsResponse` containing:
+  //   - **transaction**: A `TransactionInfo` object representing a completed wallet transaction.
+  //
+  // ### `TransactionInfo` Fields:
+  // - **tx_id** (uint64): Unique transaction identifier.
+  // - **source_address** (bytes): Sender address.
+  // - **dest_address** (bytes): Recipient address.
+  // - **status** (enum): Status of the transaction (`Completed`, `Mined`, `Cancelled`, etc.).
+  // - **direction** (enum): `"Inbound"` or `"Outbound"`.
+  // - **amount** (uint64): Transaction amount in microTari.
+  // - **fee** (uint64): Transaction fee in microTari.
+  // - **is_cancelled** (bool): Whether the transaction was cancelled.
+  // - **excess_sig** (bytes): Signature of the transaction kernel excess.
+  // - **timestamp** (uint64): UNIX timestamp of the transaction creation time.
+  // - **raw_payment_id** (bytes): Raw payment ID used in the transaction.
+  // - **user_payment_id** (bytes): User-visible payment ID, if applicable.
+  // - **mined_in_block_height** (uint64): Block height where the transaction was mined. Zero if not mined.
+  // - **input_commitments** (repeated bytes): Commitments for transaction inputs.
+  // - **output_commitments** (repeated bytes): Commitments for transaction outputs.
+  // - **payment_references_sent** (repeated bytes): Metadata references associated with sent outputs.
+  // - **payment_references_received** (repeated bytes): Metadata references associated with received outputs.
+  // - **payment_references_change** (repeated bytes): Metadata references associated with change outputs.
+  //
+  // ### Example JavaScript gRPC client usage:
+  // ```javascript
+  // const call = client.getAllCompletedTransactionsStream({
+  //   offset: 0,
+  //   limit: 20,
+  //   status_bitflag: 0
+  // });
+  //
+  // call.on("data", (response) => {
+  //   console.log("Completed Transaction:", response.transaction);
+  // });
+  //
+  // call.on("end", () => {
+  //   console.log("Stream ended.");
+  // });
+  //
+  // call.on("error", (err) => {
+  //   console.error("Stream error:", err);
+  // });
+  // ```
+  //
+  // ### Sample JSON Streamed Response:
+  // ```json
+  // {
+  //   "transaction": {
+  //     "tx_id": 103248,
+  //     "source_address": "0xabc123...",
+  //     "dest_address": "0xdef456...",
+  //     "status": "Completed",
+  //     "direction": "Outbound",
+  //     "amount": 100000000,
+  //     "fee": 200000,
+  //     "is_cancelled": false,
+  //     "excess_sig": "0x...",
+  //     "timestamp": 1670000000,
+  //     "raw_payment_id": "0xdeadbeef...",
+  //     "user_payment_id": "0xdeadbeef...",
+  //     "mined_in_block_height": 202000,
+  //     "input_commitments": ["0x...", "0x..."],
+  //     "output_commitments": ["0x...", "0x..."],
+  //     "payment_references_sent": ["0x...", "0x..."],
+  //     "payment_references_received": [],
+  //     "payment_references_change": []
+  //   }
+  // }
+  // ```
   rpc GetAllCompletedTransactionsStream(GetAllCompletedTransactionsRequest) returns (stream GetCompletedTransactionsResponse);
 
   // Gets transaction information by payment reference (PayRef)
@@ -1156,7 +1701,7 @@ service Wallet {
   // ```
   rpc GetPaymentByReference(GetPaymentByReferenceRequest) returns (GetPaymentByReferenceResponse);
 
-// Estimates the transaction fee based on amount, fee rate, and number of outputs.
+  // Estimates the transaction fee based on amount, fee rate, and number of outputs.
   //
   // The `GetFeeEstimate` call allows clients to calculate the expected transaction fee before sending funds.
   // This is useful for presenting fee information to the user or for ensuring sufficient funds are available.
@@ -1243,7 +1788,7 @@ service Wallet {
   // ```
   rpc GetFeePerGramStats(GetFeePerGramStatsRequest) returns (GetFeePerGramStatsResponse);
 
- // Attempts to replace an existing transaction with a new one that has a higher fee.
+  // Attempts to replace an existing transaction with a new one that has a higher fee.
   //
   // The `ReplaceByFee` call enables clients to increase the fee of a pending transaction,
   // potentially speeding up its confirmation by incentivizing miners to prioritize it.
@@ -1371,6 +1916,12 @@ service Wallet {
   rpc RegisterValidatorNode(RegisterValidatorNodeRequest) returns (RegisterValidatorNodeResponse);
   rpc SubmitValidatorEvictionProof(SubmitValidatorEvictionProofRequest) returns (SubmitValidatorEvictionProofResponse);
   rpc SubmitValidatorNodeExit(SubmitValidatorNodeExitRequest) returns (SubmitValidatorNodeExitResponse);
+  rpc GetBurnClaimProof(GetBurnClaimProofRequest) returns (GetBurnClaimProofResponse);
+  rpc RescanWallet(RescanWalletRequest) returns (RescanWalletResponse);
+  rpc ScanAndImportUtxos(ScanAndImportUtxosRequest) returns (ScanAndImportUtxosResponse);
+  rpc DebugTransaction(DebugTransactionRequest) returns (DebugTransactionResponse);
+  rpc ValidateTransaction(ValidateTransactionRequest) returns (ValidateTransactionResponse);
+  rpc ValidateOutputs(ValidateOutputsRequest) returns (ValidateOutputsResponse);
 }
 
 
@@ -1405,6 +1956,33 @@ message GetCompleteAddressResponse {
   string one_sided_address_emoji = 6;
 }
 
+
+message PrepareDepositMultisigTransactionRequest {
+  uint64 amount = 1;
+  uint64 party_number = 2;
+  repeated bytes public_keys = 3;
+  bytes recipient_address = 4;
+}
+
+message PrepareWithdrawMultisigTransactionRequest {
+  string utxo_commitment = 1;
+  repeated bytes signatures = 2;
+  bytes recipient_address = 3;
+}
+
+message PrepareDepositMultisigTransactionResponse {
+  bool is_success = 1;
+  string result = 2;
+  string failure_message = 3;
+}
+
+message PrepareWithdrawMultisigTransactionResponse {
+  bool is_success = 1;
+  string result = 2;
+  string failure_message = 3;
+}
+
+
 // A request to preapre a one sided transaction for offline signing
 message PrepareOneSidedTransactionForSigningRequest {
   PaymentRecipient recipient = 1;
@@ -1430,6 +2008,34 @@ message BroadcastSignedOneSidedTransactionResponse {
 // A request to send funds to one or more recipients.
 message TransferRequest {
   repeated PaymentRecipient recipients = 1;
+  bool single_tx = 2;
+}
+
+// A request to perform a range-limited coin-join to self operation.
+message RangeLimitedCoinJoinRequest {
+  // The maximum number of coins to use in any coin-join transaction (only limited by maximum transaction size limits
+  // of 4000 inputs).
+  uint64 maximum_inputs_per_transaction = 1;
+  // The target coin-joined amount to achieve - the total value of the inputs used will always be >= this amount.
+  // Inputs are sorted in ascending order when selected, and the last input selected will either result in the total
+  // being equal or greater than this amount.
+  uint64 target_minimum_amount = 2;
+  // The lower bound for coin values in this bucket (inclusive).
+  uint64 lower_bound = 3;
+  // The upper bound for coin values in this bucket (exclusive).
+  uint64 upper_bound = 4;
+  // Optional total fee to use - if not specified, fee per gram will be used instead.
+  message TotalFee {
+    uint64 total_fee = 1;
+  }
+  TotalFee total_fee = 5;
+  // Optional fee per gram to use - if not specified the lowest value will be selected.
+  message FeePerGram {
+    uint64 fee_per_gram = 1;
+  }
+  FeePerGram fee_per_gram = 6;
+  // Optional user encrypted payment ID for reference (max 256 bytes).
+  UserPaymentId user_payment_id = 7;
 }
 
 message SendShaAtomicSwapRequest {
@@ -1484,10 +2090,14 @@ message CreateBurnTransactionResponse{
   uint64 transaction_id = 1;
   bool is_success = 2;
   string failure_message = 3;
+  // Only provided if a burn claim key is provided
   bytes commitment = 4;
-  CommitmentSignature ownership_proof = 5;
-  bytes range_proof = 6;
-  bytes reciprocal_claim_public_key = 7;
+  Signature ownership_proof = 5;
+  bytes claim_public_key = 6;
+  bytes kernel_excess = 7;
+  bytes kernel_excess_nonce = 8;
+  bytes kernel_excess_signature = 9;
+  bytes sender_offset_public_key = 10;
 }
 
 message TransferResult {
@@ -1544,6 +2154,12 @@ message TransactionInfo {
   repeated bytes payment_references_sent = 17;
   repeated bytes payment_references_received = 18;
   repeated bytes payment_references_change = 19;
+  // The reason a transaction was rejected/cancelled, if applicable.
+  // Empty string if the transaction is not rejected.
+  string rejected_reason = 20;
+  // The highest lock height among all outputs (max of maturity and script_lock_height).
+  // Outputs cannot be spent until this height is reached.
+  uint64 lock_height = 21;
 }
 
 enum TransactionDirection {
@@ -1583,6 +2199,12 @@ enum TransactionStatus {
   TRANSACTION_STATUS_COINBASE_CONFIRMED = 13;
   // This is Coinbase transaction that is not currently detected as mined
   TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN = 14;
+  // This transaction is mined and confirmed but outputs are still locked (maturity not reached)
+  TRANSACTION_STATUS_MINED_CONFIRMED_LOCKED = 15;
+  // One-sided transaction confirmed but outputs are still locked
+  TRANSACTION_STATUS_ONE_SIDED_CONFIRMED_LOCKED = 16;
+  // Coinbase transaction confirmed but outputs are still locked
+  TRANSACTION_STATUS_COINBASE_CONFIRMED_LOCKED = 17;
 }
 
 message GetCompletedTransactionsRequest {
@@ -1654,10 +2276,42 @@ message CoinSplitRequest {
   bytes payment_id = 6;
 }
 
+// Request message for the CoinHistogram RPC.
+message CoinHistogramRequest {
+  // List of coin ranges to get information for.
+  repeated CoinBucket buckets = 1;
+}
+
+// A bucket representing a range of coins.
+message CoinBucket {
+  // The lower bound for coin values in this bucket (inclusive).
+  uint64 lower_bound = 1;
+  // The upper bound for coin values in this bucket (exclusive).
+  uint64 upper_bound = 2;
+}
+
 // Response message containing the transaction ID of the coin split.
 message CoinSplitResponse {
   // The unique ID of the transaction created.
   uint64 tx_id = 1;
+}
+
+// Response message for CoinHistogram RPC.
+message CoinHistogramResponse {
+  // List of coin buckets representing ranges of coin amounts and their counts.
+  repeated CoinBucketStats buckets = 1;
+}
+
+// A bucket representing a range of coin amounts and associated statistics.
+message CoinBucketStats {
+  // The number of coins in this bucket.
+  uint64 count = 1;
+  // The total amount of coins within this bucket.
+  uint64 total_amount = 2;
+  // The lower bound for coin values in this bucket (inclusive).
+  uint64 lower_bound = 3;
+  // The upper bound for coin values in this bucket (exclusive).
+  uint64 upper_bound = 4;
 }
 
 // Request message for importing UTXOs into the wallet.
@@ -1695,6 +2349,8 @@ message CreateTemplateRegistrationResponse {
 message CancelTransactionRequest {
   // The transaction ID to be cancelled.
   uint64 tx_id = 1;
+  // Force cancelling a completed transaction, otherwise it is only applicable to pending transactions.
+  bool force_if_completed = 2;
 }
 
 // Response message for the CancelTransaction RPC.
@@ -1706,7 +2362,20 @@ message CancelTransactionResponse {
   string failure_message = 2;
 }
 
-message RevalidateRequest{}
+message RevalidateRequest{
+  TransactionValidationMode transaction_mode =1;
+  OutputValidationMode output_mode = 2;
+}
+
+enum TransactionValidationMode {
+    RevalidateAll = 0;
+    RejectedOnly = 1;
+}
+
+enum OutputValidationMode {
+    Ignore = 0;
+    Revalidate = 1;
+}
 
 message RevalidateResponse{}
 
@@ -1729,6 +2398,8 @@ message CheckConnectivityResponse{
     Online = 1;
     // The wallet is not connected to any peers
     Offline = 2;
+    // The wallet connection is degraded (e.g., limited connectivity)
+    Degraded = 3;
   }
   // The current connectivity state of the wallet
   OnlineStatus status = 1;
@@ -1838,9 +2509,33 @@ message GetTransactionPayRefsRequest {
 // Response message for GetTransactionPayRefs RPC.
 message GetTransactionPayRefsResponse {
   // List of PayRefs (32-byte payment references) for the transaction.
-  repeated bytes payment_references = 1;
+  repeated bytes payment_references = 1 [deprecated = true];
+  // List of input commitment info for the transaction - hash, commitment, payment reference, output category.
+  repeated CommitmentInfo output_commitments_info = 2;
+  // Historical PayRefs that were superseded by reorgs (output_hash + previous payref pairs).
+  repeated HistoricalPayRef historical_payment_references = 3;
 }
 
+// A historical PayRef that was superseded due to a blockchain reorg.
+message HistoricalPayRef {
+  // The output hash this PayRef was generated for.
+  bytes output_hash = 1;
+  // The previous PayRef value (before the reorg changed the block hash).
+  bytes payment_reference = 2;
+}
+
+message CommitmentInfo {
+  bytes hash = 1;
+  bytes commitment = 2;
+  bytes payment_reference = 3;
+  OutputCategory category = 4;
+}
+
+enum OutputCategory {
+  OUTPUT_CATEGORY_SENT = 0;
+  OUTPUT_CATEGORY_RECEIVED = 1;
+  OUTPUT_CATEGORY_CHANGE = 2;
+}
 
 // Response message for GetTransactionsWithPayRefs RPC.
 message GetTransactionsWithPayRefsResponse {
@@ -1860,9 +2555,11 @@ message GetPaymentByReferenceRequest {
 
 // Response message containing transaction information for a payment reference
 message GetPaymentByReferenceResponse {
-  // The transaction information if PayRef is found (optional).
+  // The transaction information if PayRef is found via current PayRef (optional).
   // Returns full transaction details
   TransactionInfo transaction = 1;
+  // Transactions found via historical (superseded) PayRefs from reorgs.
+  repeated TransactionInfo historical_transactions = 2;
 }
 
 
@@ -1888,6 +2585,10 @@ message GetFeeEstimateRequest {
 message GetFeeEstimateResponse {
   // Estimated fee for the transaction in microTari
   uint64 estimated_fee = 1;
+  // number of inputs
+  uint64 input_count = 2;
+  // will it have a change output or not
+  bool change_required = 3;
 }
 
 message GetFeePerGramStatsRequest {
@@ -1912,16 +2613,16 @@ message ReplaceByFeeResponse {
 }
 
 message UserPayForFeeRequest {
-    repeated TxOutputsToSpendTransfer recipients = 1;
+  repeated TxOutputsToSpendTransfer recipients = 1;
 }
 
 message TxOutputsToSpendTransfer {
-    // Id of the transaction to spend outputs from.
-    uint64 tx_id = 1;
-    // Fee to pay for the transaction in microTari.
-    uint64 fee = 2;
-    // Base58 Tari address of the recipient.
-    string destination = 3;
+  // Id of the transaction to spend outputs from.
+  uint64 tx_id = 1;
+  // Fee to pay for the transaction in microTari.
+  uint64 fee = 2;
+  // Base58 Tari address of the recipient.
+  string destination = 3;
 }
 
 message UserPayForFeeResponse {
@@ -1949,4 +2650,127 @@ message SignMessageResponse {
   string signature = 1;
   // The public nonce component as hex-encoded string
   string public_nonce = 2;
+}
+
+// Response message for GetConnectedHttpPeerResponse
+message GetConnectedHttpPeerResponse {
+  // The connected HTTP base node
+  HttpPeer connected_peer = 1;
+}
+
+// The HttpPeer message represents a connected HTTP peer in the wallet.
+message HttpPeer {
+  // The connection URL
+  string url = 1;
+  // The latency of the last request to this peer in ms
+  uint64 last_latency = 2;
+  // Online status of the peer
+  bool is_online = 3;
+}
+
+message GetBurnClaimProofRequest {
+  bytes commitment = 1;
+}
+
+message GetBurnClaimProofResponse {
+  BurnClaimProof claim_proof = 1;
+  // Optional, not available until the burn transaction is confirmed
+  EncodedMerkleProof merkle_proof = 2;
+  bytes encrypted_data = 3;
+  TransactionKernel kernel = 4;
+  uint64 value = 5;
+  // The L1 epoch the burn was mined in (block_height / vn_epoch_length). Optional: absent until the burn is
+  // confirmed on-chain, or when connected to a base node that does not report the mined block height.
+  optional uint64 mined_in_epoch = 6;
+}
+
+message BurnClaimProof {
+  bytes commitment = 1;
+  Signature ownership_proof = 2;
+  bytes claim_public_key = 3;
+  bytes kernel_excess = 4;
+  bytes kernel_excess_nonce = 5;
+  bytes kernel_excess_signature = 6;
+  bytes sender_offset_public_key = 7;
+}
+
+message EncodedMerkleProof {
+  bytes block_hash = 1;
+  bytes encoded_proof = 2;
+  uint64 leaf_index = 3;
+}
+
+message RescanWalletRequest {
+  uint64 from_height = 1;
+}
+
+message RescanWalletResponse {
+}
+
+message ScanAndImportUtxosRequest{
+  repeated string output_hashes = 1;
+}
+message ScanAndImportUtxosResponse{
+  repeated ScanFeedback feedback = 1;
+}
+
+message ScanFeedback{
+  string output_hash = 1;
+  bool is_found = 2;
+  uint64 tx_id = 3;
+  repeated string debug_info = 4;
+}
+
+message DebugTransactionRequest {
+  uint64 tx_id = 1;
+}
+
+message DebugTransactionResponse {
+  TransactionInfo transaction_info = 1;
+  repeated DbWalletOutputInfo inputs = 2;
+  repeated DbWalletOutputInfo outputs = 3;
+}
+
+message DbWalletOutputInfo {
+  bytes commitment = 1;
+  bytes hash = 2;
+  uint64 value = 3;
+  string status = 4;
+  uint64 mined_height = 5;
+  bytes mined_in_block = 6;
+  uint64 mined_timestamp = 7;
+  uint64 marked_deleted_at_height = 8;
+  bytes marked_deleted_in_block = 9;
+  string spending_priority = 10;
+  string source = 11;
+  uint64 received_in_tx_id = 12;
+  uint64 spent_in_tx_id = 13;
+  bytes payment_id = 14;
+  string script = 15;
+  uint64 maturity = 16;
+  string features_output_type = 17;
+  bytes sender_offset_public_key = 18;
+  uint64 script_lock_height = 19;
+}
+
+message ValidateTransactionRequest {
+  uint64 tx_id = 1;
+}
+
+message ValidateTransactionResponse {
+  repeated string debug_info = 1;
+}
+
+message ValidateOutputsRequest {
+  repeated string commitments = 1;
+}
+
+message ValidateOutputsResponse {
+  repeated OutputValidationFeedback feedback = 1;
+}
+
+message OutputValidationFeedback {
+  string commitment = 1;
+  string status = 2;
+  repeated string debug_info = 3;
 }

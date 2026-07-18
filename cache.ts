@@ -2,17 +2,25 @@ import { handleGrpcResult } from "./utils/grpcHelpers.js";
 import JSONbig from "json-bigint";
 JSONbig({ useNativeBigInt: true });
 
+const DEFAULT_CACHE_SIZE = 1000;
+
 class Cache<T> {
   limit: number;
   cache: Map<string, T>;
   constructor(limit: number) {
-    this.limit = limit;
+    // A non-numeric or non-positive limit would silently disable eviction --
+    // every `size >= NaN` comparison is false -- so fall back to the default.
+    this.limit =
+      Number.isFinite(limit) && limit > 0
+        ? Math.floor(limit)
+        : DEFAULT_CACHE_SIZE;
     this.cache = new Map();
   }
 
   set(key: string, value: T) {
-    if (this.cache.size >= this.limit) {
-      const firstItemKey = this.cache.keys().next().value!;
+    while (this.cache.size >= this.limit) {
+      const firstItemKey = this.cache.keys().next().value;
+      if (firstItemKey === undefined) break;
       this.cache.delete(firstItemKey);
     }
     this.cache.set(key, value);
@@ -37,6 +45,6 @@ class Cache<T> {
 }
 
 const cache = new Cache<any>(
-  +(process.env.TARI_EXPLORER_OLD_BLOCKS_CACHE_SETTINGS || 1000),
+  +(process.env.TARI_EXPLORER_BLOCK_CACHE_SIZE || DEFAULT_CACHE_SIZE),
 );
 export default cache;

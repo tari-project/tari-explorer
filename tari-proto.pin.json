@@ -1,0 +1,6 @@
+{
+  "repo": "tari-project/tari",
+  "protoPath": "applications/minotari_app_grpc/proto",
+  "tag": "v5.5.0",
+  "sha": "b32dba96aa0d4ffdd715a0bb724f69c567d47d9f"
+}

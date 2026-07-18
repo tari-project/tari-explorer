@@ -3,23 +3,18 @@ ARG NODE_VERSION=26-trixie-slim
 
 FROM node:$NODE_VERSION
 
-ARG EXTERNAL_LIBS_LOCATION=./external_libs
-ARG BASE_NODE_PROTO=../proto/base_node.proto
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init
 
 WORKDIR /usr/src/app
 COPY --chown=node:node . .
 
-RUN npm install ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/
+# The .proto files are vendored in the repo and pinned by tari-proto.pin.json,
+# so the build needs no network access beyond the npm registry.
 RUN npm install
-# Hack - bring proto files in
-RUN cp -fvr ${EXTERNAL_LIBS_LOCATION}/base_node_grpc_client/proto applications/minotari_app_grpc/proto
 RUN npm run build
 
 ENV NODE_ENV=production
-ENV BASE_NODE_PROTO=${BASE_NODE_PROTO}
 
 EXPOSE 4000
 USER node

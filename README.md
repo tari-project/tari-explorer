@@ -6,9 +6,24 @@
 
 - `npm install`
 
-### Get latest protos and minotari node by Branch/Tag
+### Tari protos
 
-- `npm run grpc:download -- v4.4.1`
+The `.proto` files are vendored under `applications/minotari_app_grpc/proto/` and
+pinned to an upstream commit by `tari-proto.pin.json`. Builds use the vendored
+copies, so no network access to GitHub is needed to build the image.
+
+- `npm run proto:check` - verify the vendored protos still match the pin (run in CI)
+- `npm run proto:refresh` - restore the vendored protos at the pinned commit
+- `npm run proto:refresh -- v5.5.0` - move the pin to a new tag/branch
+
+Moving the pin resolves the ref to an immutable commit SHA and rewrites
+`tari-proto.pin.json`. Review the resulting diff: upstream proto changes
+regularly break codegen or the TypeScript build.
+
+### Get a minotari node binary for local development
+
+- `npm run node:download` - downloads the node matching the pinned proto tag
+- `npm run node:download -- v5.5.0` - downloads a specific release
 
 ### Build
 
@@ -28,8 +43,6 @@ To run, export the following environment variables:
 
 - PORT `Port of service` (Default: `4000`)
 - BASE_NODE_GRPC_URL `Base node GRPC URL` (Default: `localhost:18142`)
--
-- BASE_NODE_PROTO `location of base_node.proto` (Default: `../proto/base_node.proto`)
 - TARI_EXPLORER_INDEX_CACHE_SETTINGS `Index cache` (Default: `public, max-age=120, s-maxage=60, stale-while-revalidate=30`)
 - TARI_EXPLORER_MEMPOOL_CACHE_SETTINGS `Mempool cache` (Default: `public, max-age=15, s-maxage=15, stale-while-revalidate=15`)
 - TARI_EXPLORER_OLD_BLOCKS_CACHE_SETTINGS `Old blocks cache` (Default: `public, max-age=604800, s-maxage=604800, stale-while-revalidate=604800`)

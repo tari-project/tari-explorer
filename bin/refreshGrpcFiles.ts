@@ -1,172 +1,72 @@
+// Copyright 2025 The Tari Project
+// SPDX-License-Identifier: BSD-3-Clause
+
+// Refreshes the vendored .proto snapshot.
+//
+//   npm run proto:refresh              -- restore the protos at the pinned SHA
+//   npm run proto:refresh -- v5.5.0    -- move the pin to a new tag/branch
+//
+// Passing a ref resolves it to an immutable commit SHA and rewrites
+// tari-proto.pin.json, so a re-pointed tag can never silently change the build.
+// Review the resulting `git diff` -- proto changes routinely break codegen.
+
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
-import { Readable } from "node:stream";
-import { finished } from "node:stream/promises";
-import AdmZip from "adm-zip";
 import { Command } from "commander";
-
-const PLATFORM = os.platform(); // 'linux', 'darwin', 'win32'
-const HARDWARE_ARCH = os.arch(); // 'x64', 'arm64', etc.
-const REPO = "tari-project/tari";
-const TARI_SUITE_PATTERN = new RegExp(`tari_suite-.*-${getTariArch()}\\.zip`);
-const MINOTARI_NODE_EXEC_NAME = "minotari_node";
-const MINOTARI_NODE_PATH = "./applications/minotari-node";
-const PROTO_DEFAULT_BRANCH_REF = "mainnet";
+import {
+  PIN_FILE,
+  downloadProtos,
+  readPin,
+  resolveRef,
+  writePin,
+} from "./protoPin.js";
 
 const cli = new Command();
-
 cli
-  .name("refreshGrpcFiles")
-  .description(
-    "refreshes the proto files and the minotari node in the applications folder",
-  )
+  .name("proto:refresh")
+  .description("refresh the vendored Tari proto snapshot")
   .argument(
     "[ref]",
-    "Ref/branch name (e.g., v4.5.0) or values like 'mainnet'",
-    PROTO_DEFAULT_BRANCH_REF,
+    "tag or branch to move the pin to (e.g. v5.5.0, mainnet). Omit to restore the current pin.",
   );
 
-const parsedArgs = cli.parse(process.argv);
-const refName = parsedArgs.args[0] || PROTO_DEFAULT_BRANCH_REF;
+const ref = cli.parse(process.argv).args[0];
 
-interface GithubFileType {
-  name: string;
-  type: string;
-  download_url: string;
-}
+async function main() {
+  const pin = readPin();
 
-interface GithubAssetJson {
-  assets: {
-    name: string;
-    browser_download_url;
-  }[];
-}
+  let sha = pin.sha;
+  let tag = pin.tag;
 
-function getTariArch() {
-  let tariPlatform: string = PLATFORM;
-  let tariArch: string = HARDWARE_ARCH;
-
-  // Normalize platform names
-  if (tariPlatform === "win32") {
-    tariPlatform = "windows";
-    if (tariArch === "x64") {
-      tariArch = "x64";
-    }
-  } else if (tariPlatform === "darwin") {
-    tariPlatform = "macos";
-    if (tariArch === "x64") {
-      tariArch = "x86_64";
-    }
-  } else if (tariPlatform === "linux") {
-    if (tariArch === "x64") {
-      tariArch = "x86_64";
-    }
-    // Note: arm64 stays as arm64
-    // Note: riscv64 stays as riscv64
+  if (ref) {
+    console.log(`Resolving ${pin.repo}@${ref}...`);
+    ({ sha } = await resolveRef(pin.repo, ref));
+    tag = ref;
+    console.log(`   ${ref} -> ${sha}`);
+  } else {
+    console.log(`Restoring pinned snapshot ${pin.tag} (${pin.sha})`);
   }
 
-  return `${tariPlatform}-${tariArch}`;
-}
+  // Clear the directory first so files deleted upstream do not linger.
+  await fs.promises.rm(pin.protoPath, { recursive: true, force: true });
+  const names = await downloadProtos(pin, sha, pin.protoPath);
 
-const getJSON = <T>(url) =>
-  fetch(url, {
-    headers: { "User-Agent": "node.js" },
-  }).then((res) => res.json() as T);
-
-const downloadFile = async (url, destination) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.status}`);
+  for (const name of names) {
+    console.log(`   downloaded ${path.join(pin.protoPath, name)}`);
   }
 
-  if (!response.body) {
-    throw new Error("Failed to find the body of the file");
+  if (ref) {
+    writePin({ ...pin, tag, sha });
+    console.log(`Updated ${PIN_FILE} -> ${tag} (${sha})`);
   }
 
-  const fileStream = fs.createWriteStream(destination);
-  await finished(
-    Readable.fromWeb(response.body as unknown as any).pipe(fileStream),
+  console.log(
+    `Done: ${names.length} proto files at ${tag} (${sha.slice(0, 7)}).`,
   );
-};
-
-async function fetchProtoFiles() {
-  const protoDir = path.join("./applications/minotari_app_grpc/proto");
-
-  // Ensure the proto directory exists
-  await fs.promises.mkdir(protoDir, { recursive: true });
-
-  const contentsUrl = `https://api.github.com/repos/${REPO}/contents/applications/minotari_app_grpc/proto?ref=${refName}`;
-
-  console.log(`📥 Fetching proto files list for Branch/Ref: ${refName}`);
-  // Get the contents of the proto directory from GitHub API
-
-  const files: GithubFileType[] = await getJSON(contentsUrl);
-
-  console.log(`Found ${files.length} proto files`);
-
-  for (const file of files) {
-    if (file.type === "file" && file.name.endsWith(".proto")) {
-      const destination = path.join(protoDir, file.name);
-      console.log(`   ⬇️ Downloading ${file.name}...`);
-      await downloadFile(file.download_url, destination);
-    }
-  }
-
-  console.log("✅ All proto files downloaded successfully");
+  console.log("Review `git diff` and run `npm run build` before committing.");
 }
 
-async function fetchMinotariNode() {
-  const apiUrl = `https://api.github.com/repos/${REPO}/releases/latest`;
-  const json: GithubAssetJson = await getJSON(apiUrl);
-
-  const tariSuiteForHw = json.assets.find((a) =>
-    TARI_SUITE_PATTERN.test(a.name),
-  );
-  if (!tariSuiteForHw) {
-    console.error(`❌ No asset found matching pattern ${TARI_SUITE_PATTERN}`);
-    process.exit(1);
-  }
-
-  const tariSuiteFileName = path.basename(tariSuiteForHw.browser_download_url);
-
-  console.log(`   ⬇️ Downloading Tari Suite: ${tariSuiteFileName}...`);
-  await fs.promises.mkdir(MINOTARI_NODE_PATH, {
-    recursive: true,
-  });
-
-  const tariSuiteLocalPath = path.join(MINOTARI_NODE_PATH, tariSuiteFileName);
-
-  await downloadFile(tariSuiteForHw.browser_download_url, tariSuiteLocalPath);
-  console.log(`✅ Downloaded Tari Suite: ./${tariSuiteFileName}`);
-
-  //Extract minotari Node
-  var zip = new AdmZip(tariSuiteLocalPath);
-
-  const zipEntries = zip.getEntries();
-  const minotariNodeEntry = zipEntries.find(
-    (entry) => (entry.name as string) === MINOTARI_NODE_EXEC_NAME,
-  );
-
-  if (!minotariNodeEntry) {
-    throw new Error(`no ${MINOTARI_NODE_EXEC_NAME} found as executable`);
-  }
-
-  zip.extractEntryTo(minotariNodeEntry, MINOTARI_NODE_PATH, true, true);
-  console.log(`✅ Exctracted Minotari Node to: ${MINOTARI_NODE_PATH}`);
-
-  //Delete suite
-  fs.unlinkSync(tariSuiteLocalPath);
-}
-
-async function fetchLatestSuite() {
-  try {
-    await fetchProtoFiles();
-    await fetchMinotariNode();
-  } catch (err) {
-    console.error("🚨 Error:", (err as Error).message);
-    process.exit(1);
-  }
-}
-
-fetchLatestSuite();
+main().catch((err) => {
+  console.error("Error:", (err as Error).message);
+  process.exit(1);
+});

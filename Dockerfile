@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/node
-ARG NODE_VERSION=22-bookworm-slim
+ARG NODE_VERSION=26-trixie-slim
 
 FROM node:$NODE_VERSION
 

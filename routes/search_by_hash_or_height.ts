@@ -317,48 +317,61 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   }
 
   // Searching for outputs by commitment
+  //
+  // NOTE: this is intentionally done one commitment at a time rather than as a single
+  // batched `searchUtxos({ commitments: binaryHashes })` call. The base node's SearchUtxos
+  // RPC (see fetch_blocks_with_utxos / fetch_block_with_utxo in tari-project/tari) resolves
+  // each requested commitment independently, but only returns whole blocks - it does not
+  // tag which specific commitment matched which returned block. If a batch mixes a
+  // genuinely-unspent commitment with an already-spent one that happens to live in the same
+  // block, the previous implementation (filtering the returned block's full output list
+  // against the *entire* batch) would incorrectly report the already-spent commitment as
+  // unspent too, since it is still structurally present in that block's immutable output
+  // list. Querying one commitment per request guarantees any block returned was matched
+  // for that commitment specifically.
   binaryHashes = Array.from(hashesMap.values())
     .filter((hashData) => !hashData.assigned)
     .map((hashData) => hashData.binaryHash);
   let commitmentResult: SearchResult[] = [];
   let commitmentError: string | undefined;
-  try {
-    const result = await collectAsyncIterable(
-      client.searchUtxos({ commitments: binaryHashes }),
-    );
-    commitmentResult = result.flatMap((block: any) =>
-      block.block.body.outputs
-        .filter((output: any) =>
-          binaryHashes.some((hash) => hash.equals(output.commitment)),
-        )
-        .map((output: any) => ({
-          payment_reference_hex: output.payment_reference.toString("hex"),
-          block_height: block.block.header.height.toString(),
-          block_hash: block.block.header.hash,
-          mined_timestamp: block.block.header.timestamp.toString(),
-          commitment: output.commitment,
-          is_spent: output.is_spent || false,
-          spent_height: output.spent_height
-            ? output.spent_height.toString()
-            : "0",
-          spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
-          min_value_promise: output.minimum_value_promise.toString(),
-          spent_timestamp: undefined,
-          output_hash: output.hash,
-          search_type: "Commitment",
-        })),
-    );
-    // Mark these hashes as assigned
-    for (const output of commitmentResult) {
-      if (output.commitment != null) {
-        const hashData = hashesMap.get(output.commitment.toString("hex"));
-        if (hashData) {
-          hashData.assigned = true;
-        }
+  for (const binaryHash of binaryHashes) {
+    try {
+      const result = await collectAsyncIterable(
+        client.searchUtxos({ commitments: [binaryHash] }),
+      );
+      const matches = result.flatMap((block: any) =>
+        block.block.body.outputs
+          .filter((output: any) => binaryHash.equals(output.commitment))
+          .map((output: any) => ({
+            payment_reference_hex: output.payment_reference.toString("hex"),
+            block_height: block.block.header.height.toString(),
+            block_hash: block.block.header.hash,
+            mined_timestamp: block.block.header.timestamp.toString(),
+            commitment: output.commitment,
+            is_spent: output.is_spent || false,
+            spent_height: output.spent_height
+              ? output.spent_height.toString()
+              : "0",
+            spent_block_hash: output.spent_block_hash || Buffer.alloc(0),
+            min_value_promise: output.minimum_value_promise.toString(),
+            spent_timestamp: undefined,
+            output_hash: output.hash,
+            search_type: "Commitment",
+          })),
+      );
+      commitmentResult.push(...matches);
+    } catch (error) {
+      commitmentError = "no outputs via commitment(s): " + error;
+    }
+  }
+  // Mark these hashes as assigned
+  for (const output of commitmentResult) {
+    if (output.commitment != null) {
+      const hashData = hashesMap.get(output.commitment.toString("hex"));
+      if (hashData) {
+        hashData.assigned = true;
       }
     }
-  } catch (error) {
-    commitmentError = "no outputs via commitment(s): " + error;
   }
 
   if (

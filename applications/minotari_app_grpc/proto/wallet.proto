@@ -23,7 +23,6 @@ syntax = "proto3";
 
 package tari.rpc;
 
-import "google/protobuf/timestamp.proto";
 import "types.proto";
 import "transaction.proto";
 import "sidechain_types.proto";
@@ -2009,6 +2008,8 @@ message BroadcastSignedOneSidedTransactionResponse {
 message TransferRequest {
   repeated PaymentRecipient recipients = 1;
   bool single_tx = 2;
+  // Canonical compressed commitments to exclude from transaction input selection.
+  repeated bytes excluded_commitments = 3;
 }
 
 // A request to perform a range-limited coin-join to self operation.

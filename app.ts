@@ -31,14 +31,14 @@ const __dirname = path.dirname(__filename);
 hbs.registerHelper("hex", hex);
 hbs.registerHelper("script", script);
 
-hbs.registerHelper("timestamp", function (timestamp: number) {
-  const dateObj = new Date(timestamp * 1000);
+hbs.registerHelper("timestamp", function (timestamp: number | bigint) {
+  const dateObj = new Date(Number(timestamp) * 1000);
   const day = dateObj.getUTCDate();
   const month = dateObj.getUTCMonth() + 1;
   const year = dateObj.getUTCFullYear();
   const hours = dateObj.getUTCHours();
   const minutes = dateObj.getUTCMinutes();
-  const seconds = dateObj.getSeconds();
+  const seconds = dateObj.getUTCSeconds();
 
   return (
     year.toString() +

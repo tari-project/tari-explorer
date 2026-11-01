@@ -52,7 +52,7 @@ router.get("/stats", async function (req: Request, res: Response) {
   const heights = Array.from(
     { length: limit },
     (_, i) => tipHeight - BigInt(i),
-  );
+  ).filter((h) => h >= 0n);
   const blocks = await collectAsyncIterable(client.getBlocks({ heights }));
   const headers_with_reward: BlockHeaderResponse[] = await collectAsyncIterable(
     client.listHeaders({
@@ -61,11 +61,22 @@ router.get("/stats", async function (req: Request, res: Response) {
     }),
   );
 
+  const headerRewardMap = new Map<bigint, bigint>();
+  for (const h of headers_with_reward) {
+    if (h.header?.height !== undefined) {
+      headerRewardMap.set(h.header.height, h.reward ?? 0n);
+    }
+  }
+
   const stats = blocks
-    .map((block, i) => ({
-      height: block?.block?.header?.height || 0n,
-      ...miningStats(block, headers_with_reward[i]?.reward, false),
-    }))
+    .map((block) => {
+      const height = block?.block?.header?.height || 0n;
+      const reward = headerRewardMap.get(height) ?? 0n;
+      return {
+        height,
+        ...miningStats(block, reward, false),
+      };
+    })
     .sort((a, b) => Number(b.height - a.height));
 
   res.header("Cache-Control", cacheSettings.index);

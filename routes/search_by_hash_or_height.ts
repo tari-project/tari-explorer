@@ -100,8 +100,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
             /^[0-9]+$/.test(ref) && // Validate numeric format
             BigInt(ref) <= BigInt("18446744073709551615"), // Ensure within u64 range
         )
-        .map(Number)
-        .map(BigInt),
+        .map((ref) => BigInt(ref)),
     ),
   );
   const heightsMap: Map<bigint, HeightData> = new Map();
@@ -261,7 +260,9 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     // Mark these hashes as assigned
     for (const output of payrefResult) {
       if (output.payment_reference_hex != null) {
-        const hashData = hashesMap.get(output.payment_reference_hex);
+        const hashData = hashesMap.get(
+          output.payment_reference_hex.toLowerCase(),
+        );
         if (hashData) {
           hashData.assigned = true;
         }
@@ -408,7 +409,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     items: [
       ...new Map(
         [...(headerByHeightResult || []), ...(headerByHashResult || [])].map(
-          (item) => [item.block_hash, item],
+          (item) => [item.block_hash?.toString("hex"), item],
         ),
       ).values(),
       ...new Map(
@@ -418,7 +419,10 @@ router.get("/", async function (req: express.Request, res: express.Response) {
           ...(commitmentResult || []),
         ].map((item) => [item.payment_reference_hex, item]),
       ).values(),
-    ].sort((a, b) => Number(b.block_height) - Number(a.block_height)), // Parse block_height as a number
+    ].sort((a, b) => {
+      const diff = BigInt(b.block_height ?? 0) - BigInt(a.block_height ?? 0);
+      return diff > 0n ? 1 : diff < 0n ? -1 : 0;
+    }),
     heights_not_found: Array.from(heightsMap.values())
       .filter((heightData) => !heightData.assigned)
       .map((heightData) => heightData.height.toString()),

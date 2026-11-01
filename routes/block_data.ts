@@ -27,6 +27,7 @@ import cacheSettings from "../cacheSettings.js";
 import { HistoricalBlock } from "@/grpc-gen/block.js";
 import { BlockHeaderResponse } from "@/grpc-gen/base_node.js";
 import { AggregateBody } from "@/grpc-gen/transaction.js";
+import { sanitizeBigInts } from "../utils/sanitizeObject.js";
 const router = express.Router();
 
 function fromHexString(hexString: string): number[] {
@@ -43,7 +44,12 @@ router.get(
     const from = +(req.query.from || 0);
     const to = +(req.query.to || 10);
     const what = req.query.what as string | undefined;
-    if (what === undefined) {
+    if (
+      what === undefined ||
+      (what !== "inputs" && what !== "outputs" && what !== "kernels") ||
+      Number.isNaN(from) ||
+      Number.isNaN(to)
+    ) {
       res.status(404);
       res.render("404", { message: `Invalid request` });
       return;
@@ -53,6 +59,11 @@ router.get(
     let block: HistoricalBlock[] | BlockHeaderResponse;
     let height: bigint;
     if (height_or_hash.length === 64) {
+      if (!/^[0-9a-fA-F]{64}$/.test(height_or_hash)) {
+        res.status(404);
+        res.render("404", { message: `Invalid request` });
+        return;
+      }
       block = await client.getHeaderByHash({
         hash: Buffer.from(fromHexString(height_or_hash)),
       });
@@ -64,8 +75,12 @@ router.get(
         return;
       }
       height = block?.header?.height ?? 0n;
+    } else if (/^\d+$/.test(height_or_hash)) {
+      height = BigInt(height_or_hash);
     } else {
-      height = BigInt(parseInt(height_or_hash));
+      res.status(404);
+      res.render("404", { message: `Invalid request` });
+      return;
     }
 
     const request = { heights: [height] };
@@ -77,9 +92,10 @@ router.get(
     }
 
     const blockBody: AggregateBody = block[0]?.block?.body as AggregateBody;
+    const section = blockBody?.[what as keyof AggregateBody] ?? [];
     const body = {
-      length: blockBody[what as keyof AggregateBody].length,
-      data: blockBody[what as keyof AggregateBody]?.slice(from, to),
+      length: section.length,
+      data: section.slice(from, to),
     };
 
     const tipInfo = await client.getTipInfo({});
@@ -95,7 +111,7 @@ router.get(
       height,
       body: body,
     };
-    res.json(json);
+    res.json(sanitizeBigInts(json));
   },
 );
 

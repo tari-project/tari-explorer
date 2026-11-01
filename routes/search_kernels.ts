@@ -45,6 +45,11 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     nonces.length !== signatures.length
   ) {
     res.status(404);
+    if (req.query.json !== undefined) {
+      res.json({ error: "Invalid search query" });
+    } else {
+      res.render("error", { error: "Invalid search query" });
+    }
     return;
   }
   const params: { public_nonce: Buffer; signature: Buffer }[] = [];
@@ -97,7 +102,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     items: result,
   };
   if (req.query.json !== undefined) {
-    res.json(json);
+    res.json(sanitizeBigInts(json));
   } else {
     res.render("search_kernels", sanitizeBigInts(json));
   }

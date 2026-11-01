@@ -49,10 +49,10 @@ router.get("/", async function (req: express.Request, res: express.Response) {
     const extra = lastDifficulties[i].coinbase_extras.join("|");
     const split = extra.split(",");
 
+    const firstCoinbaseExtra =
+      lastDifficulties[i]?.coinbase_extras[0]?.toString() || "";
     let unique_id =
-      lastDifficulties[i]?.coinbase_extras[0]?.toString() || "" === ""
-        ? "Non-universe miner"
-        : lastDifficulties[i]?.coinbase_extras[0]?.toString();
+      firstCoinbaseExtra === "" ? "Non-universe miner" : firstCoinbaseExtra;
     let os = "Non-universe miner";
     let version = "Non-universe miner";
 
@@ -139,7 +139,7 @@ router.get("/", async function (req: express.Request, res: express.Response) {
   }
 
   if (req.query.json !== undefined) {
-    res.json(data);
+    res.json(sanitizeBigInts(data));
   } else {
     res.render("miners", sanitizeBigInts(data));
   }

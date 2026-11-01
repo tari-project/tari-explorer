@@ -49,7 +49,7 @@ const OP_END_IF = 0x63;
 
 function u64(data: Uint8Array | Array<number>): string {
   let n = BigInt(0);
-  for (let i = 7; i >= 0; --i) {
+  for (let i = Math.min(data.length, 8) - 1; i >= 0; --i) {
     n <<= BigInt(8);
     n |= BigInt(data[i]);
   }
@@ -57,6 +57,9 @@ function u64(data: Uint8Array | Array<number>): string {
 }
 
 function i64(data: Uint8Array | Array<number>): string {
+  if (data.length < 8) {
+    return u64(data);
+  }
   let n = BigInt(data[7] & 127);
   for (let i = 6; i >= 0; --i) {
     n <<= BigInt(8);
@@ -64,7 +67,7 @@ function i64(data: Uint8Array | Array<number>): string {
   }
   // It's negative
   if (data[7] & 128) {
-    n -= BigInt(9223372036854775807);
+    n -= 0x8000_0000_0000_0000n;
   }
   return n.toString();
 }
@@ -83,9 +86,11 @@ function script(data: Uint8Array | Buffer | Array<number>): string {
       // Opcode constants: Block Height Checks
       case OP_CHECK_HEIGHT_VERIFY:
         s.push(`CHECK_HEIGHT_VERIFY ${u64(data.slice(i + 1, i + 9))}`);
+        i += 9;
         break;
       case OP_CHECK_HEIGHT:
         s.push(`CHECK_HEIGHT ${u64(data.slice(i + 1, i + 9))}`);
+        i += 9;
         break;
       case OP_COMPARE_HEIGHT_VERIFY:
         s.push(`COMPARE_HEIGHT_VERIFY`);
@@ -188,8 +193,8 @@ function script(data: Uint8Array | Buffer | Array<number>): string {
         i += 33;
         break;
       case OP_CHECK_MULTI_SIG:
-        m = data[i + 1];
-        n = data[i + 2];
+        m = data[i + 1] ?? 0;
+        n = data[i + 2] ?? 0;
         public_keys = [];
         i += 3;
         for (let j = 0; j < n; ++j) {
@@ -203,8 +208,8 @@ function script(data: Uint8Array | Buffer | Array<number>): string {
         );
         break;
       case OP_CHECK_MULTI_SIG_VERIFY:
-        m = data[i + 1];
-        n = data[i + 2];
+        m = data[i + 1] ?? 0;
+        n = data[i + 2] ?? 0;
         public_keys = [];
         i += 3;
         for (let j = 0; j < n; ++j) {

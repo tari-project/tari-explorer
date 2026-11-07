@@ -27,24 +27,33 @@ import { collectAsyncIterable } from "../utils/grpcHelpers.js";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
-  const client = createClient();
-  const lastDifficulties = await collectAsyncIterable(
-    client.getNetworkDifficulty({
-      from_tip: 1000n,
-    }),
-  );
+  try {
+    const client = createClient();
+    const lastDifficulties = await collectAsyncIterable(
+      client.getNetworkDifficulty({
+        from_tip: 1000n,
+      }),
+    );
 
-  const csvStream = format({ headers: true });
-  res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
-  res.setHeader("Content-Type", "text/csv");
+    const csvStream = format({ headers: true });
+    res.setHeader("Content-Disposition", 'attachment; filename="data.csv"');
+    res.setHeader("Content-Type", "text/csv");
 
-  csvStream.pipe(res);
+    csvStream.pipe(res);
 
-  for (let i = 0; i < lastDifficulties.length; i++) {
-    csvStream.write(lastDifficulties[i]);
+    for (let i = 0; i < lastDifficulties.length; i++) {
+      csvStream.write(lastDifficulties[i]);
+    }
+
+    csvStream.end();
+  } catch (error) {
+    res.status(500);
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
-
-  csvStream.end();
 });
 
 export default router;

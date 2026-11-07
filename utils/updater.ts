@@ -42,9 +42,9 @@ export default class BackgroundUpdater {
       retryDelay?: number;
     } = {},
   ) {
-    this.updateInterval = options.updateInterval || 60000; // 1 minute
-    this.maxRetries = options.maxRetries || 3;
-    this.retryDelay = options.retryDelay || 5000; // 5 seconds
+    this.updateInterval = options.updateInterval ?? 60000; // 1 minute
+    this.maxRetries = Math.max(1, options.maxRetries ?? 3);
+    this.retryDelay = options.retryDelay ?? 5000; // 5 seconds
     this.data = null;
     this.isUpdating = false;
     this.lastSuccessfulUpdate = null;

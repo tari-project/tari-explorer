@@ -25,13 +25,22 @@ import express from "express";
 const router = express.Router();
 
 router.get("/", async function (req: express.Request, res: express.Response) {
-  const client = createClient();
-  const result = await client.getVersion({});
-  const json = { version: result.version };
-  if (req.query.json !== undefined) {
-    res.json(json);
-  } else {
-    res.render("healthz", json);
+  try {
+    const client = createClient();
+    const result = await client.getVersion({});
+    const json = { version: result.version };
+    if (req.query.json !== undefined) {
+      res.json(json);
+    } else {
+      res.render("healthz", json);
+    }
+  } catch (error) {
+    res.status(503);
+    if (req.query.json !== undefined) {
+      res.json({ error: error });
+    } else {
+      res.render("error", { error: error });
+    }
   }
 });
 

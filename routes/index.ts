@@ -48,8 +48,14 @@ type BlockHeaderExtended = BlockHeader & {
 /* GET home page. */
 router.get("/", async function (req: Request, res: Response) {
   res.setHeader("Cache-Control", cacheSettings.index);
-  const from = parseInt((req.query.from as string | undefined) || "0");
-  let limit = parseInt((req.query.limit as string | undefined) || "20");
+  const parsedFrom = parseInt((req.query.from as string | undefined) || "0", 10);
+  const from = Number.isFinite(parsedFrom) && parsedFrom >= 0 ? parsedFrom : 0;
+  const parsedLimit = parseInt(
+    (req.query.limit as string | undefined) || "20",
+    10,
+  );
+  let limit =
+    Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 20;
   if (limit > 100) {
     limit = 100;
   }
@@ -61,21 +67,21 @@ router.get("/", async function (req: Request, res: Response) {
   } else {
     json = (await getIndexData(from, limit)) ?? undefined;
   }
-  if (json === null) {
+  if (!json) {
     res.status(404).send("Block not found");
+    return;
   }
 
   if (req.query.json !== undefined) {
-    (json?.stats as []).map((x: any) => (x.height = x.height.toString()));
-    res.json(json);
+    res.json(sanitizeBigInts(json));
   } else {
     res.render("index", sanitizeBigInts(json));
   }
 });
 
 function getHashRates(difficulties: any[], properties: string[]): number[] {
-  const end_idx = difficulties.length - 1;
-  const start_idx = end_idx - 720;
+  const end_idx = difficulties.length;
+  const start_idx = Math.max(0, end_idx - 720);
 
   const hashRates = difficulties
     .map((d) =>

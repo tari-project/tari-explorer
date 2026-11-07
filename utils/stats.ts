@@ -40,8 +40,15 @@ export function miningStats(
   }
 
   let powAlgo: string;
-  if (blockData?.block?.header?.pow?.pow_algo == 0n) {
+  const algo = blockData?.block?.header?.pow?.pow_algo;
+  if (algo == 0n) {
     powAlgo = "Monero";
+  } else if (algo == 1n) {
+    powAlgo = "SHA-3";
+  } else if (algo == 2n) {
+    powAlgo = "TariRx";
+  } else if (algo == 3n) {
+    powAlgo = "Cuckaroo";
   } else {
     powAlgo = "SHA-3";
   }

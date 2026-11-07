@@ -74,11 +74,11 @@ router.get(
     }
 
     tx.body?.outputs.forEach((output: any) => {
-      if (output.features.range_proof_type === 0) {
+      if (output.features?.range_proof_type === 0) {
         // BulletProofPlus
-        const proofHex = Buffer.from(output.range_proof.proof_bytes).toString(
-          "hex",
-        );
+        const proofHex = Buffer.from(
+          output.range_proof?.proof_bytes || Buffer.from([]),
+        ).toString("hex");
         output.range_proof = proofHex;
       } else {
         // RevealedValue
@@ -88,7 +88,7 @@ router.get(
 
     const json = { tx };
     if (req.query.json !== undefined) {
-      res.json(json);
+      res.json(sanitizeBigInts(json));
     } else {
       res.render("mempool", sanitizeBigInts(json));
     }

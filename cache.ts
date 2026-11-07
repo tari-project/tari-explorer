@@ -1,6 +1,6 @@
 import { handleGrpcResult } from "./utils/grpcHelpers.js";
 import JSONbig from "json-bigint";
-JSONbig({ useNativeBigInt: true });
+const jsonBig = JSONbig({ useNativeBigInt: true });
 
 const DEFAULT_CACHE_SIZE = 1000;
 
@@ -18,6 +18,9 @@ class Cache<T> {
   }
 
   set(key: string, value: T) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
     while (this.cache.size >= this.limit) {
       const firstItemKey = this.cache.keys().next().value;
       if (firstItemKey === undefined) break;
@@ -30,7 +33,7 @@ class Cache<T> {
     func: (args: any) => Promise<T> | AsyncIterable<T>,
     args: any,
   ): Promise<T | T[]> {
-    const cache_key = JSON.stringify(args);
+    const cache_key = jsonBig.stringify(args);
     if (this.cache.has(cache_key)) {
       const temp = this.cache.get(cache_key)!;
       this.cache.delete(cache_key);

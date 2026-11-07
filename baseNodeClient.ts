@@ -18,7 +18,10 @@ function resolveTarget(address: string) {
   }
   const secure = match[1] === "https";
   const host = match[2].replace(/\/+$/, "");
-  const target = host.includes(":") ? host : `${host}:${secure ? 443 : 80}`;
+  const hasExplicitPort = host.startsWith("[")
+    ? /\]:\d+$/.test(host)
+    : host.includes(":");
+  const target = hasExplicitPort ? host : `${host}:${secure ? 443 : 80}`;
   return { target, secure };
 }
 

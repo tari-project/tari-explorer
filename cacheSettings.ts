@@ -1,3 +1,20 @@
+const DEFAULT_OLD_BLOCK_DELTA_TIP = 30 * 24 * 7;
+
+export function parseOldBlockDeltaTip(
+  raw: string | undefined,
+  fallback: number = DEFAULT_OLD_BLOCK_DELTA_TIP,
+): number {
+  if (raw === undefined) {
+    return fallback;
+  }
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isSafeInteger(parsed) ? parsed : fallback;
+}
+
 const cacheSettings = {
   index:
     process.env.TARI_EXPLORER_INDEX_CACHE_SETTINGS ||
@@ -11,8 +28,9 @@ const cacheSettings = {
   newBlocks:
     process.env.TARI_EXPLORER_NEW_BLOCKS_CACHE_SETTINGS ||
     "public, max-age=120, s-maxage=60, stale-while-revalidate=30",
-  oldBlockDeltaTip: (process.env.TARI_EXPLORER_OLD_BLOCK_DELTA_TIP ||
-    30 * 24 * 7) as number,
+  oldBlockDeltaTip: parseOldBlockDeltaTip(
+    process.env.TARI_EXPLORER_OLD_BLOCK_DELTA_TIP,
+  ),
 };
 
 export default cacheSettings;

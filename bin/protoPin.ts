@@ -22,23 +22,69 @@ export interface ProtoPin {
   sha: string;
 }
 
-export function readPin(): ProtoPin {
-  const pin: ProtoPin = JSON.parse(fs.readFileSync(PIN_FILE, "utf8"));
+const REPO_SLUG_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+
+export function isSafeProtoFileName(name: string): boolean {
+  return (
+    name.endsWith(".proto") &&
+    name !== ".proto" &&
+    path.posix.basename(name) === name &&
+    path.win32.basename(name) === name &&
+    !name.includes("..") &&
+    !name.includes("/") &&
+    !name.includes("\\")
+  );
+}
+
+export function validatePin(pin: ProtoPin, pinFile = PIN_FILE): ProtoPin {
   for (const key of ["repo", "protoPath", "tag", "sha"] as const) {
-    if (!pin[key]) {
-      throw new Error(`${PIN_FILE} is missing required field "${key}"`);
+    if (typeof pin[key] !== "string" || !pin[key].trim()) {
+      throw new Error(`${pinFile} is missing required field "${key}"`);
     }
+  }
+  const [owner, repoName] = pin.repo.split("/");
+  if (
+    !REPO_SLUG_PATTERN.test(pin.repo) ||
+    owner === "." ||
+    owner === ".." ||
+    repoName === "." ||
+    repoName === ".."
+  ) {
+    throw new Error(
+      `${pinFile} "repo" must be a valid "owner/name" slug, got "${pin.repo}"`,
+    );
+  }
+  const normalizedProtoPath = pin.protoPath.replace(/\\/g, "/");
+  const segments = normalizedProtoPath.split("/").filter(Boolean);
+  if (
+    path.posix.isAbsolute(normalizedProtoPath) ||
+    path.win32.isAbsolute(pin.protoPath) ||
+    segments.length === 0 ||
+    segments.some((seg) => seg === "." || seg === "..")
+  ) {
+    throw new Error(
+      `${pinFile} "protoPath" must be a relative subdirectory inside the repository, got "${pin.protoPath}"`,
+    );
   }
   if (!/^[0-9a-f]{40}$/.test(pin.sha)) {
     throw new Error(
-      `${PIN_FILE} "sha" must be a full 40-character commit SHA, got "${pin.sha}"`,
+      `${pinFile} "sha" must be a full 40-character commit SHA, got "${pin.sha}"`,
     );
   }
-  return pin;
+  return {
+    ...pin,
+    protoPath: segments.join("/"),
+  };
+}
+
+export function readPin(): ProtoPin {
+  const pin: ProtoPin = JSON.parse(fs.readFileSync(PIN_FILE, "utf8"));
+  return validatePin(pin, PIN_FILE);
 }
 
 export function writePin(pin: ProtoPin) {
-  fs.writeFileSync(PIN_FILE, `${JSON.stringify(pin, null, 2)}\n`);
+  const validated = validatePin(pin, PIN_FILE);
+  fs.writeFileSync(PIN_FILE, `${JSON.stringify(validated, null, 2)}\n`);
 }
 
 async function githubJson<T>(url: string): Promise<T> {
@@ -73,11 +119,21 @@ export async function listProtoFiles(
   pin: Pick<ProtoPin, "repo" | "protoPath">,
   sha: string,
 ): Promise<string[]> {
+  const encodedPath = pin.protoPath
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
   const contents = await githubJson<{ name: string; type: string }[]>(
-    `https://api.github.com/repos/${pin.repo}/contents/${pin.protoPath}?ref=${sha}`,
+    `https://api.github.com/repos/${pin.repo}/contents/${encodedPath}?ref=${encodeURIComponent(sha)}`,
   );
+  if (!Array.isArray(contents)) {
+    throw new Error(
+      `Expected directory listing at ${pin.repo}:${pin.protoPath}@${sha}`,
+    );
+  }
   return contents
-    .filter((f) => f.type === "file" && f.name.endsWith(".proto"))
+    .filter((f) => f.type === "file" && isSafeProtoFileName(f.name))
     .map((f) => f.name)
     .sort();
 }
@@ -92,7 +148,10 @@ export async function downloadProtos(
   await fs.promises.mkdir(destDir, { recursive: true });
 
   for (const name of names) {
-    const url = `https://raw.githubusercontent.com/${pin.repo}/${sha}/${pin.protoPath}/${name}`;
+    if (!isSafeProtoFileName(name)) {
+      throw new Error(`Refusing to write unsafe proto file name "${name}"`);
+    }
+    const url = `https://raw.githubusercontent.com/${pin.repo}/${sha}/${pin.protoPath}/${encodeURIComponent(name)}`;
     const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Failed to download ${name}: ${res.status}`);

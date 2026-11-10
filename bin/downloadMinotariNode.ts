@@ -13,29 +13,24 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
+import { pathToFileURL } from "node:url";
 import AdmZip from "adm-zip";
 import { Command } from "commander";
 import { readPin } from "./protoPin.js";
 
-const MINOTARI_NODE_EXEC_NAME = "minotari_node";
 const MINOTARI_NODE_PATH = "./applications/minotari-node";
 
-const cli = new Command();
-cli
-  .name("node:download")
-  .description("download a minotari_node binary for local development")
-  .argument(
-    "[tag]",
-    "release tag to download. Defaults to the tag in tari-proto.pin.json.",
-  );
-
-const tagArg = cli.parse(process.argv).args[0];
+export function getMinotariNodeExecName(
+  platform: string = os.platform(),
+): string {
+  return platform === "win32" ? "minotari_node.exe" : "minotari_node";
+}
 
 /** Map Node's platform/arch onto the naming used by Tari release assets. */
-function getTariArch(): string {
-  const platform = os.platform();
-  const arch = os.arch();
-
+export function getTariArch(
+  platform: string = os.platform(),
+  arch: string = os.arch(),
+): string {
   const platformName =
     platform === "win32"
       ? "windows"
@@ -65,13 +60,29 @@ async function downloadFile(url: string, destination: string) {
 }
 
 async function main() {
+  const cli = new Command();
+  cli
+    .name("node:download")
+    .description("download a minotari_node binary for local development")
+    .argument(
+      "[tag]",
+      "release tag to download. Defaults to the tag in tari-proto.pin.json.",
+    );
+
+  const tagArg = cli.parse(process.argv).args[0];
   const pin = readPin();
   const tag = tagArg || pin.tag;
+  const execName = getMinotariNodeExecName();
   const suitePattern = new RegExp(`tari_suite-.*-${getTariArch()}\\.zip`);
 
+  const headers: Record<string, string> = { "User-Agent": "tari-explorer" };
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+
   const release = await fetch(
-    `https://api.github.com/repos/${pin.repo}/releases/tags/${tag}`,
-    { headers: { "User-Agent": "tari-explorer" } },
+    `https://api.github.com/repos/${pin.repo}/releases/tags/${encodeURIComponent(tag)}`,
+    { headers },
   ).then((res) => {
     if (!res.ok) {
       throw new Error(`No release found for tag ${tag} (${res.status})`);
@@ -99,23 +110,31 @@ async function main() {
   console.log(`Downloading ${asset.name} (${tag})...`);
   await downloadFile(asset.browser_download_url, localPath);
 
-  const zip = new AdmZip(localPath);
-  const entry = zip
-    .getEntries()
-    .find((e) => e.name === MINOTARI_NODE_EXEC_NAME);
-  if (!entry) {
-    throw new Error(`no ${MINOTARI_NODE_EXEC_NAME} found in ${asset.name}`);
+  try {
+    const zip = new AdmZip(localPath);
+    const entry = zip.getEntries().find((e) => e.name === execName);
+    if (!entry) {
+      throw new Error(`no ${execName} found in ${asset.name}`);
+    }
+
+    zip.extractEntryTo(entry, MINOTARI_NODE_PATH, true, true);
+    if (os.platform() !== "win32") {
+      await fs.promises.chmod(path.join(MINOTARI_NODE_PATH, execName), 0o755);
+    }
+  } finally {
+    await fs.promises.rm(localPath, { force: true });
   }
 
-  zip.extractEntryTo(entry, MINOTARI_NODE_PATH, true, true);
-  fs.unlinkSync(localPath);
-
-  console.log(
-    `Extracted ${MINOTARI_NODE_EXEC_NAME} to ${MINOTARI_NODE_PATH} (${tag})`,
-  );
+  console.log(`Extracted ${execName} to ${MINOTARI_NODE_PATH} (${tag})`);
 }
 
-main().catch((err) => {
-  console.error("Error:", (err as Error).message);
-  process.exit(1);
-});
+const isMainModule =
+  Boolean(process.argv[1]) &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error("Error:", (err as Error).message);
+    process.exit(1);
+  });
+}
